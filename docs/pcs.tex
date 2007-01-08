@@ -1,0 +1,770 @@
+\documentclass[11pt]{article}
+\usepackage{codespelunking}
+\usepackage[pdftex]{hyperref}
+\title{Packet Construction Set}
+\author{George V. Neville-Neil}
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+PCS is a set of Python modules and objects that make building network
+protocol testing tools easier for the protocol developer.  The core of
+the system is the pcs module itself which provides the necessary
+functionality to create classes that implement packets.
+
+Installing PCS is covered in the text file, \file{INSTALLATION}, which came
+with this package.  The code is under a BSD License and can be found
+in the file \file{COPYRIGHT} in the root of this package.
+
+In the following document we set \class{classes} 
+\function{functions} and \method{methods} apart by setting them in
+different type.  Methods and functions are also followed by
+parentheses, ``()'', which classes are not.
+
+
+\section{A Quick Tour}
+
+For the impatient programmer this section is a 5 minute intro to using
+PCS.  Even faster than this tour would be to read some of the test
+code in the \file{tests} sub-directory or the scripts in the
+\file{scripts} sub directory.
+
+PCS is a set of functions to encode and decode network packets from
+various formats as well as a set of \emph{classes} for the most
+commonly use network protocols.  Each object derived from a packet has
+fields automatically built into it that represent the relevant
+sections of the packet.  
+
+Let's grab a familiar packet to work with, the IPv4 packet.  IPv4
+packets show a few interesting features of PCS.  Figure
+\ref{fig:rfc791-ipheader} shows the definition of an IPv4 packet
+header from \cite{rfc791} which specifies the IPv4 protocol.  
+
+\begin{figure}
+\label{fig:rfc791-ipheader}
+  \centering
+\begin{verbatim}
+    0                   1                   2                   3   
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Version|  IHL  |Type of Service|          Total Length         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         Identification        |Flags|      Fragment Offset    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Time to Live |    Protocol   |         Header Checksum       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       Source Address                          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Destination Address                        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Options                    |    Padding    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{verbatim}
+  \caption{IPv4 Header Format}
+\end{figure}
+
+In PCS every packet class contains fields which represent the fields
+of the packet exactly, including their bit widths.
+Figure\ref{fig:ipv4-quick-and-dirty} shows a command line interaction
+with an IPv4 packet.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+Python 2.4.2 (#1, Mar  7 2006, 15:04:29) 
+[GCC 4.0.1 (Apple Computer, Inc. build 5250)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from pcs.packets.ipv4 import *
+>>> ip = ipv4()
+>>> print ip
+version 4
+hlen 0
+tos 0
+length 0
+id 0
+flags 0
+offset 0
+ttl 64
+protocol 0
+checksum 0
+src 0.0.0.0
+dst 0.0.0.0
+
+>>> ip.hlen=5<<2
+>>> print ip
+version 4
+hlen 20
+tos 0
+length 0
+id 0
+flags 0
+offset 0
+ttl 64
+protocol 0
+checksum 0
+src 0.0.0.0
+dst 0.0.0.0
+\end{verbatim}
+  \caption{Quick and Dirty IPv4 Example}
+  \label{fig:ipv4-quick-and-dirty}
+\end{figure}
+
+Each packet has a built in field called \field{bytes} which always contains
+the wire representation of the packet.  
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> from pcs.packets.ipv4 import *
+>>> ip = ipv4()
+>>> ip.bytes
+'@\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+>>> ip.hlen = 5 << 2
+>>> ip.bytes
+'D\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+\end{verbatim}
+  \caption{The \field{bytes} Field of the Packet}
+  \label{fig:bytes-field}
+\end{figure}
+
+In Figure\ref{fig:bytes-field} the \field{bytes} field has been
+changed in its first position by setting the \field{hlen} or header
+length field to 20, $5 \ll 2$.  Such programmatic access is available
+to all fields of the packet.
+
+The IPv4 header has fields that can be problematic to work with in any
+language including ones that are
+
+\begin{list}{fig:ipheadfeatures}{}
+\item less than one byte (octect) in length (Version, IHL, Flags)
+\item not an even number of bits (Flags)
+\item not aligned on a byte boundary (Fragment Offset)
+\end{list}
+
+Using just these features it is possible to write complex programs in
+Python that directly manipulate packets.  For now you should know
+enough to safely ignore this documentation until you to explore further.
+
+\section{Working with Packets}
+
+In PCS every packet is a class and the layout of the packet is defined
+by a Layout class which contains a set of Fields.  Fields can be from
+1 to many bits, so it is possible to build packets with arbitrary
+width bit fields.  Fields know about the widths and will throw
+exceptions when they are overloaded.
+
+Every Packet object, that is an object instantiated from a specific
+PCS packet class, has a field named bytes which shows the
+representation of the data in the packet at that point in time.  It is
+the bytes field that is used when transmitting the packet on the wire.
+
+The whole point of writing PCS was to make it easier to experiment
+with various packet types.  In PCS there are packet classes and packet
+objects.  Packet classes define the named fields of the packet and
+these named fields are properties of the object.  A practical example
+may help.  Given an IPv6 packet class it is possible to create the
+object, set various fields, as well as transmit and receive the
+object.
+
+A good example is the IPv6 class:
+\begin{figure}
+  \centering
+\begin{verbatim}
+        ip = ipv6()
+        assert (ip != None)
+        ip.traffic_class = 1
+        ip.flow = 0
+        ip.length = 64
+        ip.next_header = 6
+        ip.hop = 64
+        ip.src = inet_pton(AF_INET6, "::1")
+        ip.dst = inet_pton(AF_INET6, "::1")
+\end{verbatim}
+  \caption{IPv6 Class}
+  \label{fig:ipv6-class}
+\end{figure}
+The code in Figure \ref{fig:ipv6-class} gets a new IPv6 object from
+the ipv6() class, which was imported earlier, and sets various fields
+in the packet.  Showing the bytes field, Figure
+\ref{fig:bytes-ipv6-packet} gives us an idea of how well this is
+working.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> ip.bytes
+'`\x10\x00\x00\x00@\x06@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
+\end{verbatim}
+  \caption{Bytes of the IPv6 Packet}
+  \label{fig:bytes-ipv6-packet}
+\end{figure}
+
+Note that various bits are set throughout the bytes.  The data in the
+packet can be pretty printed using the \function{print} function as
+seen in Figure \ref{fig:printing-a-packet} or it can be dumped as a
+string directly as seen in Figure\ref{fig:repr-method}.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> print ip
+version 6
+traffic_class 1
+flow 0
+length 64
+next_header 6
+hop 64
+src ::1
+dst ::1
+\end{verbatim}
+  \caption{Printing a Packet}
+  \label{fig:printing-a-packet}
+\end{figure}
+
+  \begin{figure}[h]
+    \centering
+\begin{verbatim}
+>>> ip
+<IPv6: src: 0, dst: 0, traffic_class: 0, flow: 0, length: 0, \
+version:6, hop: 0, next_header: 0>
+\end{verbatim}
+    \caption{Using the \method{\_\_repr\_\_} method}
+    \label{fig:repr-method}
+  \end{figure}
+
+\section{Creating Packet Classes}
+
+For a packet to be a part of PCS it must sub-classed from the \class{Packet}
+class as seen in Figure \ref{}
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+class ipv6(pcs.Packet):
+    """A class that contains the IPv6 header.  All other data is
+    chained on the end."""
+
+    layout = pcs.Layout()
+
+    def __init__(self, bytes = None):
+        """IPv6 Packet from RFC 2460"""
+        version = pcs.Field("version", 4, default = 6)
+        traffic = pcs.Field("traffic_class", 8)
+        flow = pcs.Field("flow", 20)
+        length = pcs.Field("length", 16)
+        next = pcs.Field("next_header", 8)
+        hop = pcs.Field("hop", 8)
+        src = pcs.Field("src", 16 * 8, type = str)
+        dst = pcs.Field("dst", 16 * 8, type = str)
+        pcs.Packet.__init__(self,
+                            [version, traffic, flow, length, next, hop,
+                             src, dst], bytes)
+\end{verbatim}
+  \caption{IPv6 Packet Class}
+  \label{fig:ipv6-class-definition}
+\end{figure}
+
+The code in Figure \ref{fig:ipv6-class-definiition} defines a new
+class, one that will describe an IPv6 packet, sub-classed from the
+\class{Packet} base class.  All PCS packets must have a \field{layout}
+field, which is set via the base class's \method{\_\_init\_\_} method,
+called at the end of the ipv6 class's own \method{\_\_init\_\_}
+method.
+
+Part of packet initialization is to set up the fields that the packet
+will contain.  Each field has several possible arguments, but the two
+that are required are a name, which is the string field specified as
+the first argument and a width in bits, specified as the second
+argument.  Note that all field widths are specified in \emph{bits} and
+not \emph{bytes} or \emph{octets}.  Fields may also have a type (see
+below) and default values.  The name of the field becomes a named
+property of the object which is what makes it possible to have code
+that like that in Figure \ref{fig:setting-a-packet-field} where we set
+the packet's hop count via its \field{hop} property.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+    ip = ipv6()
+    ip.hop = 4 # Set hop count to 4.
+\end{verbatim}
+  \caption{Setting a Packet Field}
+  \label{fig:setting-a-packet-field}
+\end{figure}
+
+The fields are set by passing them as an array to the PCS base class
+initialization method.
+
+\subsection{Working with Different Types of Fields}
+
+It would have been convenient if all network protocol packets were
+simply lists of fixed length fields, but that is not the case.  PCS
+defines two extra field classes, the \class{StringField} and the
+\class{LengthValueField}.
+
+The \class{StringField} is simply a name and a width in bits of the
+string.  The data is interpreted as a list of bytes, but without an
+encoded field size.  Like a \class{Field} the \class{StringField} has
+a constant size.
+
+Numerous upper layer protocols, i.e. those above UDP and TCP, use
+length-value fields to encode their data, usually strings.  In a
+length-value field the number of bytes being communicated is given as
+the first byte, word, or longword and then the data comes directly
+after the size.  For example, DNS~\cite{rfc1035} encodes the domain
+names to be looked up as a series of length-value fields such that the
+domain name pcs.sourceforge.net gets encoded as 3pcs11sourceforge3net
+when it is transmitted in the packet.
+
+The \class{LengthValueField} class is used to encode length-value
+fields.  A \class{LenghtValueField} has three attributes, its name,
+the width in bits of the length part, and a possible default value.
+Currently only 8, 16, and 32 bit fields are supported for the length.
+The length part need never been set by the programmer, it is
+automatically set when a string is assigned to the field as shown
+in~\ref{fig:using-a-length-value-field}.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+
+class dnslabel(pcs.Packet):
+    """A DNS Label.""" 
+
+    layout = pcs.Layout()
+
+    def __init__(self, bytes = None):
+        name = pcs.LengthValueField("name", 8)
+        pcs.Packet.__init__(self,
+                            [name],
+                            bytes = bytes)
+        
+        self.description = "DNS Label"
+
+...
+
+    lab1 = dnslabel()
+    lab1.name = "pcs"
+
+    lab2 = dnslabel()
+    lab2.name = "sourceforge"
+
+    lab3 = dnslabel()
+    lab3.name = "net"
+
+    lab4 = dnslabel()
+    lab4.name = ""
+
+\end{verbatim}
+  \caption{Using a \class{LengthValueField}}
+  \label{fig:using-a-length-value-field}
+\end{figure}
+
+Figure~\ref{fig:using-a-length-value-field} shows both the definition
+and use of a \class{LengthValueField}.  The definition follows the
+same system as all the other fields, with the name and the size given
+in the initialization.  The \class{dnslabel} class has only one field,
+that is the name, and it's length is given by an 8 bit field, meaning
+the string sent can have a maximum length of 255 bytes.  
+
+When using the class, as mentioned, the size is not explicitly set.
+One last thing to note is that in order to have a 0 byte terminator
+the programmer assigns the empty string to a label.  Using the empty
+string means that the length-value field in the packet has a 0 for the
+length which acts as a terminator for the list.  For a complete
+example please review \file{dns\_query.py} in the \file{scripts}
+directory.
+
+\subsection{Built in Bounds Checking}
+\label{sec:built-in-bounds-checking}
+
+One of the nicer features of PCS is built in bounds checking.  Once
+the programmer has specified the size of the field, the system checks
+on any attempt to set that field to make sure that the value is within
+the proper bounds.  For example, in Figure \ref{fig:bounds-checking-1}
+an attempt to set the value of the IP packet's header length field to
+$16$ fails because the header length field is only 4 bits wide and so
+must contain a value between zero and fifteen.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> from pcs.packets.ipv4 import *
+>>> ip = ipv4()
+>>> ip.hlen = 16
+Traceback (most recent call last):
+[...]
+pcs.FieldBoundsError: 'Value must be between 0 and 15'
+>>> ip.hlen = -1
+Traceback (most recent call last):
+[...]
+pcs.FieldBoundsError: 'Value must be between 0 and 15'
+>>> 
+\end{verbatim}
+  \caption{Bounds Checking}
+  \label{fig:bounds-checking-1}
+\end{figure}
+
+\program{PCS} does all the work for the programmer once they have set
+the layout of their packet.
+
+\section{Retrieving Packets}
+\label{sec:retrieving-packets}
+
+One of the uses of \program{PCS} is to analyze packets that have
+previously stored, for example by a program such as
+\program{tcpdump(1)}.  \program{PCS} supports reading and writing
+\program{tcpdump(1)} files though the
+\href{http://monkey.org/~dugsong/pypcap/}{pcap} library written by
+Doug Song.  The python API exactly mirrors the C API in that packets
+are processed via a callback to a \function{dispatch} routine, usually
+in a loop.  Complete documentation on the \program{pcap} library can
+be found with its source code or on its web page.  This document only
+explains \program{pcap} as it relates to how we use it in
+\program{PCS}.
+
+When presented with a possibly unknown data file how can you start?
+If you don't know the bottom layer protocol stored in the file, such
+as \emph{Ethernet}, \emph{FDDI}, or raw \emph{IP} packets such as
+might be capture on a loopback interface, it's going to be very hard
+to get your program to read the packets correctly.  The \program{pcap}
+library handles this neatly for us.  When opening a saved file it is
+possible to ask the file what kind of data it contains, through the
+\method{datalink} method.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> import pcap
+>>> efile = pcap.pcap("etherping.out")
+>>> efile.datalink()
+1
+>>> efile.datalink() == pcap.DLT_EN10MB
+True
+>>> lfile = pcap.pcap("loopping.out")
+>>> lfile.datalink()
+0
+>>> lfile.datalink() == pcap.DLT_NULL
+True
+>>> lfile.datalink() == pcap.DLT_EN10MB
+False
+>>> 
+\end{verbatim}
+  \caption{Determining the Bottom Layer}
+  \label{fig:determining-the-bottom-layer}
+\end{figure}
+
+In Figure\ref{fig:determining-the-bottom-layer} we see two different
+save files being opened.  The first, \file{etherping.out} is a tcpdump
+file that contains data collected on an Ethernet interface, type
+\constant{DLT\_EN10} and the second, \file{loopping.out} was collected
+from the \emph{loopback} interface and so contains no Layer 2 packet
+information.  
+
+Not only do we need to know the type of the lowest layer packets but
+we also need to know the next layer's offset so that we can find the
+end of the datalink packet and the beginning of the network packet.
+The \field{dloff} field of the \class{pcap} class gives the data link
+offset.  Figure\ref{fig:finding-the-datalink-offset} continues the
+example shown in Figure\ref{fig:determining-the-bottom-layer} and
+shows that the Ethernet file has a datalink offset of 14 bytes, and
+the loopback file 4. 
+
+  \begin{figure}
+    \centering
+\begin{verbatim}
+>>> efile.dloff
+14
+>>> lfile.dloff
+4
+>>> 
+\end{verbatim}
+    \caption{Finding the Datalink Offset}
+    \label{fig:finding-the-datalink-offset}
+  \end{figure}
+
+It is in the loopback case that the number is most important.  Most
+network programmers remember that Ethernet headers are 14 bytes in
+length, but the 4 byte offset for loopback may seem confusing, and if
+forgotten any programs run on data collected on a loopback interface
+will appear as garbage.
+
+With all this background we can now read a packet and examine it.
+Figure \ref{fig:reading-in-a-packet} shows what happens when we create
+a packet from a data file.  
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> ip = ipv4(packet[efile.dloff:len(packet)])
+>>> print ip
+version 4
+hlen 5
+tos 0
+length 84
+id 34963
+flags 0
+offset 0
+ttl 64
+protocol 1
+checksum 58688
+src 192.168.101.166
+dst 169.229.60.161
+\end{verbatim}
+  \caption{Reading in a Packet}
+  \label{fig:reading-in-a-packet}
+\end{figure}
+
+In this example we pre-suppose that the packet is an IPv4 packet but
+that is not actually necessary.  We can start from the lowest layer,
+which in this case is Ethernet, because the capture file knows the
+link layer of the data.  Packets are fully decoded as much as possible
+when they are read.  
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> from pcs.packets.ethernet import ethernet
+>>> ethernet = ethernet(packet[0:len(packet)])
+>>> ethernet.data
+<Packet: hlen: 5, protocol: 1, src: 3232261542L, tos: 0, dst: 2850372769L, ttl: 64, length: 84, version: 4, flags: 0, offset: 0, checksum: 58688, id: 34963>
+>>> ip = ethernet.data
+>>> print ethernet
+src: 0:10:db:3a:3a:77
+dst: 0:d:93:44:fa:62
+type: 0x800
+>>> print ip
+version 4
+hlen 5
+tos 0
+length 84
+id 34963
+flags 0
+offset 0
+ttl 64
+protocol 1
+checksum 58688
+src 192.168.101.166
+dst 169.229.60.161
+
+\end{verbatim}
+  \caption{Packet Decapsulation on Read}
+  \label{fig:packet-decapsulation-on-read}
+\end{figure}
+
+PCS is able to do this via a special method, called \method{next} and
+a field called \field{data}.  Every PCS class has a \method{next}
+method which attempts to figure out the next higher layer protocol if
+there is any data in a packet beyond the header.  If the packet's data
+can be understand and a higher layer packet class is found the
+\method{next} creates a packet object of the appropriate type and
+sets the \field{data} field to point to the packet.  This process is
+recursive, going up the protocol layers until all remaining packet
+data or higher layers are exhausted.  In
+Figure\ref{fig:packet-decapsulation-on-read} we see an example of an
+Ethernet packet which contains an IPv4 packet which contains an ICMPv4
+packet all connected via their respective \field{data} fields.
+
+\section{Storing Packets}
+
+This section intentionally left blank.
+
+Need to update \program{pcap} module to include support for true dump
+files.
+
+\section{Sending Packets}
+\label{sec:sending-packets}
+
+In \program{PCS} packets are received and transmitted (see
+\ref{sec:sending-packets} using \class{Connectors}.  A
+\class{Connector} is an abstraction that can contain a traditional
+network \emph{socket}, or a file descriptor which points to a protocol
+filter such as \emph{BPF}.  For completely arbitrary reasons we will
+discuss packet transmission first.
+
+In order to send a packet we must first have a connector of some type
+on which to send it.  A trivial example is the \file{http\_get.py}
+script which uses a \class{TCP4Connector} to contact a web server,
+execute a simple \em{GET} command, and print the results.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+import pcs
+
+from socket import *
+
+def main():
+
+    conn = pcs.TCP4Connector("127.0.0.1", 80)
+    conn.write("GET / \n")
+    result = conn.read(1024)
+
+    print result
+
+main()
+\end{verbatim}
+  \caption{HTTP Get Script}
+  \label{fig:http-get-script}
+\end{figure}
+
+Although everything that is done in the \program{http\_get} script
+could be done far better with \program{Python's} native HTTP classes
+the script does show how easy it is to set up a connector.
+
+For the purposes of protocol development and testing it is more
+interesting to look at the \class{PcapConnector} class, which is used
+to read and write raw packets to the network.  Figure
+\ref{fig:transmitting-a-raw-ping-packet} shows a section of the
+\program{icmpv4test} test script which transmits an ICMPv4 echo, aka
+ping, packet.  
+
+\footnote{Note that on most operating system you need root privileges
+  in use the \class{PcapConnector} class.}
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+    def test_icmpv4_ping(self):
+        ip = ipv4()
+        ip.version = 4
+        ip.hlen = 5
+        ip.tos = 0
+        ip.length = 84
+        ip.id = 1
+        ip.flags = 0
+        ip.offset = 0
+        ip.ttl = 33
+        ip.protocol = IPPROTO_ICMP
+        ip.src = 2130706433
+        ip.dst = 2130706433
+
+        icmp = icmpv4()
+        icmp.type = 8
+        icmp.code = 0
+        icmp.cksum = 0
+        
+        echo = icmpv4echo()
+        echo.id = 32767
+        echo.seq = 1
+
+        lo = localhost()
+        lo.type = 2
+        packet = Chain([lo, ip, icmp, echo])
+        
+        icmp_packet = Chain([icmp, echo])
+        icmp.checksum = icmp_packet.calc_checksum()
+
+        packet.encode()
+
+        input = PcapConnector("lo0")
+        input.setfilter("icmp")
+
+        output = PcapConnector("lo0")
+        out = output.write(packet.bytes, 88)
+\end{verbatim}
+  \caption{Transmitting a Raw Ping Packet}
+  \label{fig:transmitting-a-raw-ping-packet}
+\end{figure}
+
+The \function{test\_icmpv4\_ping} function contains a good deal of code
+but we are only concerned with the last two lines at the moment.  The
+next to the last line opens a raw pcap socket on the localhost,
+\em{lo0}, interface which allows us to write packets directly to that
+interface.  The last line writes a packet to the interface.  We will
+come back to this example again in section \ref{sec:chains}.
+
+\section{Receiving Packets}
+\label{sec:receiving-packets}
+
+In order to receive packets we again use the \class{Connector}
+classes.  Figure \ref{fig:packet-snarfing-program} shows the simplest
+possible packet sniffer program that you may ever see.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+import pcs
+from pcs.packets.ethernet import ethernet
+
+def main():
+
+    from optparse import OptionParser
+
+    parser = OptionParser()
+    parser.add_option("-i", "--interface",
+                      dest="interface", default=None,
+                      help="Which interface to snarf from.")
+    
+    (options, args) = parser.parse_args()
+
+    snarf = pcs.PcapConnector(options.interface)
+
+    while 1:
+        packet = ethernet(snarf.read())
+        print packet
+        print packet.data
+        
+main()
+\end{verbatim}
+  \caption{Packet Snarfing Program}
+  \label{fig:packet-snarfing-program}
+\end{figure}
+
+The \program{snarf.py} reads from a selected network interface, which
+in this case must be an Ethernet interface, and prints out all the
+Ethernet packets and \emph{any upper level packets that PCS knows
+  about.}  It is this second point that should be emphasized.  Any
+packet implemented in \program{PCS} which has an upper layer protocol
+can, and should, implement a \method{next} method which correctly
+fills in the packet's \field{data} field with the upper level
+protocol.  In this case the upper layer protocols are likely to be
+either ARP, IPv4 or IPv6, but there are others that are possible.
+
+\section{Chains}
+\label{sec:chains}
+
+We first saw a the \class{Chain} class in Figure
+\ref{fig:transmitting-a-raw-ping-packet} and we'll continue to refer
+to that figure here.  \class{Chains} are used to connect several
+packets together, which allows use to put any packet on top of any
+other.  Want to transmit an Ethernet packet on top of ICMPv4?  No
+problem, just put the Ethernet packet after the ICMPv4 packet in the
+chain.  Apart from creating arbitrary layering, \class{Chains} allow
+you to put together better known set of packets.  In order to create a
+valid ICMPv4 echo packet we need to have a IPv4 packet as well as the
+proper framing for the localhost interface.  When using \program{pcap}
+directly even the localhost interface has some necessary framing to
+indicate what type of packet is being transmitted over it.  
+
+The packet we're to transmit is set up as a \class{Chain} that
+contains four other packets: localhost, IPv4, ICMPv4, and Echo.  Once
+the chain is created it need not be static, as in this example, as
+changes to any of the packets it contains will be reflected in the
+chain.  In order to update the actual bytes the caller has to remember
+to invoke the \method{encode} method after any changes to the packets
+the chain contains.  \footnote{This may be fixed in a future version
+  to make \class{Chains} more automatic.}
+
+\class{Chains} can also calculate RFC 792 style checksums, such as
+those used for ICMPv4 messages.  The checksum feature was used in
+Figure~\ref{fig:transmitting-a-raw-ping-packet}.  Because it is common
+to have to calculate checksums over packets it made sense to put this
+functionality into the \class{Chain} class.
+
+\section{Displaying Packets}
+\label{sec:displaying-packets}
+
+\begin{verbatim}
+To be done, to be done...
+\end{verbatim}
+
+\end{document}
+\begin{thebibliography}{99} 
+\bibitem{rfc791} Postel J.: 
+RFC 791 Internet Protocol
+\bibitem{rfc1035} Mockapetris P..: 
+RFC 1035 Domain Names - Implementation and Specification
+\end{thebibliography}

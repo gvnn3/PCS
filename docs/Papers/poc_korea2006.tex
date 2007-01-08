@@ -1,0 +1,595 @@
+\documentclass[11pt]{article}
+\usepackage{codespelunking}
+\usepackage[pdftex]{hyperref}
+\hypersetup{ 
+    pdfauthor   = {George V. Neville-Neil},%
+    pdftitle    = {Network Protocol Security Testing with the Packet
+      Construction Set},%
+    pdfkeywords = {vulnerabilities, attacks, TCP/IP},%
+    pdfcreator  = {PDFLaTeX},%
+    pdfproducer = {PDFLaTeX}
+}
+\title{Network Protocol Security Testing with the Packet Construction Set}
+\author{George V. Neville-Neil}
+\begin{document}
+\maketitle
+\begin{abstract}
+  Writing network protocol code is hard work.  Testing network
+  protocol conformance and security is often as hard as writing the
+  protocol code itself.  We introduce the Protocol Construction Set
+  \program{PCS}, a set of \program{Python} modules which alleviate
+  much of the work in writing network protocols and protocol tests.  A
+  brief introduction to working with \program{PCS} is given and then
+  two example tests are shown as well as a script to analyze data from
+  potential distributed denial of service (DDOS) attacks.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+
+Writing network protocol code is difficult work.  A typical network
+protocol, such as TCP/IP, found in FreeBSD \cite{FreeBSD}, contains 50
+files with approximately 50,000 lines of C code without including any
+device drivers or supporting software such as the routing table.  Most
+network protocols are specified in separate documents and the code and
+specification do not always match.  How then does one go about
+verifying a network protocol, or discovering if it has any security
+holes?
+
+For some network protocols, those that have very high market values,
+there are specialized, and expensive tools such as \cite{anvl} and
+\cite{smartbits}, but these tools are often not available to the
+average researcher and do not specifically look for security problems.
+In order to rigorously test protocols it becomes necessary to create
+a duplicate of the original code and test the first with the second.
+Creating a single protocol stack is hard enough, but creating two
+seems to be ridiculous and so what most people do is either test the
+protocol code by using it or to write specialized tests which only
+test known problem areas, neither of these is sufficient.
+
+What is really called for is a programming language or system in which
+protocol code, such as packets, are first class objects so that
+the tests can written more naturally and with less supporting code.
+
+Writing languages is possibly more difficult that writing network
+protocol code, and is rarely undertaken by the same people.  Another
+problem with proposing a new language is that about $90\%$ of the
+keywords and language constructs for such a \emph{packet language}
+would repeat keywords and constructs in pre-existing languages.
+Specialized languages also have a lower uptake rate by programmers,
+because no one wants to learn the ins and outs of a narrow use
+language unless they absolutely have a need to.  For these reasons we
+undertook to write a system to bring packet objects into a
+pre-existing language, \program{Python}\cite{python} a widely used,
+object oriented, interpreted programming language.
+
+\program{Python} was chosen for several reasons.  First it allows the
+programmer to create new objects easily and provide those to other
+programmers.  Second, it is a powerful and and fully expressive
+language that has all the programming language features that modern
+programmers expect.  Third, unlike some other scripting languages, it
+is easy to read and document, and lastly it has a built in unit test
+facility meaning a separate testing framework is unnecessary for most
+uses.
+
+The goals of the \program{PCS} project are to provide:
+
+\begin{itemize}
+\item Make packets first class objects in the system
+\item Provide simple ways to create packet objects
+\item Make it easy for programmers to work with packets
+\item Cover $80\%$ of the most popular network protocols
+\end{itemize}
+
+\newpage
+\section{Programming with PCS}
+\label{sec:programming-with-pcs}
+
+\begin{figure}[t]
+  \centering
+\begin{verbatim}
+    0                   1                   2                   3   
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Version|  IHL  |Type of Service|          Total Length         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         Identification        |Flags|      Fragment Offset    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Time to Live |    Protocol   |         Header Checksum       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       Source Address                          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Destination Address                        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Options                    |    Padding    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{verbatim}
+  \caption{IPv4 Header Format}
+  \label{fig:rfc791-header}
+\end{figure}
+
+One of the major goals of PCS is to make it easy for programmers to
+work with packets.  We believe that giving the programmer simple
+programmatic access to the fields of the packet is the best way to
+make writing protocol code simpler and to make reading it nearly
+trivial. Consider the \program{IPv4} packet shown in
+\ref{fig:rfc791-header}.  
+
+The IPv4 packet is an excellent example of the problems a programmer
+with encounter in writing protocol code because it has several
+problems including fields that:
+
+\begin{itemize}
+\item are less than one byte in length \emph{Version, Header Length etc.}.
+\item do not start on a byte boundary. \emph{Fragment Offset}
+\item are an odd number of bits. \emph{Flags}
+\end{itemize}
+
+
+All of which require special macros in languages like C or classes in
+C++ which muddy up the meaning of the code.
+
+What would be nice, from the programmers point of view, is to be able
+to read and write values from fields in a packet that are approriately
+named, have automatic field overflow checking, and be able to then
+transmit or receive the packet through a simple interface.
+Example~\ref{fig:field-access-and-packet-construction} shows an
+example of how \program{PCS} provides this for IPv4 packets.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> ip = ipv4() # Create a new IPv4 object.
+>>> print ip.ttl # Access a field
+64
+>>> ip.bytes
+'@\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+>>> ip.ttl = 32
+32
+>>> ip.bytes
+'@\x00\x00\x00\x00\x00\x00\x00 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+\end{verbatim}
+  \caption{Field Access and Packet Construction}
+  \label{fig:field-access-and-packet-construction}
+\end{figure}
+
+In Figure~\ref{fig:field-access-and-packet-construction} we see a new
+IP packet being created from an \class{ipv4} class on line one.  We'll
+come to to how packet classes are created in a moment.  Now that we
+have an instance of an IPv4 packet we can work with its fields.  On
+line 2 of the example we print the value of the \field{ttl} field,
+which indicates the packet's \emph{time to live}.  At line 4 we show
+the \field{bytes} field of the \object{ip} object.  The \field{bytes}
+field always contains the most up to date bits that make up the
+packet.  Note the 9th byte in the string, and that it is set to the
+character @.  On line 5 we set the \field{ttl} field to 32 and at line
+6 we again print the bytes of the packet.  The 9th byte is now a space
+because the underlying packet as been changed.  We have now shown how
+a programmer would work with a packet but how can the programmer
+create packets of their own?
+
+To create a packet the programmer sets up a special class, which
+inherits from the \class{Packet} base class.  
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+class ipv4(pcs.Packet):
+
+    layout = pcs.Layout()
+
+    def __init__(self, bytes = None):
+        """ define the fields of an IPv4 packet, from RFC 791
+        This version does not include options."""
+        version = pcs.Field("version", 4, default = 4)
+        hlen = pcs.Field("hlen", 4)
+        tos = pcs.Field("tos", 8)
+        length = pcs.Field("length", 16)
+        id = pcs.Field("id", 16)
+        flags = pcs.Field("flags", 3)
+        offset = pcs.Field("offset", 13)
+        ttl = pcs.Field("ttl", 8, default = 64)
+        protocol = pcs.Field("protocol", 8)
+        checksum = pcs.Field("checksum", 16)
+        src = pcs.Field("src", 32)
+        dst = pcs.Field("dst", 32)
+        pcs.Packet.__init__(self,
+                            [version, hlen, tos, length, id, flags, offset,
+                             ttl, protocol, checksum, src, dst],
+                            bytes = bytes)
+        # Description MUST be set after the PCS layer init
+        self.description = "IPv4"
+\end{verbatim}
+  \caption{IPv4 Packet Class \method{\_\_init\_\_} Method}
+  \label{fig:ipv4-packet-init-method}
+\end{figure}
+
+The heart of each packet class is the set of bit fields which describe
+it.  Figure~\ref{fig:ipv4-packet-init-method} shows the
+\method{\_\_init\_\_} method for the \class{ipv4} class which
+describes the fields in an IPv4 packet.  Each field has a name, a
+width in bits, and may have a default value.  Note that bit fields can
+be of any size, from 1 to 32, and can be aligned anywhere in the
+packet.  The \program{PCS} modules handle all the necessary
+conversions between program values and the underlying bits in the
+packet.  All that is necessary for the programmer to do is to give the
+layout of the packet and \program{PCS} will reproduce it faithfully.
+
+The IPv4 packet is a particularly good example to work with because it
+has several odd fields.  Referring back to
+Figure~\ref{fig:rfc791-header} we see that the first two fields are less
+than a byte in length, each is 4 bits.  The \field{flags} field is 3
+bits and the \field{offset} field is 13 bits and does not start on a
+byte boundary.  All of these issues mean that in most languages, such
+as \program{C} we have to have specialized macros to properly access
+these fields, and these macros can decrease the readability of code.
+While it is very important to use a high performance language to
+implement a protocol, it is not strictly necessary for testing
+protocols, and this is one of the trade offs that \program{PCS} has
+made.
+
+\section{A Simple Example}
+\label{sec:a-simple-example}
+
+As with any new programming system the easiest way to get a grasp on
+what it is doing is to give a simple example.
+Figure~\ref{fig:sending-a-fake-arp-packet} shows a short program using
+\program{PCS} which sends a fake ARP (Address Resolution Protocol)
+packet.  ARP is used to resolve IPv4 addresses on a local subnet into
+hardware addresses so that an Ethernet device can send the packet to
+the correct node.  There are several attacks against ARP but this
+example only shows us sending a fake packet.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+from pcs.packets.arp import *
+from pcs.packets.ethernet import *
+
+arppkt = arp()
+arppkt.op = 1
+arppkt.sha = ether_atob(ether_source)
+arppkt.spa = inet_atol(ip_source)
+arppkt.tha = "\x00\x00\x00\00\x00\x00"
+arppkt.tpa = inet_atol(target)
+
+ether = ethernet()
+ether.src = ether_atob(ether_source)
+ether.dst = "\xff\xff\xff\xff\xff\xff"
+ether.type = 0x806
+
+packet = Chain([ether, arppkt])
+
+output = PcapConnector(interface)
+
+out = output.write(packet.bytes, len(packet.bytes))
+\end{verbatim}
+  \caption{Sending a Fake ARP Packet}
+  \label{fig:sending-a-fake-arp-packet}
+\end{figure}
+
+The 20 line program in Figure~\ref{fig:sending-a-fake-arp-packet} is a
+relatively complete example, except for retrieving some values from
+the user.  At the beginning, lines 1 and 2 we need to import the
+proper packets to use.  Although it is possible to import all packets
+at once, well written scripts will only import the packets that they
+need to increase readability.  The script then creates an ARP and an
+Ethernet packet and sets their fields to the appropriate values.  The
+ARP packet is a request (\field{op} = 1) which is from a user
+specified source hardware and IPv4 address and also has a user
+specified IPv4 destination address (lines 6, 7 and 9).  In order to
+send our packet somewhere useful we need to encapsulate it within an
+Ethernet packet.  On lines 13 through 16 we create an Ethernet packet,
+give it a user defined source address, set its destination to the
+broadcast address and give it a type of $0x806$ which is the Ethernet
+protocol type for an ARP packet.
+
+Encapsulation is handled via the \class{Chain} class in \program{PCS}.
+A \class{Chain} is one or more packets connected together.  On line 18
+we instantiate a \object{packet} object from the \class{Chain} class,
+and we give a list of the packets that make up the chain ([ether,
+arppkt]) to the constructor method of the class.  The order of the
+elements of the list is important as it represents the order of the
+packets in the chain.  If, for example, we had placed the
+\object{ether} object after the \object{arpppkt} object we would have
+stacked the packets in the wrong order.  The returned packet object
+has the bytes of both packets in its own \field{bytes} field which we
+use on line 20 to transmit the packet.
+
+In between creating the chain and transmitting the packets we used a
+class that had not yet been introduced, a \class{Connector}.
+Connectors are classes that implement methods for accessing network
+sockets and other transmission media.  Although \program{Python} does
+give access to TCP and UDP sockets it does not, by default, come with
+interfaces to write raw packets.  \program{PCS} uses a specially
+adapted version of Doug Song's \program{pypcap} which gives fairly
+complete access to raw packet reading and writing abilities.  In our
+example we only use the \class{PcapConnector} to write bytes to the
+raw network, as we have to bypass the network stack to transmit out
+Ethernet packet, but the \class{Connector} classes actually have much
+more functionality, just more than we want to describe here.
+
+\section{Security Testing  with PCS}
+\label{sec:security-testing-with-pcs}
+
+How does \program{PCS} relate to security?  Once we are able to send
+any packet we wish it is far easier to write a set of tools for
+security testing at several different levels.  At the operating system
+kernel level it is possible to hunt for externally trigger-able kernel
+panics, which can lead to denial of service (DOS) attacks.  At the
+network protocol level it might be possible to cause information to
+leak from the system, through triggering code paths that are not
+normally tested.  Once we arrive at the application level the same set
+of concerns apply, though crashing the application is not likely to be
+as catastrophic as panic'ing the kernel it still leads to the same
+problem, denial of service.  Since \program{PCS} allows the programmer
+to specify and run protocols at any layer, through the use of various
+\class{Connectors} the possibilities are really only limited by the
+ingenuity of the programmer.
+
+One way in which \program{PCS} was used recently to test the security
+of a system was by Cl\'ement Lecigne who for his Google Summer of Code
+project \cite{lecigne} used a combination of \program{PCS} based
+scripts and other tools to attempt to find security issues in the
+FreeBSD IPv6 protocol stack.  For the project several different
+protocol fuzzers were constructed which would test the protocol both
+internally, requiring login access to the target of the attack and
+externally, attacking the kernel via the IPv6 protocol.
+
+One attack that was tried, and which was partially successful, was to
+send an ICMPv6 packet to a target telling it that the maximum transfer
+unit of the system with which it was communicating was smaller than it
+really was.  This ``too big'' attack could prevent one node from
+communicating with another by forcing the attacked node to update its
+routing table with a ridiculously small value, one that is too small
+for the IPv6 protocol to transmit.  
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+# Putting on the headers
+def toobig(iface, mtu, dstip, dstmac, srcip, srcmac, pkt):
+    """send fake icmp TOO BIG packet"""
+    # ethernet header
+    eth = ethernet()
+    eth.dst = eth.name2eth(dstmac)
+    eth.src = eth.name2eth(srcmac)
+    eth.type = ETHERTYPE_IPV6
+    # ipv6 header
+    ip = ipv6.ipv6()
+    ip.traffic_class = 0
+    ip.flow = 0
+    ip.next_header = IPPROTO_ICMPV6
+    ip.hop = 255
+    ip.length = 8 + len(pkt)
+    ip.src = inet_pton(AF_INET6, srcip)
+    ip.dst = inet_pton(AF_INET6, dstip)
+
+    # icmp6 header
+    icmp6 = icmpv6(ICMP6_PACKET_TOO_BIG)
+    icmp6.type = ICMP6_PACKET_TOO_BIG 
+    icmp6.code = 0
+    icmp6.mtu = mtu
+    icmp6.checksum = icmp6.cksum(ip, pkt)
+    chain = pcs.Chain([eth, ip, icmp6])
+    c = pcs.Connector("IPV6", iface)
+    c.write(chain.bytes + pkt)
+    c.close()
+\end{verbatim}
+  \caption{IPv6 Packet Attack}
+  \label{fig:ipv6-packet-attack}
+\end{figure}
+
+Figure~\ref{fig:ipv6-packet-attack} shows a section of code from the
+\program{toobig} attack.  The \function{toobig} function takes several
+supplied arguments and creates a two packet chain with an IPv6 packet
+and an ICMPv6 packet.  The ICMPv6 packet contains the attack in that
+it sets the \field{icmp6.type} field to
+\constant{ICMP6\_PACKET\_TOO\_BIG} and then sets the \field{icmp6.mtu}
+field to whatever the user supplies.
+
+Although this code does not cause a kernel panic it can cause two
+nodes to be unable to communicate until they are rebooted.
+
+\subsection{Working with Dump Files}
+\label{sec:working-with-dumpfiles}
+
+While \program{PCS} provides a handy way to generate attacks through
+the creation of arbitrary packets it can also be used to detect
+attacks by reading packets from the network or from a pcap dump file.
+Currently most of the tools that work with pcap dump files, most often
+created by the \program{tcpdump} program and read by the
+\program{ethereal} packet sniffer, are simple command line programs
+which do one or two things with the dump file.  With \program{PCS's}
+built in pcap support and ability to work pragmatically with
+packets we can implement a distributed denial of service detector
+program that can read either from the network or a dump file.
+
+Why do we need a program to know if we're under DDOS?  Occasionally
+a DDOS will really be a misconfigured server or router and so the
+higher network traffic that leads someone to think they're under a
+DDOS attack may all be coming from one, or a small number of
+addresses.  Since the machines sending the packets are your own, and
+are on your network, they are nearby and can generate an inordinately
+high load.
+
+In order to verify a DDOS attack all that is required is to analyze
+the source address of the packets.  If they are all from one or two
+systems, or if the packets come from within one of your own
+subnetworks then you are actually DOSing yourself and you need to
+fix your equipment.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+? ddos\_analyze.py -f pcaptestfile -s 255.255.255.0 -n 10.0.0.0 -m 5
+
+5001 packets in dumpfile
+5 unique source IPs
+0 packets in specified network
+Top 5 source addresses were
+Address 204.152.184.203 Count 2473 Percentage 49.450110
+Address 64.13.135.16    Count 2    Percentage 0.039992
+Address 64.13.134.241   Count 1    Percentage 0.019996
+Address 195.137.95.246  Count 1    Percentage 0.019996
+Address 64.13.134.241   Count 1    Percentage 0.019996
+Address 195.137.95.246  Count 1    Percentage 0.019996
+1.898u 0.214s 0:02.12 99.0%     0+0k 0+7io 0pf+0w
+\end{verbatim}
+  \caption{Test run of a DDOS analyzer}
+  \label{fig:test-run-of-ddos-analyzer}
+\end{figure}
+
+Figure~\ref{fig:test-run-of-ddos-analyzer} shows the output of our
+DDOS analyzer being run against a 5000 packet pcap file (snaplen of
+9000 bytes) taken from a public server.  We can see that the server is
+not under DDOS, but is instead receiving almost $50\%$ of its traffic
+from a single IP address.  The analysis took 2 seconds on a 2GHz Mac
+Book Pro Core Duo.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+while not done:
+    try:
+       packet = file.read()
+    except:
+       done = True
+    packets += 1
+    ip = ipv4(packet[file.dloff:len(packet)])
+    if (ip.src & mask) != network:
+        if ip.src in srcmap:
+           srcmap[ip.src] += 1
+        else:
+           srcmap[ip.src] = 1
+    else:
+        in_network +=1
+
+# Doing the analysis
+hit_list = sorted(srcmap.itervalues(), reverse = True)
+for i in range(1,max):
+    for addr in srcmap.items():
+        if addr[1] == hit_list[i]:
+           print "Address %s\t Count %s\t Percentage %f" 
+                  % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), 
+                     addr[1], 
+                    (float(addr[1]) / float(packets)) * float(100))
+
+\end{verbatim}
+  \caption{DDOS Analysis Code}
+  \label{fig:ddos-analysis-code}
+\end{figure}
+
+Figure~\ref{fig:ddos-analysis-code} shows the core of the
+\program{ddos\_analyze.py} program.  The program reads all the packets
+from the dump file, and then checks to see whether the source address
+is within the user's subnet or not (line 8).  A dictionary is used to
+store each unique source address found, and a count of the times that
+address has been seen (lines 9 through 12).  Lines 17 through 21 do
+the actual analysis by first sorting the addresses from most seen to
+least and then showing the top N addresses, where N is specified by
+the users.  The total size of the full script is 67 lines including
+options parsing.
+
+\section{Currents Status}
+\label{sec:current-status}
+
+Development on \program{PCS} is ongoing.  At the moment Alpha 0.3
+currently available on the \href{http://pcs.sf.net}{PCS} web site
+which is hosted by Source Forge.  The list of packets supported is
+given in Figure~\ref{fig:packets-supported-by-pcs}.
+
+\begin{figure}
+  \centering
+  \begin{itemize}
+  \item Link Layer: Localhost, Ethernet
+  \item Network Layer: ARP, IPv4, ICMPv4, IPv6, ICMPv6, ND6
+  \item Transport Layer: UDP, TCP
+  \item Application Protocols: DNS, DHCPv4
+  \end{itemize}
+  \caption{Packets Supported by \program{PCS}}
+  \label{fig:packets-supported-by-pcs}
+\end{figure}
+
+Every protocol has a test suite supported by the \program{Python}
+unittest framework.  Several short scripts are included with the
+distribution and these are shown in
+Table~\ref{fig:current-pcs-scripts}.
+
+\begin{figure}
+  \centering
+\begin{tabular}{|l|l|}
+\hline
+Script & Purpose \\
+\hline
+arpwhohas.py & Generate a fake ARP\\
+ddos\_analyze.py & Determine majority source addresses in a pcap file \\
+dns\_query.py & Generate a fake DNS query\\
+http\_get.py & Grab a web page\\
+pcap\_info.py & Print out various bits of info about a pcap file \\
+pcap\_slice.py & Carve up pcap files analogous to tcpslice\\
+ping.py & A simple ICMPv4 packet generator \\
+snarf.py & A trivial packet sniffer \\
+udp\_echo.py & Generate a fake UDP packet\\
+\hline
+\end{tabular}
+  \caption{Current \program{PCS} Scripts}
+  \label{fig:current-pcs-scripts}
+\end{figure}
+
+\section{Future Work}
+\label{sec:future-work}
+
+The focus on the near future is to add more packet classes to the
+system and attempt to cover $80\%$ of all known protocols.  Secondary
+to packet coverage we intend to add more scripts but what we really
+want is for more people to incorporate \program{PCS} into their own
+code rather than providing a complete set of scripts with the
+library.  First and foremost \program{PCS} is a programming system and
+we want programmers to use it.
+
+Although there is documentation, tests and scripts to read the
+documentation can always be improved and this will continue apace with
+the code itself.
+
+\section{Related Work}
+\label{sec:related-work}
+
+Several projects attempt to build packet manipulation libraries for
+use by programmers.  The \program{Libnet} \cite{libnet} and
+\program{Libnet-ng} libraries are written in \program{C} and give the
+programmer the ability to extend them by adding more \program{C}
+functions to the library.  \program{dpkt} \cite{dpkt} and
+\program{dnet} \cite{libdnet} are both Python libraries that work in much
+the same way as \program{Libnet} does, in that the provide access to
+packet construction APIs.  \program{scapy} \cite{scapy} is a Python
+library that gives a large system for building packets who's goal is
+fuzzing and security checking.  All of these systems provide only
+partial solutions to the problem that \program{PCS} is trying to solve
+and none of them make creating packet classes any easier.
+
+\section{Availability}
+\label{sec:availability}
+
+The PCS project is hosted on Source Forge and can be found at
+http://pcs.sf.net.  It is distributed under the BSD License.
+
+\begin{thebibliography}{99} 
+\bibitem{rfc791} Postel J.: RFC 791 Internet Protocol, September 1981
+\bibitem{FreeBSD} McKusick K., Neville-Neil G.: The Design and
+  Implementation of the FreeBSD Operating System, Addison-Wesley
+  Longman, August 2004
+\bibitem{python} Van Rossum G.: The Python Language Reference Manual,
+  Network Theory Ltd. 2003
+\bibitem{lecigne} Lecigne C., Neville-Neil G.: Walking through the
+  FreeBSD IPv6 Stack (Currently Unpublished)
+\bibitem{anvl} ANVL Protocol Tester:
+  http://www.phoenixdatacom.com/anvl/anvl.html
+\bibitem{smartbits}Spirent Smartbits http://www.spirentcom.com/
+\bibitem{scapy} Scapy Web Page: http://www.secdev.org/projects/scapy/
+\bibitem{libnet} Libnet Web Page: http://libnet.sourceforge.net/
+\bibitem{libdnet} Libdnet Web Page: http://libdnet.sourceforge.net/dnet.html
+\bibitem{dpkt} dpkt web page: http://www.monkey.org/~dugsong/dpkt
+\end{thebibliography}
+
+\end{document}

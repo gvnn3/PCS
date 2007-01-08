@@ -1,0 +1,12 @@
+include Makefile
+include README
+include INSTALL
+include COPYRIGHT
+include CONTRIBUTORS
+recursive-include tests *.py
+recursive-include tests *.out
+recursive-include scripts *.py
+recursive-include docs *.tex
+recursive-include docs *.sty
+recursive-include docs *.pdf
+recursive-include docs Makefile

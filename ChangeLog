@@ -1,0 +1,19 @@
+2006-10-04  gnn  <gnn@neville-neil.com>
+
+	* Version 0.3
+
+	Add automatic bounds checking when setting values in packets.
+	Add scripts to do DDOS analysis and to slice up dumpfiles.
+	
+
+2006-09-05  gnn  <gnn@neville-neil.com>
+
+	* Version 0.2
+
+	Add LengthValue fields.
+	Add a dns_query script which uses the LengthValue fields.
+	Add a working ping program.
+	Make IPv4 and ICMPv4 checksums work.  ICMPv4 checksums are
+	calculated using Chains.
+	Integrate all the latest patches submitted by Clement on the PCS
+	web site.

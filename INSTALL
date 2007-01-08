@@ -1,0 +1,25 @@
+Installation Instructions for Packet Construction Set (PCS)
+
+PCS follows the normal Python conventions for building and installing
+and there is very little, if any, magic.  To install the library and
+the associated packet classes into your system do:
+
+> python setup.py install <return>
+
+To test your installation do:
+
+> cd tests/ <return>
+> python *.py
+
+Some tests fail if you do not have enough privileges to work with the
+Berkeley Packet Filter.  If you wish to run those tests run them
+using sudo.
+
+To build the documentation you will need pdflatex and a BSD version of
+make(1) installed.  Go into the docs directory and build the
+documentation:
+
+> cd docs/ <return>
+> bsdmake all
+
+you will see PDF versions of the docs.
