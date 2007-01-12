@@ -52,7 +52,8 @@ class icmpv4(pcs.Packet):
         cksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [type, code, cksum], bytes)
         self.description = "ICMPv4"
-        
+        self.data = None
+
 class icmpv4echo(pcs.Packet):
     """ICMPv4 Echo (aka ping) Packet
 
@@ -72,4 +73,4 @@ class icmpv4echo(pcs.Packet):
         data = pcs.StringField("data", 56 * 8)
         pcs.Packet.__init__(self, [id, seq, data], bytes)
         self.description = "ICMPv4 Echo"
-
+        self.data = None

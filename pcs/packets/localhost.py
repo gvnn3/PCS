@@ -34,10 +34,11 @@
 #
 # Description: A packet to handle localhost encoded tcpdump packets.
 
+import socket
 import pcs
 from pcs.packets import ipv4
 from pcs.packets import ipv6
-from socket import ntohl
+
 ETHERTYPE_IP		= 0x0800	# IP protocol 
 ETHERTYPE_ARP		= 0x0806	# Addr. resolution protocol
 ETHERTYPE_REVARP	= 0x8035	# reverse Addr. resolution protocol
@@ -56,16 +57,16 @@ class localhost(pcs.Packet):
         self.description = "Localhost"
 
         if (bytes != None):
-            data = self.next(bytes[lolen:len(bytes)])
+            self.data = self.next(bytes[lolen:len(bytes)])
         else:
-            data = None
+            self.data = None
 
     def next(self, bytes):
         """Decode the type of a packet and return the correct higher
         level protocol object"""
-        if self.type == ETHERTYPE_IP:
+        if self.type == socket.AF_INET:
             return ipv4.ipv4(bytes)
-        if self.type == ETHERTYPE_IPV6:
+        if self.type == socket.AF_INET6:
             return ipv6.ipv6(bytes)
         return None
 

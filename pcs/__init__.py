@@ -465,6 +465,22 @@ class Packet(object):
         "Return the count of the number of bytes in the packet."
         return len(self.bytes)
 
+    def chain(self):
+        "Return the packet and its next packets as a chain."
+        packet_list = []
+        done = False
+        packet = self
+        while not done:
+            try:
+                packet_list.append(packet)
+            except:
+                done = True
+            if (packet.data != None):
+                packet = packet.data
+            else:
+                done = True
+        return Chain(packet_list)
+        
     def toXML(self):
         pass
 
@@ -655,18 +671,14 @@ class PcapConnector(Connector):
     def unpack(self, packet, dlink, dloff):
         """Turn the buffer into a real packet."""
         import packets.ethernet
+        import packets.localhost
         import packets.ipv6
         import packets.ipv4
 
         if dlink == pcap.DLT_EN10MB:
             return packets.ethernet.ethernet(packet)
         elif dlink == pcap.DLT_NULL:
-            p = packets.ipv4.ipv4(packet[dloff:len(packet)])
-            if (p.version == 4):
-                return p
-            p = packets.ipv6.ipv6(packet[dloff:len(packet)])
-            if (p.version == 6):
-                return p
+            return packets.localhost.localhost(packet)
         else:
             raise UnpackError, "Could not interpret packet"
                 

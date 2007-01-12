@@ -41,7 +41,7 @@ sys.path.insert(0, '../')
 
 from pcs.packets.ethernet import ethernet
 from pcs.packets.ipv4 import ipv4
-from pcs import Chain
+from pcs import *
 
 class chainTestCase(unittest.TestCase):
     def test_chain_compare(self):
@@ -72,6 +72,18 @@ class chainTestCase(unittest.TestCase):
         ip1.dst = 0
         self.assertNotEqual(chain1, chain2, "chains compare equal but should not")
 
+    def test_chain_read(self):
+        """Test whether or not the chain method of the base class works."""
+        file = PcapConnector("loopping.out")
+        packet = file.readpkt()
+        chain = packet.chain()
+        test_string = "Localhost\ntype 2\n IPv4\nversion 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\n ICMPv4\ntype 8\ncode 0\nchecksum 60550"
+
+        string = chain.__str__()
+        self.assertEqual(test_string, string,
+                    "strings not equal \ngot\n%s\nexpected\n%s" %
+                    (string, test_string))
+        
 if __name__ == '__main__':
     unittest.main()
 
