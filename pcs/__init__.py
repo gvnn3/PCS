@@ -661,13 +661,14 @@ class PcapConnector(Connector):
         if dlink == pcap.DLT_EN10MB:
             return packets.ethernet.ethernet(packet)
         elif dlink == pcap.DLT_NULL:
-            p = packets.ipv4.ipv4(packet)
+            p = packets.ipv4.ipv4(packet[dloff:len(packet)])
             if (p.version == 4):
                 return p
-            p = packets.ipv6.ipv6(packet)
+            p = packets.ipv6.ipv6(packet[dloff:len(packet)])
             if (p.version == 6):
                 return p
-        raise UnpackError, "Could not interpret packet"
+        else:
+            raise UnpackError, "Could not interpret packet"
                 
 
 class PcapDumpConnector(Connector):
