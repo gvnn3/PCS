@@ -37,7 +37,9 @@
 
 import pcs
 import os
-from socket import AF_INET6, inet_ntop
+from socket import AF_INET6, IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_ICMP, inet_ntop
+
+import udp, tcp, icmpv4
 
 # extension header next header field.
 IPV6_HOPOPTS = 0
@@ -69,6 +71,12 @@ class ipv6(pcs.Packet):
                              src, dst], bytes)
         self.description = "IPv6"
 
+        if (bytes != None):
+            offset = 40
+            self.data = self.next(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+        
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
         retval = ""
@@ -92,6 +100,21 @@ class ipv6(pcs.Packet):
                 break
         return v6
 
+    def next(self, bytes):
+        "Decode extension headers and the rest of the packets."
+        if self.next_header == IPPROTO_UDP:
+            return udp.udp(bytes)
+        elif self.next_header == IPPROTO_TCP:
+            return tcp.tcp(bytes)
+        elif self.next_header == IPPROTO_AH:
+            return ipsec.ah(bytes)
+        elif self.next_header == IPPROTO_ESP:
+            return ipsec.esp(bytes)
+        elif self.next_header == IPPROTO_ICMP:
+            return icmpv4.icmpv4(bytes)
+        # Fall through
+        return None
+        
 class rthdr(pcs.Packet):
     """A class that contains the IPv6 routing extension-headers."""
 

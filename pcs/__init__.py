@@ -179,7 +179,7 @@ class FieldAlignmentError(Exception):
 class StringField(object):
     """A string field is a name, a width in bits, and possibly a
 default value.  The data is to be interpreted as a string, but does
-not encode the lenght into the packet.  Length encoded values are
+not encode the length into the packet.  Length encoded values are
 handled by the LengthValueField."""
     
     def __init__(self, name = "", width = 1, default = None):
@@ -471,10 +471,7 @@ class Packet(object):
         done = False
         packet = self
         while not done:
-            try:
-                packet_list.append(packet)
-            except:
-                done = True
+            packet_list.append(packet)
             if (packet.data != None):
                 packet = packet.data
             else:
@@ -672,8 +669,6 @@ class PcapConnector(Connector):
         """Turn the buffer into a real packet."""
         import packets.ethernet
         import packets.localhost
-        import packets.ipv6
-        import packets.ipv4
 
         if dlink == pcap.DLT_EN10MB:
             return packets.ethernet.ethernet(packet)

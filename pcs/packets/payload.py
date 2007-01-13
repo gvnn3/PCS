@@ -1,4 +1,4 @@
-# Copyright (c) 2006, Neville-Neil Consulting
+# Copyright (c) 2007, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,41 +28,26 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: localhost.py,v 1.1 2006/07/04 13:30:10 gnn Exp $
+# File: $Id: $
 #
 # Author: George V. Neville-Neil
 #
-# Description: A packet to handle localhost encoded tcpdump packets.
+# Description: A raw data class for PCS.  This contains only data, and
+# nothing else.  It is the catch all for data that is not known.
 
-import socket
 import pcs
-from pcs.packets import ipv4
-from pcs.packets import ipv6
 
-class localhost(pcs.Packet):
+class payload(pcs.Packet):
 
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
-        type = pcs.Field("type", 32)
-        lolen = 4
+        payload = pcs.Field("payload", len(bytes) * 8)
+        pcs.Packet.__init__(self, [payload], bytes = bytes)
+        self.description = "Data"
 
-        pcs.Packet.__init__(self, [type], bytes = bytes)
-        self.description = "Localhost"
+        # Unconditionally the last packet in a chain
+        self.data = None
 
-        if (bytes != None):
-            self.data = self.next(bytes[lolen:len(bytes)])
-        else:
-            self.data = None
-
-    def next(self, bytes):
-        """Decode the type of a packet and return the correct higher
-        level protocol object"""
-        print self.type
-        print socket.AF_INET6
-        if self.type == socket.AF_INET:
-            return ipv4.ipv4(bytes)
-        if self.type == socket.AF_INET6:
-            return ipv6.ipv6(bytes)
-        return None
-
+    def __str__(self):
+        retval = "%s" % self.payload

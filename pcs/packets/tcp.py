@@ -35,6 +35,7 @@
 # Description: A class that describes a TCP packet.
 
 import pcs
+from pcs.packets import payload
 
 class tcp(pcs.Packet):
 
@@ -61,6 +62,12 @@ class tcp(pcs.Packet):
                                    cksum, urgp],
                             bytes = bytes)
         self.description = "TCP"
+
+        if (bytes != None):
+            offset = 20
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
