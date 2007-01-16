@@ -47,6 +47,7 @@ class icmpv4(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a ICMPv4 packet"""
         type = pcs.Field("type", 8)
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
@@ -68,6 +69,7 @@ class icmpv4echo(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize an ICMPv4 echo packet, used by ping(8) and others"""
         id = pcs.Field("id", 16)
         seq = pcs.Field("sequence", 16)
         data = pcs.StringField("data", 56 * 8)

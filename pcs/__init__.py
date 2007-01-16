@@ -82,16 +82,26 @@ class FieldBoundsError(Exception):
         return repr(self.message)
     
 class Field(object):
-    """A field is a name, a type, a width in bits, and possibly a default
-value.  These classes are used by the packet to define the layout of
-the data and how it is addressed."""
+    """A field is a name, a type, a width in bits, and possibly a
+default value.  These classes are used by the packet to define the
+layout of the data and how it is addressed."""
     
     def __init__(self, name = "", width = 1, default = None):
+        """initialize a field
+
+        name - a string name
+        width - a width in bits
+        default - a default value
+        """
+        ## the name of the Field
         self.name = name
+        ## the width, in bites, of the field's data
         self.width = width
+        ## the default value of the field, must fit into bits
         self.default = default
         
     def __repr__(self):
+        """return an appropriate representation for the Field object"""
         return "<pcs.Field  name %s, %d bits, type %s, default %s>" % \
                (self.name, self.width, self.type, self.default)
 
@@ -123,6 +133,14 @@ the data and how it is addressed."""
         return [real_value, curr, byteBR]
 
     def encode(self, bytearray, value, byte, byteBR):
+        """encode the a field into the bytes necessary to transmit it
+        as part of a packet
+
+        bytearray - the array of bytes that will be returned
+        value - the value to encode
+        byte - the byte we are encoding, we can encode partial bytes
+        byteBR - the bits remaining in the current byte being encoded.
+        """
         # The algorithm below hurts my head, as I'm not very
         # smart so it is heavily commented.
         #
@@ -172,8 +190,10 @@ the data and how it is addressed."""
 class FieldAlignmentError(Exception):
     """When a programmer tries to decode a field that is not
     on a byte boundary this exception is raised."""
-
+    
     def __init__(self, message):
+        """set the FieldAlignmentError message"""
+        ## the message that will be output when this error is raised
         self.message = message
 
 class StringField(object):
@@ -183,11 +203,16 @@ not encode the length into the packet.  Length encoded values are
 handled by the LengthValueField."""
     
     def __init__(self, name = "", width = 1, default = None):
+        """initialtize a StringField"""
+        ## the name of the StringField
         self.name = name
+        ## the width, in bits, of the StringField
         self.width = width
+        ## the default value, if any, of the StringField
         self.default = default
         
     def __repr__(self):
+        """return a human readable form of a StringFeild object"""
         return "<pcs.StringField  name %s, %d bits, type %s, default %s>" % \
                (self.name, self.width, self.type, self.default)
 
@@ -289,9 +314,9 @@ class Layout(list):
     Fields and is implemented as a descriptor.  A layout can only be
     set or get, but never deleted."""
 
-    length = 0
-    
     def __get__(self, obj, typ=None): 
+        """return the Layout"""
+        ## the layout is the ordering of the fields in the packet
         return self.layout
 
     # Update the layout itself.  Right now this does not handle
@@ -300,6 +325,11 @@ class Layout(list):
     # list of Field objects
 
     def __set__(self, obj, value): 
+        """set the layout
+
+        obj - the object we are about to set
+        value - the value we are setting the field to
+        """
         self.layout = value
         for field in self.layout:
             # This is a special case, we don't want to recurse back
@@ -315,6 +345,8 @@ class FieldError(Exception):
     layout this exception is raised."""
 
     def __init__(self, message):
+        """set the error message when this error is raised"""
+        ## the error message passed when this error is raised
         self.message = message
         
 
@@ -337,6 +369,7 @@ class Packet(object):
 
     _bytes = ""
     def getbytes(self):
+        """return the bytes of the packet"""
         if self._needencode:
             self._needencode = False
             self.encode()
@@ -382,16 +415,24 @@ class Packet(object):
 
         self._bytes = ''.join(bytearray) # Install the new value
 
-    bit_length = 0
-
     def __init__(self, layout = None, bytes = None):
+        """initialize a Packet object
+
+        layout - the layout of the packet, a list of Field objects
+        bytes - if the packet is being set up now the bytes to set in it
+        """
         self._fieldnames = {}
+        # The layout of the Packet, a list of Field objects.
         self.layout = layout
         self._needencode = True
         if bytes != None:
             self.decode(bytes)
 
     def __add__(self, layout = None):
+        """add two packets together
+
+        This is really an append operation, of one packet after another.
+        """
         for field in layout:
             self.layout.append(field)
             self._needencode = True
@@ -462,11 +503,11 @@ class Packet(object):
         return retval
 
     def __len__(self):
-        "Return the count of the number of bytes in the packet."
+        """Return the count of the number of bytes in the packet."""
         return len(self.bytes)
 
     def chain(self):
-        "Return the packet and its next packets as a chain."
+        """Return the packet and its next packets as a chain."""
         packet_list = []
         done = False
         packet = self
@@ -479,30 +520,39 @@ class Packet(object):
         return Chain(packet_list)
         
     def toXML(self):
+        """Transform the Packet into XML."""
         pass
 
     def fromXML(self):
+        """Create a Packet from XML."""
         pass
 
     def toHTML(self):
+        """Transform a Packet to HTML."""
         pass
 
     def fromHTML(self):
+        """Create a Packet from HTML."""
         pass
 
 class Chain(list):
     """A chain is simply a list of packets.  Chains are used to
     aggregate related sub packets into one chunk for transmission."""
 
-    packets = []
-    bytes = ""
-
     def __init__(self, packets = None):
+        """initialize a Chain object
+
+        packets - an optionl array of packets to add to the new Chain
+        """
         list.__init__(self)
         self.packets = packets
         self.encode()
 
     def __eq__(self, other):
+        """test two Chain objects for equality
+
+        Two chains are equal iff they have the same packets and their
+        packets have the same data in them."""
         if len(self.packets) != len(other.packets):
             return False
         for i in range(len(self.packets)):
@@ -511,9 +561,11 @@ class Chain(list):
         return True
             
     def __ne__(self, other):
+        """test two Chain objects for inequality"""
         return not self.__eq__(other)
             
     def __str__(self):
+        """return a pretty printed Chain"""
         retval = ""
         for packet in self.packets:
             retval += "%s " % packet.__str__()
@@ -526,11 +578,13 @@ class Chain(list):
         self.encode()
 
     def encode(self):
+        """Encode all the packets in a chain into a set of bytes for the Chain"""
         self.bytes = ""
         for packet in self.packets:
             self.bytes += packet.bytes
     
     def decode(self, bytes):
+        """Decode all the bytes of all the packets in a Chain into the underlying packets"""
         for packet in self.packets:
             packet.decode(packet.bytes)
 
@@ -631,6 +685,10 @@ class PcapConnector(Connector):
     """
 
     def __init__(self, name = None):
+        """initialize a PcapConnector object
+
+        name - the name of a file or network interface to open
+        """
         try:
             self.file = pcap.pcap(name)
         except:
@@ -642,31 +700,55 @@ class PcapConnector(Connector):
         self.dlink = self.file.datalink()
         
     def read(self):
+        """read a packet from a pcap file or interface
+
+        returns the packet as a bytearray
+        """
         return self.file.next()[1]
 
     def recv(self):
+        """recv a packet from a pcap file or interface"""
         return self.file.next()[1]
     
     def recvfrom(self):
+        """recvfrom a packet from a pcap file or interface"""
         return self.file.next()[1]
 
     def readpkt(self):
-        """Unpacks the returned buffer into a real packet."""
+        """read a packet from a pcap file or interfaces returning an
+        appropriate packet object
+
+        This is the most usefule method for use by naive applications
+        that do not wish to interrogate the underlying packet data."""
         packet = self.file.next()[1]
         return self.unpack(packet, self.dlink, self.dloff)
 
     def write(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+
+        bytes - the bytes of the packet, and not the packet object
+"""
         return self.file.inject(packet, bytes)
 
     def send(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+
+        bytes - the bytes of the packet, and not the packet object"""
         return self.file.inject(packet, bytes)
 
     def sendto(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+
+        bytes - the bytes of the packet, and not the packet object"""
         return self.file.inject(packet, bytes)
 
-
     def unpack(self, packet, dlink, dloff):
-        """Turn the buffer into a real packet."""
+        """turn a packet into a set of bytes appropriate to transmit
+
+        packet - a Packet object
+        dlink - a data link layer as defined in the pcap module
+        dloff - a datalink offset as defined in the pcap module
+        """
         import packets.ethernet
         import packets.localhost
 
@@ -677,6 +759,9 @@ class PcapConnector(Connector):
         else:
             raise UnpackError, "Could not interpret packet"
                 
+    def close(self):
+        """Close the pcap file or interface."""
+        self.file.close()
 
 class PcapDumpConnector(Connector):
     """A connector for dumping packets to a file for later re-use.
@@ -688,6 +773,7 @@ class PcapDumpConnector(Connector):
     """
 
     def __init__(self, dumpfile = None, dumptype = None):
+        """initialize a pcap dump connector"""
         from pcap import pcap
         try:
             self.file = pcap(dumpfile = dumpfile, dumptype=dumptype)
@@ -699,18 +785,26 @@ class PcapDumpConnector(Connector):
         self.setfilter = self.file.setfilter
         
     def write(self, packet):
+        """write a packet to the dumpfile"""
         if type(packet) is buffer:
             packarg = "%ds" % len(packet)
             packet = struct.unpack(packarg, packet)[0]
         return self.file.dump(packet)
 
     def send(self, packet):
+        """send a packet to the dumpfile
+
+        calls the write() method"""
         return self.file.dump(packet)
 
     def sendto(self, packet, header):
+        """sendto a packet to the dumpfile
+
+        calls the write() method"""
         return self.file.dump(packet)
 
     def close(self):
+        """close the dumpfile"""
         self.file.dump_close()
 
 class IP4Connector(Connector):
@@ -722,41 +816,54 @@ class IP4Connector(Connector):
     """
 
     def __init__(self, name = None):
+        """initialize an IP4Connector"""
         try:
             self.file = socket(AF_INET, SOCK_RAW, IPPROTO_IP)
         except:
             raise
 
     def connect(self, address):
+        """connect to a foreign IPv4 address"""
         return self.file.connect(address)
 
     def read(self, len):
+        """read data from an IPv4 socket"""
         return self.file.recv(len)
 
     def recv(self, len, flags = 0):
+        """recv data from an IPv4 socket"""
         return self.file.recv(len, flags)
     
     def recvfrom(self, len, flags = 0):
+        """recvfrom data from an IPv4 socket"""
         return self.file.recvfrom(len, flags)
 
     def write(self, packet, flags = 0):
+        """write data to an IPv4 socket"""
         return self.file.sendall(packet, flags)
 
     def send(self, packet, flags = 0):
+        """send data to an IPv4 socket"""
         return self.file.send(packet, flags)
 
     def sendto(self, packet, addr, flags = 0):
+        """sendto data to an IPv4 socket"""
         return self.file.sendto(packet, flags, addr)
 
     def close(self):
+        """close an IPv4 Connector"""
         self.file.close()
-    
     
 class UDP4Connector(IP4Connector):
     """A connector for IPv4 UDP sockets
     """
 
     def __init__(self, address = None, port = None):
+        """initialize a UDPv4 connector
+
+        address - an optional address to connect to
+        port - an optional port to connect to
+        """
         try:
             self.file = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
         except:
@@ -775,6 +882,7 @@ class TCP4Connector(IP4Connector):
     """
 
     def __init__(self, addr = None, port = None ):
+        """initialize a TCP4Connector class for TCP over IPv4"""
         try:
             self.file = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
         except:
@@ -793,6 +901,7 @@ class SCTP4Connector(IP4Connector):
     """
 
     def __init__(self, addr = None, port = None ):
+        """initialize a SCTP4Connector class for TCP over IPv4"""
         try:
             self.file = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP)
         except:
@@ -805,38 +914,46 @@ class SCTP4Connector(IP4Connector):
                 raise
 
 class IP6Connector(Connector):
-    """Base class for all IPv4 connectors.
+    """Base class for all IPv6 connectors.
 
-    This class implements all the necessary functions for a plain IPv4
+    This class implements all the necessary functions for a plain IPv6
     based connector.  In particular the data access methods, such as
     read, write, etc. likely do not need to be overridden by the sub classes.
     """
 
     def __init__(self, name = None):
+        """initialize an IPPConnector class for raw IPv6 access"""
         try:
             self.file = socket(AF_INET6, SOCK_RAW, IPPROTO_IP)
         except:
             raise
 
     def read(self, len):
+        """read from an IPv6 connection"""
         return self.file.recv(len)
 
     def recv(self, len, flags = 0):
+        """recv from an IPv6 connection"""
         return self.file.recv(len, flags)
     
     def recvfrom(self, len, flags = 0):
+        """readfrom on an IPv6 connection"""
         return self.file.recvfrom(len, flags)
 
     def write(self, packet, flags = 0):
+        """write to an IPv6 connection"""
         return self.file.sendall(packet, flags)
 
     def send(self, packet, flags = 0):
+        """send to an IPv6 connection"""
         return self.file.send(packet, flags)
 
     def sendto(self, packet, addr, flags = 0):
+        """sendto to an IPv6 connection"""
         return self.file.sendto(packet, flags, addr)
 
     def mcast(self, iface):
+        """set IP6 connector into multicast mode"""
         import dl
         _libc = dl.open('libc.so')
         ifn = _libc.call('if_nametoindex', iface)
@@ -846,10 +963,10 @@ class IP6Connector(Connector):
 
 
 class UDP6Connector(IP6Connector):
-    """A connector for IPv6 UDP sockets
-    """
+    """A connector for IPv6 UDP sockets """
 
     def __init__(self, name = None):
+        """initialize a UDPv6 connector"""
         try:
             self.file = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
         except:
@@ -868,6 +985,7 @@ class TCP6Connector(IP6Connector):
     """
 
     def __init__(self, name = None):
+        """initialize a TCPv6 connector"""
         try:
             self.file = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP)
         except:
@@ -886,6 +1004,7 @@ class SCTP6Connector(IP6Connector):
     """
 
     def __init__(self, name = None):
+        """initialize a SCTP6Connector"""
         try:
             self.file = socket(AF_INET6, SOCK_STREAM, IPPROTO_SCTP)
         except:
@@ -902,11 +1021,8 @@ class SCTP6Connector(IP6Connector):
 ### network code.
 ###
 
-# Define an inet_atol handles numeric, that is Long, valued IPv4
-# addresses.  This only exists because inet_ntoa and family return
-# strings.
-
 def inet_atol(string):
+    """convert an ascii IPv4 address into a Long"""
     from socket import inet_aton
     value = 0
     addr = inet_aton(string)

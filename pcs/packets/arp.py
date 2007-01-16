@@ -42,6 +42,7 @@ class arp(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize an ARP packet"""
         hrd = pcs.Field("hrd", 16, default = 1)
         pro = pcs.Field("pro", 16, default = 0x800)
         hln = pcs.Field("hln", 8, default = 6)
@@ -58,6 +59,7 @@ class arp(pcs.Packet):
         self.data = None
 
     def __str__(self):
+        """return a human readable version of an ARP packet"""
         retval = "ARP\n"
         retval += "hrd: "
         retval += "%d\n" % self.hrd

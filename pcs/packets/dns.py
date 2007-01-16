@@ -70,6 +70,7 @@ class dnslabel(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a DNS label, which is a component of a domain name"""
         name = pcs.LengthValueField("name", 8)
         pcs.Packet.__init__(self,
                             [name],
@@ -83,6 +84,7 @@ class dnsquery(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a DNS query packet, which is a query for information"""
         type = pcs.Field("type", 16)
         qclass = pcs.Field("query_class", 16)
         pcs.Packet.__init__(self,
@@ -97,6 +99,7 @@ class dnsrr(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a DNS resource record, which encodes data returned from a query"""
         name = pcs.LengthValueField("name", 8)
         type = pcs.Field("type", 16)
         qclass = pcs.Field("query_class", 16)

@@ -38,10 +38,11 @@ import pcs
 from pcs.packets import payload
 
 class tcp(pcs.Packet):
-
+    """A TCP class for IPv4"""
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a TCP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
         seq = pcs.Field("sequence", 32)

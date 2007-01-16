@@ -38,10 +38,16 @@
 import pcs
 
 class payload(pcs.Packet):
+    """A raw data packet.
+
+    A payload is a raw, set of bytes, and can be used to terminate any
+    packet chain.  When data is not part of a packet, or the packet is
+    not known this class is used to encapsulate the data."""
 
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a payload packet"""
         payload = pcs.Field("payload", len(bytes) * 8)
         pcs.Packet.__init__(self, [payload], bytes = bytes)
         self.description = "Data"
@@ -50,4 +56,5 @@ class payload(pcs.Packet):
         self.data = None
 
     def __str__(self):
+        """return a readable version of a payload object"""
         retval = "%s" % self.payload

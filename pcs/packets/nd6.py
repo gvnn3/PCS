@@ -38,14 +38,13 @@ import pcs
 
 import icmpv6 # All neighbor discovery messages are inserted in ICMPv6 packets
 
-# RFC 2461 neighbor discovery messages
-
 class nd6_solicit(pcs.Packet):
-    """A neighbor solicitation message"""
+    """RFC 2461 neighbor discovery messages"""
 
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a Neighbor Solicitaion header"""
         reserved = pcs.Field("reserved", 32)
         target = pcs.Field("target", 128)
         pcs.Packet.__init__(self, [reserved, target], bytes)

@@ -44,6 +44,7 @@ class localhost(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a localhost header, needed to read or write to lo0"""
         type = pcs.Field("type", 32)
         lolen = 4
 
@@ -60,6 +61,7 @@ class localhost(pcs.Packet):
         level protocol object"""
         print self.type
         print socket.AF_INET6
+        ## type is the address family, and NOT an ethertype 
         if self.type == socket.AF_INET:
             return ipv4.ipv4(bytes)
         if self.type == socket.AF_INET6:

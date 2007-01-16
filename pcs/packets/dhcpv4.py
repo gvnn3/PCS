@@ -42,6 +42,7 @@ class dhcpv4(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a DHCPv4 packet"""
         op = pcs.Field("op", 8)
         htype = pcs.Field("htype", 8)
         hlen = pcs.Field("hlen", 8)

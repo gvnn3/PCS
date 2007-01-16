@@ -45,6 +45,7 @@ class udpv6(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """Initialize a UDP packet for IPv6"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
         length = pcs.Field("length", 16)

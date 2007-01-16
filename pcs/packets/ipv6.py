@@ -72,6 +72,7 @@ class ipv6(pcs.Packet):
         self.description = "IPv6"
 
         if (bytes != None):
+            ## 40 bytes is the standard size of an IPv6 header
             offset = 40
             self.data = self.next(bytes[offset:len(bytes)])
         else:

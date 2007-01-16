@@ -10,10 +10,12 @@
 
 SRCS= pcs.tex design.tex
 
-all: ${SRCS:S/.tex/.pdf/}
+all: ${SRCS:S/.tex/.pdf/} man latex
 
 .tex.pdf:
 	pdflatex ${.IMPSRC}
 
+man::
+	doxygen
 clean::
-	rm -rf *.pdf *.html *.out *.log
+	rm -rf *.pdf *.html *.out *.log Web/html man latex

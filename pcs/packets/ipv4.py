@@ -88,6 +88,7 @@ class ipv4(pcs.Packet):
     def next(self, bytes):
         """Decode the type of a packet and return the correct higher
         level protocol object"""
+        ## the protocol above IP, such as ICMP, UDP, TCP, AH, ESP etc.
         if self.protocol == IPPROTO_UDP:
             return udp.udp(bytes)
         elif self.protocol == IPPROTO_TCP:
@@ -102,6 +103,10 @@ class ipv4(pcs.Packet):
         return None
         
     def calc_checksum(self):
+        """calculate the IPv4 checksum over a packet
+
+        returns the calculated checksum
+        """
         total = 0
         packet = ipv4(self.bytes)
         packet.checksum = 0

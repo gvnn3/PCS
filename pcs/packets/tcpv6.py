@@ -39,10 +39,11 @@ import struct
 from pseudoipv6 import *
 
 class tcpv6(pcs.Packet):
-
+    """A TCP class for IPv6"""
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a TCP packet for IPv6"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
         seq = pcs.Field("sequence", 32)

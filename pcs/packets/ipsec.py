@@ -43,6 +43,7 @@ class ah(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize an AH packet header"""
         next = pcs.Field("next_header", 8)
         plen = pcs.Field("payload_len", 8)
         rsvrd = pcs.Field("reserved", 16)
@@ -60,6 +61,7 @@ class esp(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize an ESP packet header"""
         spi = pcs.Field("spi", 32)
         seq = pcs.Field("sequence", 32)
         payload = pcs.Field("payload", 32)

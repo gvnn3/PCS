@@ -38,10 +38,12 @@ import pcs
 from pcs.packets.dns import *
 
 class udp(pcs.Packet):
+    """A UDP class."""
 
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize a UDP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
         length = pcs.Field("length", 16)

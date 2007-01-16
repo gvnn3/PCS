@@ -14,6 +14,7 @@ class ethernet(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None):
+        """initialize an ethernet packet"""
         src = pcs.StringField("src", 48)
         dst = pcs.StringField("dst", 48)
         type = pcs.Field("type", 16)
@@ -27,6 +28,7 @@ class ethernet(pcs.Packet):
             self.data = None
 
     def __str__(self):
+        """return a human readable version of an Ethernet packet"""
         retval = "Ethernet\n"
         retval += "dst: "
         for byte in range(0,5):
@@ -45,6 +47,7 @@ class ethernet(pcs.Packet):
     def next(self, bytes):
         """Decode the type of a packet and return the correct higher
         level protocol object"""
+        ## the ethertype of the packet
         if self.type == ETHERTYPE_ARP:
             return arp(bytes)
         if self.type == ETHERTYPE_IP:
