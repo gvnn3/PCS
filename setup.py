@@ -39,7 +39,7 @@
 from distutils.core import setup
 
 setup(name='pcs',
-      version = '0.3',
+      version = '0.4',
       description = 'Packet Construction Set',
       author = 'George V. Neville-Neil',
       author_email = 'gnn@neville-neil.com',

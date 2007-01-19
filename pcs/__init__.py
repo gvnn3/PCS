@@ -214,7 +214,7 @@ handled by the LengthValueField."""
     def __repr__(self):
         """return a human readable form of a StringFeild object"""
         return "<pcs.StringField  name %s, %d bits, type %s, default %s>" % \
-               (self.name, self.width, self.type, self.default)
+               (self.name, self.width, self.type, self.default) # 
 
     def decode(self, bytes, curr, byteBR):
         """Decode the field and return the value as well as the new

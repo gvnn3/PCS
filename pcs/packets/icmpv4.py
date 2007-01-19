@@ -35,6 +35,7 @@
 # Description: A class which describes an ICMPv4 packet
 
 import pcs
+from pcs.packets import payload
 
 class icmpv4(pcs.Packet):
     """ICMPv4 Packet
@@ -53,7 +54,13 @@ class icmpv4(pcs.Packet):
         cksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [type, code, cksum], bytes)
         self.description = "ICMPv4"
-        self.data = None
+
+        if (bytes != None):
+            offset = type.width + code.width + cksum.width
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+
 
 class icmpv4echo(pcs.Packet):
     """ICMPv4 Echo (aka ping) Packet
@@ -72,7 +79,12 @@ class icmpv4echo(pcs.Packet):
         """initialize an ICMPv4 echo packet, used by ping(8) and others"""
         id = pcs.Field("id", 16)
         seq = pcs.Field("sequence", 16)
-        data = pcs.StringField("data", 56 * 8)
-        pcs.Packet.__init__(self, [id, seq, data], bytes)
+        pcs.Packet.__init__(self, [id, seq], bytes)
         self.description = "ICMPv4 Echo"
-        self.data = None
+
+        if (bytes != None):
+            offset = id.width + seq.width
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+
