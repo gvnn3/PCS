@@ -5,7 +5,7 @@
 # Author: George V. Neville-Neil
 #
 # Makefile for updating PCS web pages.
-FILES = *.html *.jpg *.py *.pdf
+FILES = *.html *.jpg *.py ../pcs.pdf html/
 
 install::
-	scp ${FILES} gnn@shell.sourceforge.net:/home/groups/p/pc/pcs/htdocs
+	scp -r ${FILES} gnn@shell.sourceforge.net:/home/groups/p/pc/pcs/htdocs
