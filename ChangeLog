@@ -1,3 +1,12 @@
+2007-01-19  gnn  <gnn@neville-neil.com>
+
+	* Version 0.4
+
+	Move to Beta status.
+	Add Doxygen style documentation.
+	Added payload packet which can end packet chains.
+	Standardized the data attribute, and next() method for all packets.
+
 2006-10-04  gnn  <gnn@neville-neil.com>
 
 	* Version 0.3
