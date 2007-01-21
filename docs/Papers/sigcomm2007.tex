@@ -1,0 +1,302 @@
+\documentclass{sig-alternate-10pt}
+\usepackage[pdftex]{hyperref}
+\usepackage{codespelunking}
+\title{Packet Construction Set: A New Approach to Network Protocol
+  Construction, Testing and Interrogation}
+\author{Paper \#22}
+\begin{document}
+\maketitle
+\begin{abstract}
+Network protocol design, construction and testing has always been
+hampered by the lack of a natural way in which to express packets as
+source code.  The majority of network protocol software is written in
+low level languages and is contained within operating systems
+kernels.  While such implementations make sense for highly optimized
+systems they are not the best approach for developing new or
+experimental protocols, nor are they required for protocol conformance
+tests, and other types of tools.
+
+The Protocol Construction Set (PCS) is a new approach to writing
+network protocol code that makes building new protocols, and new
+protocol tools, easier and less error prone.  PCS's two key features
+are a simple and clean representation of packets and packet fields in
+source code, and the promotion of packets to high level language
+objects that are easier to create and manipulate within programs.  In
+this paper we present our completed system, both design and
+implementation, as well as several tools that have been built using
+it, including the Packet Debugger, a program for working with network
+packets in the same way in which programmers use source code
+debuggers.
+
+\end{abstract}
+
+\section{Introduction}
+
+The way in which network protocols are written has been little changed
+since the first versions of the ARPANet protocol~\cite{} were built in
+the early 1970s.  At that time it was necessary to write network
+protocols in a low level language, often assemlber, and then later C,
+and to place the protocol code into the core of the operating system
+\cite{}.  In order to verify the proper functioning of the protocol
+test code might be written, but more commonly two copies of the same
+code were run against each other to make sure that the systems could
+``talk'' to each other without error.  Experimenting with, and writing
+new, protocols often required putting the protocol code into an
+operating system kernel because that was the only way in which to get
+ahold of the necessary low level software and hardware facilities to
+affet communication.  Although a protocol could be built and run
+outside the kernel, where better tools might make the job eaiser, this
+has always required porting the in kernel facilities into libraries
+that can be used by user level programs.  To this day most people
+develop their protocols in the kernel, where the tools for debugging
+and working with code are at their bare minimum.  Being built in low
+level languages, protocols have always had to do their own low level
+manipulation of packet data as well as express the logic of the
+protocol machinery, often leading to confusing and hard to read code.
+
+The Packet Construction Set (PCS) is a set of language extensions that
+make writing protocol code more natural and less error prone, allowing
+for faster development and easier experimentation with network
+protocols.  The two key features of PCS are the ability to easily
+translate a packet format into a an object in the language, and the
+provision of easy access to the fields of a packet as attributes of
+the generated object.
+
+The rest of this paper is organized as follows, in
+Section~\ref{sec:the-programmers-view} we present how a protocol
+designer, implementor, or tester uses PCS.
+Section~\ref{sec:a-concrete-example} gives a concrete example of a
+system built using PCS to work with several well known protocols,
+including IPv4\cite{rfc791}, IPv6\cite{rfc2460} and Ethernet \cite{}.
+
+\section{The Programmer's View}
+\label{sec:the-programmers-view}
+
+The focus in PCS is on the programmer and it is for them that the
+system was built.  To most programmers the part of buiding a network
+protocol that is tedious is the need to manipulate low level
+structures, which require proper alignment, and byte ordering in order
+for the protocol to work at all.  Take, for example, an IPv4 packet,
+seen in Figure\ref{fig:rfc791-ipheader}.
+
+\begin{figure}
+\label{fig:rfc791-ipheader}
+
+  \caption{IPv4 Header Format}
+\end{figure}
+
+IPv4 was designed in the late 1970s and first deployed in the early
+1980s, when byte addressable machines were popular, computer networks
+were slower and computer memory sizes were much smaller than they were
+today.  In order to pack enough information into the header to make it
+easy and fast to transmit the designers attempted to not waste space,
+and used fields that were as efficient as they could make them.  The
+IPv4 header contains 3 fields that are less than a byte in length,
+including the \verb|version|, \verb|header length|, and \verb|flags.|
+Though these choices meant that little space was wasted they also
+require some complex gymnastics from the programmer implementing the
+protocol.  Due to the fact that the \verb|flags| field is only 3 bits
+in length, the \verb|Fragement Offset| starts in the middle of a
+byte.  The \verb|version| and \verb|header length|, are each sub byte
+quantities, which are not naturally addressable in the language in
+which most IP protocol stacks are written, C.
+
+In order to overcome these limitations programmers have written
+special macros to handle getting data into and out of the fields of
+the packet, and to make sure that the bytes that are placed into the
+packet are in the correct byte order for the network.  These
+constraints lead to code, such as that in
+Figure~\ref{fig:c-structure-for-an-ipv4-packet} from the FreeBSD
+Operating System Kernel \cite{McKusick}, for representing IP packets
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+struct ip {
+#if BYTE_ORDER == LITTLE_ENDIAN
+	u_int	ip_hl:4,		/* header length */
+		ip_v:4;			/* version */
+#endif
+#if BYTE_ORDER == BIG_ENDIAN
+	u_int	ip_v:4,			/* version */
+		ip_hl:4;		/* header length */
+#endif
+	u_char	ip_tos;			/* type of service */
+	u_short	ip_len;			/* total length */
+	u_short	ip_id;			/* identification */
+	u_short	ip_off;			/* fragment offset field */
+#define	IP_RF 0x8000			/* reserved fragment flag */
+#define	IP_DF 0x4000			/* dont fragment flag */
+#define	IP_MF 0x2000			/* more fragments flag */
+#define	IP_OFFMASK 0x1fff		/* mask for fragmenting bits */
+	u_char	ip_ttl;			/* time to live */
+	u_char	ip_p;			/* protocol */
+	u_short	ip_sum;			/* checksum */
+	struct	in_addr ip_src,ip_dst;	/* source and dest address */
+} __packed __aligned(4);
+\end{verbatim}
+  \caption{C Structure for an IPv4 Packet}
+  \label{fig:c-structure-for-an-ipv4-packet}
+\end{figure}
+
+In order to access the flags field in a packet, which is not visibly
+represented in this structure, the programmer needs to mask off bites
+of the offset field \verb|ip_off|, or offset, field, as can be seen in
+Figure~\ref{fig:accessing-the-flags-field}.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+if (ip->ip_off & (IP_MF | IP_OFFMASK)) {  
+\end{verbatim}
+  \caption{Accessing the flags field in an IPv4 packet}
+  \label{fig:accessing-the-flags-field}
+\end{figure}
+
+While the preceeding code may seem reasonable and a common idiom to a
+kernel programmer it is not so for most other programmers, and for
+many people building new protocols, or writing test code, it is not
+really necessary.
+
+\subsection{PCS and Packets}
+\label{sec:pcs-and-packets}
+
+In PCS packets are transformed into objects in the Python language
+\cite{vanRossum}, and their fields appear as attributes of the object.
+Accessing a field returns the value contained in the bytes of the
+packet, and assigning a value to a field updates the bytes of the
+packet.  All fields of the packet implement bounds checking at run
+time, so any attempt to write a value that is too large into the
+object is raised as an exception.  The code that describes the fields
+of an IPv4 packet in PCS is shown in
+Figure~\ref{fig:ipv4-packet-in-pcs} and the full class definition can
+be found in the source code\cite{}.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+version = pcs.Field("version", 4, default = 4)
+hlen = pcs.Field("hlen", 4)
+tos = pcs.Field("tos", 8)
+length = pcs.Field("length", 16)
+id = pcs.Field("id", 16)
+flags = pcs.Field("flags", 3)
+offset = pcs.Field("offset", 13)
+ttl = pcs.Field("ttl", 8, default = 64)
+protocol = pcs.Field("protocol", 8)
+checksum = pcs.Field("checksum", 16)
+src = pcs.Field("src", 32)
+dst = pcs.Field("dst", 32)
+\end{verbatim}
+  \caption{The fields of an IPv4 packet in PCS}
+  \label{fig:ipv4-packet-in-pcs}
+\end{figure}
+
+A \class{Packet} is a class defined by the PCS module, and all packets
+defined in the system inherit from this base class.  In order to
+define a field in a packet as an attribute of an object a
+\class{Field} class is used, as seen here.  The \class{Field} class
+can take three arguments in its constructor.  The first argument is a
+\verb|name|, which will become the name of the attribute in the object
+that we use to manipulate that particular set of bits in the packet.
+How that is exploited will be covered in the next paragraphs.  The
+second argument is a \verb|width|, in bits, for the field.  The
+\verb|width| for a simple field can be from 1 to 32 bits.  Other
+types of \class{Fields} are provided to encode strings and
+length/value encoded strings into packet, but they are beyond the
+scope of the present discussion.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+pcs.Packet.__init__(self,
+   [version, hlen, tos, length, id, flags, 
+    offset, ttl, protocol, checksum, src, dst],
+   bytes = bytes)
+\end{verbatim}
+  \caption{Initializing the packet object}
+  \label{fig:initializing-the-packet-object}
+\end{figure}
+
+Defining the fields in the packet is the first step in setting up a
+packet object.  Once the fields are defined we must call the base
+class's constructor, in Python it's \verb|__init__()| method, in order
+to finishing setting up the object.  It is in the base class's
+\verb|__init__()| method that the object is given the attributes we
+have defined in Figure~\ref{fig:ipv4-packet-in-pcs}.  The second
+argument is a list containing the fields we just defined, \emph{in the order
+in which they are to appear in the packet.}  
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> from pcs.packets.ipv4 import ipv4
+>>> ip = ipv4()
+>>> print ip
+IPv4
+version 4
+hlen 0
+tos 0
+length 0
+id 0
+flags 0
+offset 0
+ttl 64
+protocol 0
+checksum 0
+src 0.0.0.0
+dst 0.0.0.0
+
+>>> print ip.bytes
+^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@
+>>> ip.hlen=5
+>>> ip.ttl=32
+>>> print ip.bytes
+E^@^@^@^@^@^@^@ ^@^@^@^@^@^@^@^@^@^@^@
+\end{verbatim}
+  \caption{Interactive manipulation of an IPv4 object}
+  \label{fig:interactive-manipulation-of-an-ipv4-object}
+\end{figure}
+
+With the packet so defined we can now use it in a program or work with
+it interactively in the Python command line interpreter.
+Figure~\ref{fig:interactive-manipulation-of-an-ipv4-object} shows the
+creation of an IPv4 object from its class, and what happens when we
+read or write the attributes of the object.  The \verb|bytes| field of
+every \class{Packet} object contains the up to date set of bytes for
+the packet as they would be transmitted on the wire, and is not meant
+to be printed or read by humans.  In this case it is instructive
+because it shows, in its first and eight locations the changes that
+have been effected by changing the values of the attributes in the
+IPv4 object.
+
+XXX MENTION the data and next() things XXX
+
+\section{A Concrete Example}
+\label{sec:a-concrete-example}
+
+PCS has been used to implement a Packet Debugger, a program which
+works with packet capture files, those read and written with the pcap
+library, as if they are lines of source code.  With PDB a user can
+load, manipulate, edit and replay pcap files in order to debug their
+network protocol, and client or server software.
+
+\section{Related Work}
+\label{sec:related-work}
+
+\section{Future Work}
+\label{sec:future-work}
+
+\section{Conclusions}
+\label{sec:conclusions}
+
+\label{sec:bibliography}
+\begin{thebibliography}{99} 
+\bibitem{rfc791} Postel J.: 
+RFC 791 Internet Protocol
+\bibitem{McKusick} McKusick M., Neville-Neil G.:
+The Design and Implementation of the FreeBSD Operating System
+\bibitem{vanRossum} van Rossum, G., Drake, F.:
+Python Reference Manual, Release 2.4
+\end{thebibliography}
+\end{document}
