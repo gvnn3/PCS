@@ -80,8 +80,9 @@ for the protocol to work at all.  Take, for example, an IPv4 packet,
 seen in Figure\ref{fig:rfc791-ipheader}.
 
 \begin{figure}
+  \centering
 \label{fig:rfc791-ipheader}
-
+\includegraphics[width=0.5\textwidth]{IPv4Packet}
   \caption{IPv4 Header Format}
 \end{figure}
 
@@ -153,24 +154,38 @@ if (ip->ip_off & (IP_MF | IP_OFFMASK)) {
   \label{fig:accessing-the-flags-field}
 \end{figure}
 
-While the preceeding code may seem reasonable and a common idiom to a
-kernel programmer it is not so for most other programmers, and for
-many people building new protocols, or writing test code, it is not
-really necessary.
+While the preceeding code may seem reasonable and a common idiom to an
+operating system kernel programmer it is not so for most other
+programmers, for many people building new protocols, or for people
+writing test code.  In many cases such code is not even necessary to
+the task.
 
 \subsection{PCS and Packets}
 \label{sec:pcs-and-packets}
 
 In PCS packets are transformed into objects in the Python language
-\cite{vanRossum}, and their fields appear as attributes of the object.
+\cite{vanRossum}, and their fields appear as attributes of the
+object.  Each packet has two simultaneous representations, as a set of
+bytes as they would be transmitted on the wire, and as a set of
+attributes of an object, as used by programs writtien in the Python
+language.
+
 Accessing a field returns the value contained in the bytes of the
 packet, and assigning a value to a field updates the bytes of the
-packet.  All fields of the packet implement bounds checking at run
-time, so any attempt to write a value that is too large into the
-object is raised as an exception.  The code that describes the fields
-of an IPv4 packet in PCS is shown in
-Figure~\ref{fig:ipv4-packet-in-pcs} and the full class definition can
-be found in the source code\cite{}.
+packet.  The bytes of the packet and the values of the associated
+attributes are kept in sync at all times during program execution,
+which allows the programmer to ignore how the bytes are stored and
+transmitted on the wire and to concentrate on the way the protocol
+uses the fields of a packet.  All fields of the packet implement
+bounds checking at run time, so any attempt to write a value that is
+too large into the object is raised as an exception.  
+
+Throughout the rest of this section we shall use the IPv4 packet as
+our example, for all the reasons stated in
+Section~\ref{sec:the-programmers-view} relating to the packet's
+inherent complexity.  The code that describes the fields of an IPv4
+packet in PCS is shown in Figure~\ref{fig:ipv4-packet-in-pcs} and the
+full class definition can be found in the source code\cite{}.
 
 \begin{figure}
   \centering
@@ -194,17 +209,16 @@ dst = pcs.Field("dst", 32)
 
 A \class{Packet} is a class defined by the PCS module, and all packets
 defined in the system inherit from this base class.  In order to
-define a field in a packet as an attribute of an object a
-\class{Field} class is used, as seen here.  The \class{Field} class
-can take three arguments in its constructor.  The first argument is a
-\verb|name|, which will become the name of the attribute in the object
-that we use to manipulate that particular set of bits in the packet.
-How that is exploited will be covered in the next paragraphs.  The
-second argument is a \verb|width|, in bits, for the field.  The
-\verb|width| for a simple field can be from 1 to 32 bits.  Other
-types of \class{Fields} are provided to encode strings and
-length/value encoded strings into packet, but they are beyond the
-scope of the present discussion.
+define a field in a packet to be an attribute of an object, a
+\class{Field} class is used.  The \class{Field} class can take three
+arguments in its constructor.  The first argument is a \verb|name|,
+which will become the name of the attribute in the object that we use
+to manipulate that particular set of bits in the packet.  How that is
+exploited will be covered in the next paragraphs.  The second argument
+is a \verb|width|, in bits, for the field.  The \verb|width| for a
+simple field can be from 1 to 32 bits.  Other types of \class{Fields}
+are provided to encode strings and length/value encoded strings into
+packet, but they are beyond the scope of the present discussion.
 
 \begin{figure}
   \centering
@@ -225,7 +239,16 @@ to finishing setting up the object.  It is in the base class's
 \verb|__init__()| method that the object is given the attributes we
 have defined in Figure~\ref{fig:ipv4-packet-in-pcs}.  The second
 argument is a list containing the fields we just defined, \emph{in the order
-in which they are to appear in the packet.}  
+in which they are to appear in the packet.}  The last argument,
+\field{bytes} is used when the caller has a set of bytes from the
+network that they wish to convert into an object, and its use will be
+seen in Section~\ref{}.  
+
+The ordering shown in the second argument is very important, because
+it is this ordering that determines the way in which the fields will
+be put into the underlying bytes of the packet.  The code shown in
+Figure~\ref{fig:initializing-the-packet-object} exactly follows the
+IPv4 packet layout shown in Figure~\ref{fig:rfc791-ipheader}.
 
 \begin{figure}
   \centering
@@ -266,26 +289,201 @@ read or write the attributes of the object.  The \verb|bytes| field of
 every \class{Packet} object contains the up to date set of bytes for
 the packet as they would be transmitted on the wire, and is not meant
 to be printed or read by humans.  In this case it is instructive
-because it shows, in its first and eight locations the changes that
+because it shows, in its first and eighth locations the changes that
 have been effected by changing the values of the attributes in the
 IPv4 object.
 
-XXX MENTION the data and next() things XXX
+\subsection{Run Time Boundary Checking}
+\label{sec:run-time-boundary-checking}
+
+In PCS, each field knows its size and so run time boundary checks are
+implemented when a programmer sets a field of a packet.  Whenever a
+program attempts to store a value that is too large for a field into a
+packet an exception is raised, which can be caught and handled by a
+program, or, when not caught, will result in the program halting.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+>>> ip.ttl = 65535
+Traceback (most recent call last):
+[debugging information deleted]
+pcs.FieldBoundsError: 
+    'Value must be between 0 and 255'
+>>> 
+\end{verbatim}
+  \caption{Run Time Boundary Checking}
+  \label{fig:run-time-boundary-checking}
+\end{figure}
+
+In Figure~\ref{fig:run-time-boundary-checking} we have attempted to
+assign a 16 bit value to the time to live, \verb|ttl|, field, which is
+only 8 bits wide.  Boundary checking is enabled on all fields.
+
+\subsection{Unpacking Layers of Packets}
+\label{sec:unpacking-layers-of-packets}
+
+All network protocols support layering, the ability to put one packet
+into the payload of another.  The canonical example is a TCP segment
+encapsulated within an IPv4 packet which is carried within an Ethernet
+frame.  In PCS each packet class knows how to decode the packets that
+could likely occur in its payload.  Each packet class has a
+\field{data} attribute and a \method{next} method.  The \field{data}
+attribute contains an object reference to the next higher layer packet
+contained in the packet object, and the \method{next} method 
+calls the appropriate constructor to fill in the \field{data}
+attribute.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+def next(self, bytes):
+    if self.type == ETHERTYPE_ARP:
+        return arp(bytes)
+    if self.type == ETHERTYPE_IP:
+        return ipv4(bytes)
+    if self.type == ETHERTYPE_IPV6:
+        return ipv6(bytes)
+    return None
+\end{verbatim}
+  \caption{The Ethernet Class's \method{next} method}
+  \label{fig:ethernet-next-method}
+\end{figure}
+
+Figure~\ref{fig:ethernet-next-method} shows the code from the
+\class{Ethernet} class which unpacks the protocols that can be
+supported in its payload.  At the moment the \class{Ethernet} class
+can support the Address Resolution Protocol (ARP), IPv4 and IPv6.
+Note that the return value from the \method{next} method is an object
+from the appropriate class for the payload found in the Ethernet packet.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+if (bytes != None):
+    self.data = self.next(bytes[etherlen:len(bytes)])
+\end{verbatim}
+  \caption{Calling the \method{next} method during object construction}
+  \label{fig:calling-next-method}
+\end{figure}
+
+Each packet class uses its \method{next} method to fill in its
+\field{data} attribute when its constructor,
+i.e. \method{\_\_init\_\_} method is called with packet data.
+Figure~\ref{fig:calling-next-method} shows the code in the
+\class{Ethernet} class's constructor which receives the object created
+by the \method{next} method.  Packet objects are tied together via
+their \field{data} attributes, with the highest level attribute being
+a \class{Payload} class.  The \class{Payload} class acts as a catch
+all packet class which terminates a string of packets, as seen in
+Figure~\ref{fig:data-field-chain}.
+
+\begin{figure}
+  \centering
+\label{fig:data-field-chain}
+\includegraphics[width=0.5\textwidth]{DataFieldChain}
+  \caption{Using the data field to chain packets}
+\end{figure}
+
+\section{Support for reading and writing packets}
+\label{sec:support-for-reading-and-writing}
+
+So far we have described only the way in which packet classes and
+packet objects are implemented and manipulated within \program{PCS}.
+For the system to be useful to a programmer it must also support the
+ability to read and write data into and out of packet objects.
+\program{PCS} supports access to many types of network services
+including the well known \program{socket} library as well as directly
+to network interfaces using the \program{pcap} packet capture
+facility.  Live capture and injection are supported as well as the
+reading and writing of pre-recorded dump files, such as those created
+with \program{tcpdump}\cite{}.
+
+Within \program{PCS} a special set of classes exist, collectively
+known as \class{Connectors}.  Each connector is of a specific type for
+accessing a socket, network interface or dump file.  For example the
+\class{PcapConnector} can open, read, and write a network interface or
+a pre-recorded dump file, wherease a \class{TCPConnector} gives access
+a more traditional TCP socket.  Each connector class implements their
+own versions of the \method{read}, \method{write}, \method{send},
+\method{recv}, \method{sendmsg}, and \method{recvfrom} and
+\method{readpkt} methods.  In all the connector classes it is the
+\method{readpkt} method that is used most often because it not only
+gets the packet from the underlying socket or file but returns a
+proper object to the caller, as opposed to a string of bytes which
+much subsequently be passed to the correct packet class's constructor
+method.
+
+The implementation of the \class{PcapConnector} class's
+\method{readkpkt} and \method{unpack} methods give a clear
+demonstration of the power of \program{PCS} for user programs.  The
+code for both functions is shown, combined, in
+Figure~\ref{fig:readpkt-and-unpack-code}.
+
+\begin{figure}
+  \centering
+\begin{verbatim}
+[readpkt() code]
+
+packet = self.file.next()[1]
+return self.unpack(packet, self.dlink, 
+                   self.dloff)
+
+[... and now unpack() ...]
+
+if dlink == pcap.DLT_EN10MB:
+    return packets.ethernet.ethernet(packet)
+elif dlink == pcap.DLT_NULL:
+    return packets.localhost.localhost(packet)
+else:
+    raise UnpackError, 
+        "Could not interpret packet"
+\end{verbatim}
+  \caption{readpkt and unpack method code}
+  \label{fig:readpkt-and-unpack-code}
+\end{figure}
+
+The \method{readpkt} method actually knows nothing about packets, it
+only knows about the underlying interface, a pcap connection to a
+network interface or file.  The \method{unpack} method is what maps a
+datalink type, such as Ethernet or Localhost (also known as the
+loopback interface) to a packet type and attempts to construct the
+proper packet chain for each packet read from the file or the wire.
+Successive calls of the \method{next} method in each object correctly
+created will cause an entire chain of packets to be returned to the
+caller.  Visualizing the packet chain will be easier when we give a
+concrete example in Section~\ref{sec:a-concrete-example}.
+
+Writing, or injecting, packets into a file or the network is handled
+more simply because each packet already has within it the proper set
+of bytes to write to the file or network interface.  Each connector
+class need only implement a \method{write} method, which takes as its
+arguments the set of bytes and the length of the bytes, in order to
+properly output the packet.
 
 \section{A Concrete Example}
 \label{sec:a-concrete-example}
 
-PCS has been used to implement a Packet Debugger, a program which
-works with packet capture files, those read and written with the pcap
-library, as if they are lines of source code.  With PDB a user can
-load, manipulate, edit and replay pcap files in order to debug their
-network protocol, and client or server software.
+The best way to show the power of \program{PCS} is to show it being
+used in a real program.  The Packet Debugger (\program{pdb} is a
+program which works with packet capture files, those read and written
+with the \program{pcap} library\cite{}, as if they are lines of source
+code.  With \program{pdb} a user can load, manipulate, edit and replay
+\program{pcap} files in order to debug their network protocol, or any
+other network based software.  The \program{pdb} program uses all of
+the previously decribed features of \program{PCS} to achieve these
+goals in less than 1000 lines of code.
+
 
 \section{Related Work}
 \label{sec:related-work}
 
+Click
+
 \section{Future Work}
 \label{sec:future-work}
+
+More packets, network protocol test suite.
 
 \section{Conclusions}
 \label{sec:conclusions}
