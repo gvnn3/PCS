@@ -12,3 +12,4 @@ include docs/Web/*
 recursive-include tests *.py
 recursive-include tests *.out
 recursive-include scripts *.py
+global-exclude ymsgr.py
