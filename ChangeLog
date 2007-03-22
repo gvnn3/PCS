@@ -1,3 +1,13 @@
+2007-03-22  gnn  <gnn@neville-neil.com>
+
+	* Version 0.5
+
+	Move my version of Doug Song's Python pcap library into the
+	package.
+	Update the Makefile to make sure that we install correctly no
+	matter what target is selected.
+		
+
 2007-01-19  gnn  <gnn@neville-neil.com>
 
 	* Version 0.4
