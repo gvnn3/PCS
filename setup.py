@@ -39,6 +39,7 @@
 
 from distutils.core import setup, Extension
 from distutils.command import config, clean
+from Pyrex.Distutils import build_ext
 import cPickle, glob, os, sys
 
 pcap_config = {}
@@ -118,13 +119,14 @@ if len(sys.argv) > 1 and sys.argv[1] == 'build':
         sys.exit(1)
 
 pcap = Extension(name='pcs.pcap',
-                 sources=[ 'pcs/pcap/pcap.c', 'pcs/pcap/pcap_ex.c' ],
+                 sources=[ 'pcs/pcap/pcap.pyx', 'pcs/pcap/pcap_ex.c' ],
                  include_dirs=pcap_config.get('include_dirs', ''),
                  library_dirs=pcap_config.get('library_dirs', ''),
                  libraries=pcap_config.get('libraries', ''),
-                 extra_compile_args=pcap_config.get('extra_compile_args', ''))
+                 extra_compile_args=pcap_config.get('extra_compile_args', '')
+	)
 
-pcap_cmds = { 'config':config_pcap, 'clean':clean_pcap }
+pcap_cmds = { 'config':config_pcap, 'clean':clean_pcap, 'build_ext':build_ext }
 
 setup(name='pcs',
       version='0.5',

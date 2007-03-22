@@ -9,6 +9,7 @@ include docs/*.sty
 include docs/*.pdf
 include docs/Makefile
 include docs/Web/*
+include pcs/pcap/*.h
 recursive-include tests *.py
 recursive-include tests *.out
 recursive-include scripts *.py
