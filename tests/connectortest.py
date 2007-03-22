@@ -38,7 +38,7 @@
 import unittest
 
 import sys
-sys.path.insert(0, "..") # Look locally first
+#sys.path.insert(0, "..") # Look locally first
    
 from socket import *
 
@@ -119,7 +119,7 @@ class pcapTestCase(unittest.TestCase):
         """Test the underlying __compare__ functionality of the
         packet.  Two packets constructed from the same bytes should be
         equal and two that are not should not be equal."""
-        from pcap import DLT_NULL
+        from pcs.pcap import DLT_NULL
         # Create a vanilla ping packet
         ip = ipv4()
 

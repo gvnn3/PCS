@@ -39,7 +39,7 @@
 import unittest
 
 import sys
-sys.path.insert(0, "../") # Look locally first.
+#sys.path.insert(0, "../") # Look locally first.
 
 from pcs import PcapConnector
 from pcs import PcapDumpConnector
@@ -110,7 +110,7 @@ class etherTestCase(unittest.TestCase):
 
     def test_ethernet_write(self):
         """This test writes a fake ethernet packet to a dump file."""
-        from pcap import DLT_EN10MB
+        from pcs.pcap import DLT_EN10MB
         file = PcapDumpConnector("etherdump.out", DLT_EN10MB)
         # create one packet, copy its bytes, then compare their fields
         ether = ethernet()

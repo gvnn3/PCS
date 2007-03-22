@@ -39,7 +39,7 @@
 import unittest
 
 import sys
-sys.path.insert(0, "..") # Look locally first.
+#sys.path.insert(0, "..") # Look locally first.
 
 from pcs.packets.dns import *
 from pcs.packets.ipv4 import ipv4
@@ -115,7 +115,7 @@ class dnsTestCase(unittest.TestCase):
 
     def test_dns_read(self):
         """This test reads from a pre-stored pcap file generated with tcpdump and ping on the loopback interface."""
-        import pcap
+        import pcs.pcap as pcap
         file = pcap.pcap("dns.out")
         packet = file.next()[1]
         ip = ipv4(packet[file.dloff:len(packet)])
@@ -131,7 +131,7 @@ class dnsTestCase(unittest.TestCase):
         """Test the underlying __compare__ functionality of the
         packet.  Two packets constructed from the same bytes should be
         equal and two that are not should not be equal."""
-        import pcap
+        import pcs.pcap as pcap
         file = pcap.pcap("loopping.out")
         packet = file.next()[1]
         udp1 = udpv4(packet[file.dloff:len(packet)])
@@ -147,7 +147,7 @@ class dnsTestCase(unittest.TestCase):
         """This test reads from a pre-stored pcap file generated with
         tcpdump and ping on the loopback interface and tests the
         __str__ method to make sure the correct values are printed."""
-        import pcap
+        import pcs.pcap as pcap
         file = pcap.pcap("loopping.out")
         packet = file.next()[1]
         udp = udpv4(packet[file.dloff:len(packet)])

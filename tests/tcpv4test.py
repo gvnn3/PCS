@@ -39,11 +39,11 @@
 import unittest
 
 import sys
-sys.path.insert(0, "..") # Look locally first
+#sys.path.insert(0, "..") # Look locally first
    
 from pcs import PcapConnector
 from pcs.packets.ipv4 import *
-from pcs impot inet_atol
+from pcs import inet_atol
 
 class ipTestCase(unittest.TestCase):
     def test_ipv4(self):

@@ -65,7 +65,7 @@ import struct
 # We need the socket module for to implement some of the Connector classes.
 from socket import *
 
-import pcap
+import pcs.pcap as pcap
 
 import itertools
 

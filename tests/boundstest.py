@@ -38,7 +38,7 @@
 import unittest
 
 import sys
-sys.path.insert(0, "..") # Look locally first
+#sys.path.insert(0, "..") # Look locally first
    
 from pcs.packets.ipv4 import *
 from pcs.packets.ethernet import *

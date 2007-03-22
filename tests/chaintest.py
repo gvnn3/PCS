@@ -37,7 +37,7 @@
 import unittest
 
 import sys
-sys.path.insert(0, '../')
+#sys.path.insert(0, '../')
 
 from pcs.packets.ethernet import ethernet
 from pcs.packets.ipv4 import ipv4
@@ -48,7 +48,7 @@ class chainTestCase(unittest.TestCase):
         """Test the underlying __eq__ functionality of the
         packet.  Two packets constructed from the same bytes should be
         equal and two that are not should not be equal."""
-        import pcap
+        import pcs.pcap as pcap
         file = pcap.pcap("loopping.out")
         packet = file.next()[1]
         ip1 = ipv4(packet[file.dloff:len(packet)])
