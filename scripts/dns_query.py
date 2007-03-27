@@ -35,9 +35,6 @@
 #
 # Description:  A PCS demo script that performs a simple DNS lookup.
 
-import sys
-sys.path.insert(0, "..") # Look locally first
-
 import pcs
 from pcs import *
 from pcs.packets.dns import *

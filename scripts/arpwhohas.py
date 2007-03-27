@@ -34,9 +34,6 @@
 #
 # Description: A simple program to send ARP requests and replies.
 
-import sys
-sys.path.insert(0, "..") # Look locally first
-
 import pcs
 from pcs import *
 from pcs.packets.arp import *

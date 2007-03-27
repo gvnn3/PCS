@@ -36,9 +36,6 @@
 # Description: A simple re-implementatoin of the ping(8) program in
 # Python using the Packet Construction Set
 
-import sys
-sys.path.insert(0, "..") # Look locally first
-
 from pcs.packets.localhost import *
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *

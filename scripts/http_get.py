@@ -34,9 +34,6 @@
 #
 # Description: This script uses PCS to send UDP echo packets (port 7)
 
-import sys
-sys.path.insert(0, "../") # Look locally first.
-
 import pcs
 
 from socket import *
