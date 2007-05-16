@@ -149,7 +149,7 @@ class icmpv6(pcs.Packet):
             total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16
-        return  ~total
+        return  ~total & 0xffff
 
 class icmpv6option(pcs.Packet):
 
@@ -161,11 +161,11 @@ class icmpv6option(pcs.Packet):
         length = pcs.Field("length", 8)
         # Source Link-Layer Address.
         if type == 1:
-            source = pcs.Field("source", 48)
+            source = pcs.StringField("source", 48)
             pcs.Packet.__init__(self, [ty, length, source], bytes)
         # Target Link-Layer Address
         elif type == 2:
-            target = pcs.Field("target", 48)
+            target = pcs.StringField("target", 48)
             pcs.Packet.__init__(self, [ty, length, target], bytes)
         # Prefix Information.
         elif type == 3:
@@ -176,11 +176,11 @@ class icmpv6option(pcs.Packet):
             vlf = pcs.Field("valid_lifetime", 32)
             plf = pcs.Field("preferred_lifetime", 32)
             reserved2 = pcs.Field("reserved2", 32)
-            prefix = pcs.Field("prefix", 16 * 8, type = str)
+            prefix = pcs.StringField("prefix", 16 * 8)
             pcs.Packet.__init__(self, [ty, length, plength, l, a, reserved1, vlf, plf, reserved2, prefix], bytes)
         # Redirected Header.
         elif type == 4:
-            reserved = pcs.Field("reserved", 48)
+            reserved = pcs.StringField("reserved", 48)
             pcs.Packet.__init__(self, [ty, length, reserved], bytes)
         # MTU 
         elif type == 5:
