@@ -102,7 +102,7 @@ class ipv4(pcs.Packet):
         # Fall through
         return None
         
-    def calc_checksum(self):
+    def cksum(self):
         """calculate the IPv4 checksum over a packet
 
         returns the calculated checksum
@@ -117,5 +117,5 @@ class ipv4(pcs.Packet):
             total += (struct.unpack("!H", bytes[2*i:2*i+2])[0])
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16
-        return ~total
+        return ~total & 0xffff
 
