@@ -111,9 +111,11 @@ class pcapTestCase(unittest.TestCase):
 
         wfile.write(packet.bytes, 84)
 
-        got = ethernet(rfile.read())
+        got = localhost(rfile.read())
         ip = got.data
+        self.failIfEqual(ip, None)
         ping = ip.data
+        self.assertEqual(ping, icmp)
 
     def test_pcap_write(self):
         """Test the underlying __compare__ functionality of the

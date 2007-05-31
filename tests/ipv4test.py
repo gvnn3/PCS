@@ -145,7 +145,7 @@ class ipTestCase(unittest.TestCase):
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
 
-        test_string = "<IPv4: hlen: 5, protocol: 1, src: 2130706433, tos: 0, dst: 2130706433, ttl: 64, length: 84, version: 4, flags: 0, offset: 0, checksum: 0, id: 59067>"
+        test_string = "<IPv4: version: 4, hlen: 5, tos: 0, length: 84, id: 59067, flags: 0, offset: 0, ttl: 64, protocol: 1, checksum: 0, src: 2130706433, dst: 2130706433>"
 
         string = ip.println()
 

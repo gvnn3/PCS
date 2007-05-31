@@ -27,20 +27,37 @@ class ethernet(pcs.Packet):
         else:
             self.data = None
 
+    def __repr__(self):
+        """return a human readable version of an Ethernet packet"""
+        retval = "<Ethernet: "
+        retval += "dst: "
+        for byte in range(0,5):
+            retval += "%x:" % ord(self.dst[byte])
+        retval += "%x " % ord(self.dst[5])
+
+        retval += "src: "
+        for byte in range(0,5):
+            retval += "%x:" % ord(self.src[byte])
+        retval += "%x " % ord(self.src[5])
+
+        retval += "type: 0x%x>" % self.type
+
+        return retval
+
     def __str__(self):
         """return a human readable version of an Ethernet packet"""
         retval = "Ethernet\n"
         retval += "dst: "
         for byte in range(0,5):
-            retval += "%s:" % hex(ord(self.dst[byte]))[2:4]
-        retval += "%s" % hex(ord(self.dst[5]))[2:4]
+            retval += "%x:" % ord(self.dst[byte])
+        retval += "%x" % ord(self.dst[5])
 
         retval += "\nsrc: "
         for byte in range(0,5):
-            retval += "%s:" % hex(ord(self.src[byte]))[2:4]
-        retval += "%s" % hex(ord(self.src[5]))[2:4]
+            retval += "%x:" % ord(self.src[byte])
+        retval += "%x" % ord(self.src[5])
 
-        retval += "\ntype: %s" % hex(self.type)
+        retval += "\ntype: 0x%x" % self.type
 
         return retval
 
