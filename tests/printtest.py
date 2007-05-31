@@ -138,7 +138,7 @@ class etherTestCase(unittest.TestCase):
     def test_ethernet_print(self):
         """This test reads from a pre-stored pcap file generated with
         tcpdump and ping on an ethernet interface and tests the
-        __str__ method to make sure the correct values are printed."""
+        println method to make sure the correct values are printed."""
         file = PcapConnector("etherping.out")
         packet = file.read()
         ether = ethernet(packet[0:file.dloff])
@@ -161,9 +161,9 @@ class etherTestCase(unittest.TestCase):
         ether = ethernet(packet[0:file.dloff])
         assert (ether != None)
 
-        test_string = "Ethernet\ndst: 0:10:db:3a:3a:77\nsrc: 0:d:93:44:fa:62\ntype: 0x800"
+        test_string = "<Ethernet: dst: 0:10:db:3a:3a:77 src: 0:d:93:44:fa:62 type: 0x800>"
 
-        string = ether.__str__()
+        string = ether.println()
 
         self.assertEqual(string, test_string,
                          "strings are not equal \nexpected %s \ngot %s " %

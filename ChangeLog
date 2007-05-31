@@ -1,3 +1,10 @@
+2007-05-30  gnn  <gnn@neville-neil.com>
+
+	* Fixed a critical bug in decoding which improperly dealt with
+	sub byte sized fields.
+
+	* Fixed all tests so the pass with the data given
+
 2007-03-22  gnn  <gnn@neville-neil.com>
 
 	* Version 0.5

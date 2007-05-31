@@ -77,13 +77,14 @@ class chainTestCase(unittest.TestCase):
         file = PcapConnector("loopping.out")
         packet = file.readpkt()
         chain = packet.chain()
-        test_string = "Localhost\ntype 2\n IPv4\nversion 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\n ICMPv4\ntype 8\ncode 0\nchecksum 60550"
+        test_string = "Localhost\ntype 2\n IPv4\nversion 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\n ICMPv4\ntype 8\ncode 0\nchecksum 60550\n Payload\n\'\\x18\\x19\\x1a\\x1b\' "
 
         string = chain.__str__()
+
         self.assertEqual(test_string, string,
-                    "strings not equal \ngot\n%s\nexpected\n%s" %
-                    (string, test_string))
-        
+                         "strings not equal \ngot\n%s\nexpected\n%s" %
+                         (string, test_string))
+
 if __name__ == '__main__':
     unittest.main()
 

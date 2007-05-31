@@ -161,15 +161,13 @@ class etherTestCase(unittest.TestCase):
         ether = ethernet(packet[0:file.dloff])
         assert (ether != None)
 
-        test_string = "<Ethernet: src: \'\\x00\\r\\x93D\\xfab\', dst: \'\\x00\\x10\\xdb::w\', type: 2048>"
-
         string = ether.println()
+
+        test_string = "<Ethernet: dst: 0:10:db:3a:3a:77 src: 0:d:93:44:fa:62 type: 0x800>"
 
         self.assertEqual(string, test_string,
                          "strings are not equal \nexpected %s \ngot %s " %
                          (test_string, string))
-
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -149,7 +149,7 @@ class icmpv6(pcs.Packet):
             total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16
-        return  ~total
+        return  ~total & 0xffff
 
 class icmpv6option(pcs.Packet):
 
@@ -165,7 +165,7 @@ class icmpv6option(pcs.Packet):
             pcs.Packet.__init__(self, [ty, length, source], bytes)
         # Target Link-Layer Address
         elif type == 2:
-            target = pcs.Field("target", 48)
+            target = pcs.StringField("target", 48)
             pcs.Packet.__init__(self, [ty, length, target], bytes)
         # Prefix Information.
         elif type == 3:

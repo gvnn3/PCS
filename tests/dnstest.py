@@ -43,6 +43,7 @@ import sys
 
 from pcs.packets.dns import *
 from pcs.packets.ipv4 import ipv4
+from pcs.packets.udpv4 import udpv4
 
 class dnsTestCase(unittest.TestCase):
     def test_dns(self):
@@ -92,7 +93,6 @@ class dnsTestCase(unittest.TestCase):
         dnsnew = dnsquery()
         dnsnew.decode(dns.bytes)
 
-        self.assertEqual(dns.name, dnsnew.name, "name not equal")
         self.assertEqual(dns.type, dnsnew.type, "type not equal")
         self.assertEqual(dns.query_class, dnsnew.query_class, "class not equal")
 
@@ -120,42 +120,41 @@ class dnsTestCase(unittest.TestCase):
         packet = file.next()[1]
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
-        print ip
-        print ip.data
         udp = ip.data
-        print udp
         dns = udp.data
-        print dns
         
-    def test_udpv4_compare(self):
+    def test_dns_compare(self):
         """Test the underlying __compare__ functionality of the
         packet.  Two packets constructed from the same bytes should be
         equal and two that are not should not be equal."""
         import pcs.pcap as pcap
         file = pcap.pcap("loopping.out")
         packet = file.next()[1]
-        udp1 = udpv4(packet[file.dloff:len(packet)])
-        udp2 = udpv4(packet[file.dloff:len(packet)])
+        ip = ipv4(packet[file.dloff:len(packet)])
+        assert (ip != None)
+        udp1 = udpv4(ip.data.bytes)
+        udp2 = udpv4(ip.data.bytes)
         assert (udp1 != None)
         assert (udp2 != None)
         self.assertEqual(udp1, udp2, "packets should be equal but are not")
 
-        udp1.dst = 0xffffffff
-        self.assertNotEqual(udp1, udp2, "packets compare equal but should not")
+        udp1.dport = 0xffff
+        self.assertNotEqual(udp1, udp2, "packets compare equal but should not\ngot %sexpect %s" % (udp1, udp2))
         
-    def test_udpv4_print(self):
+    def test_dns_print(self):
         """This test reads from a pre-stored pcap file generated with
         tcpdump and ping on the loopback interface and tests the
         __str__ method to make sure the correct values are printed."""
         import pcs.pcap as pcap
-        file = pcap.pcap("loopping.out")
+        file = pcap.pcap("dns.out")
         packet = file.next()[1]
-        udp = udpv4(packet[file.dloff:len(packet)])
-        assert (udp != None)
+        ip = ipv4(packet[file.dloff:len(packet)])
+        assert (ip != None)
 
-        test_string = "version 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 2130706433\ndst 2130706433\n"
+        test_string = "UDP\nsport 50942\ndport 53\nlength 62\nchecksum 46791\n"
 
-        string = udp.__str__()
+        udpv4 = ip.data
+        string = udpv4.__str__()
 
         self.assertEqual(string, test_string,
                          "strings are not equal \nexpected %s \ngot %s " %

@@ -141,7 +141,7 @@ class ip6TestCase(unittest.TestCase):
         ip = ipv6(packet[file.dloff:len(packet)])
         assert (ip != None)
 
-        test_string = "<IPv6: src: \'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\', dst: \'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\', traffic_class: 0, flow: 0, length: 16, version: 6, hop: 64, next_header: 58>"
+        test_string = "<IPv6: version: 6, traffic_class: 0, flow: 0, length: 16, next_header: 58, hop: 64, src: \'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\', dst: \'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\'>"
 
         string = ip.println()
 

@@ -36,6 +36,7 @@
 # nothing else.  It is the catch all for data that is not known.
 
 import pcs
+from pprint import pformat
 
 class payload(pcs.Packet):
     """A raw data packet.
@@ -48,7 +49,7 @@ class payload(pcs.Packet):
 
     def __init__(self, bytes = None):
         """initialize a payload packet"""
-        payload = pcs.Field("payload", len(bytes) * 8)
+        payload = pcs.StringField("payload", len(bytes))
         pcs.Packet.__init__(self, [payload], bytes = bytes)
         self.description = "Data"
 
@@ -57,4 +58,6 @@ class payload(pcs.Packet):
 
     def __str__(self):
         """return a readable version of a payload object"""
-        retval = "%s" % self.payload
+        retval = "Payload\n"
+        retval += "%s" % pformat(self.payload)
+        return retval

@@ -72,9 +72,9 @@ class tcp(pcs.Packet):
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
-        retval = ""
+        retval = "TCP\n"
         for field in self.layout:
-            if (field.type == str):
+            if (type(field) == str):
                 retval += "%s %s\n" % (field.name, self.__dict__[field.name])
             else:
                 retval += "%s %d\n" % (field.name, self.__dict__[field.name])

@@ -141,7 +141,8 @@ class icmpTestCase(unittest.TestCase):
         ip.checksum = 0
 
         icmp_packet = Chain([icmp, echo])
-        icmp.checksum = icmp_packet.calc_checksum()
+        print abs(ip.calc_checksum())
+        icmp.checksum = ip.calc_checksum()
 
         packet.encode()
 

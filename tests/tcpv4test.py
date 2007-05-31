@@ -38,116 +38,133 @@
 
 import unittest
 
-import sys
+#import sys
 #sys.path.insert(0, "..") # Look locally first
-   
+ 
 from pcs import PcapConnector
 from pcs.packets.ipv4 import *
+from pcs.packets.tcp import tcp
 from pcs import inet_atol
 
-class ipTestCase(unittest.TestCase):
-    def test_ipv4(self):
+class tcpTestCase(unittest.TestCase):
+    def test_tcpv4(self):
         # create one packet, copy its bytes, then compare their fields
-        ip = ipv4()
-        assert (ip != None)
-        ip.version = 4
-        ip.hlen = 5
-        ip.tos = 0
-        ip.length = 64
-        ip.id = 1
-        ip.flags = 1
-        ip.offset = 2
-        ip.ttl = 33
-        ip.protocol = 6
-        ip.src = inet_atol("127.0.0.1")
-        ip.dst = inet_atol("127.0.0.1")
+        tcppacket = tcp()
+        assert (tcppacket != None)
+        tcppacket.sport = 51
+        tcppacket.dport = 50
+        tcppacket.sequence = 42
+        tcppacket.offset = 10
+        tcppacket.urgent = 1
+        tcppacket.ack = 1
+        tcppacket.push = 1
+        tcppacket.reset = 1
+        tcppacket.syn = 1
+        tcppacket.fin = 1
+        tcppacket.window = 1024
+        tcppacket.checksum = 0
 
         # Create a packet to compare against
-        ipnew = ipv4()
-        ipnew.decode(ip.bytes)
+        tcpnew = tcp()
+        tcpnew.decode(tcppacket.bytes)
 
-        self.assertEqual(ip.bytes, ipnew.bytes, "bytes not equal")
-        self.assertEqual(ipnew.version, 4,
-                         "version not equal %d" % ipnew.version)
-        self.assertEqual(ipnew.hlen, 5, "hlen not equal %d" % ipnew.hlen)
-        self.assertEqual(ipnew.tos, 0, "tos not equal %d" % ipnew.tos)
-        self.assertEqual(ipnew.length, 64, "length not equal %d" % ipnew.length)
-        self.assertEqual(ipnew.id, 1, "id not equal %d" % ipnew.id)
-        self.assertEqual(ipnew.flags, 1, "flags not equal %d" % ipnew.flags)
-        self.assertEqual(ipnew.offset, 2, "offset not equal %d" % ipnew.offset)
-        self.assertEqual(ipnew.ttl, 33, "ttl not equal %d" % ipnew.ttl)
-        self.assertEqual(ipnew.protocol, 6,
-                         "protocol not equal %d" % ipnew.protocol)
-        self.assertEqual(ipnew.src, 2130706433, "src not equal %d" % ipnew.src)
-        self.assertEqual(ipnew.dst, 2130706433, "dst not equal %d" % ipnew.dst)
 
-    def test_ipv4_read(self):
-        """This test reads from a pre-stored pcap file generated with tcpdump and ping on the loopback interface."""
-        file = PcapConnector("loopping.out")
+        self.assertEqual(tcppacket.bytes, tcpnew.bytes, "bytes not equal")
+        self.assertEqual(tcpnew.sport, 51,
+                "source port not equal %d" % tcpnew.sport)
+        self.assertEqual(tcpnew.dport, 50,
+                "destination port not equal %d" % tcpnew.dport)
+        self.assertEqual(tcpnew.sequence, 42,
+                "sequence number not equal %d" % tcpnew.sequence)
+        self.assertEqual(tcpnew.offset, 10,
+                "offset not equal %d" % tcpnew.offset)
+        self.assertEqual(tcpnew.urgent, 1, "urgent not equal %d" % tcpnew.urgent)
+        self.assertEqual(tcpnew.ack, 1, "ack not equal %d" % tcpnew.ack)
+        self.assertEqual(tcpnew.push, 1, "push not equal %d" % tcpnew.push)
+        self.assertEqual(tcpnew.reset, 1, "reset not equal %d" % tcpnew.reset)
+        self.assertEqual(tcpnew.syn, 1, "syn not equal %d" % tcpnew.syn)
+        self.assertEqual(tcpnew.fin, 1, "fin not equal %d" % tcpnew.fin)
+        self.assertEqual(tcpnew.window, 1024,
+                "window not equal %d" % tcpnew.window)
+        self.assertEqual(tcpnew.checksum, 0,
+                "checksum not equal %d" % tcpnew.checksum)
+
+    def test_tcpv4_read(self):
+        """This test reads from a pre-stored pcap file generated with tcpdump."""
+        file = PcapConnector("wwwtcp.out")
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
+        tcppacket = tcp(ip.data.bytes)
 
-        self.assertEqual(ip.version, 4,
-                         "version not equal %d" % ip.version)
-        self.assertEqual(ip.hlen, 5, "hlen not equal %d" % ip.hlen)
-        self.assertEqual(ip.tos, 0, "tos not equal %d" % ip.tos)
-        self.assertEqual(ip.length, 84, "length not equal %d" % ip.length)
-        self.assertEqual(ip.id, 59067, "id not equal %d" % ip.id)
-        self.assertEqual(ip.flags, 0, "flags not equal %d" % ip.flags)
-        self.assertEqual(ip.offset, 0, "offset not equal %d" % ip.offset)
-        self.assertEqual(ip.ttl, 64, "ttl not equal %d" % ip.ttl)
-        self.assertEqual(ip.protocol, 1,
-                         "protocol not equal %d" % ip.protocol)
-        self.assertEqual(ip.src, inet_atol("127.0.0.1"),
-                         "src not equal %d" % ip.src)
-        self.assertEqual(ip.dst, inet_atol("127.0.0.1"),
-                         "dst not equal %d" % ip.dst)
+        self.assertEqual(tcppacket.sport, 53678, "source port not equal %d" % tcppacket.sport)
+        self.assertEqual(tcppacket.dport, 80, "destination port not equal %d" %
+                tcppacket.dport)
+        self.assertEqual(tcppacket.sequence, 1351059655, "sequence number not equal %d" %
+                tcppacket.sequence)
+        self.assertEqual(tcppacket.ack_number, 0, "ack number not equal %d" %
+                tcppacket.ack_number)
+        self.assertEqual(tcppacket.offset, 11, "offset not equal %d" % tcppacket.offset)
+        self.assertEqual(tcppacket.reserved, 0, "reserved not equal %d" % tcppacket.reserved)
+        self.assertEqual(tcppacket.urgent, 0, "urgent not equal %d" % tcppacket.urgent)
+        self.assertEqual(tcppacket.ack, 0, "ack not equal %d" % tcppacket.ack)
+        self.assertEqual(tcppacket.push, 0, "push not equal %d" % tcppacket.push)
+        self.assertEqual(tcppacket.reset, 0, "reset not equal %d" % tcppacket.reset)
+        self.assertEqual(tcppacket.syn, 1, "syn not equal %d" % tcppacket.syn)
+        self.assertEqual(tcppacket.fin, 0, "fin not equal %d" % tcppacket.fin)
+        self.assertEqual(tcppacket.window, 65535, "window not equal %d" % tcppacket.window)
+        self.assertEqual(tcppacket.checksum, 15295, "checksum not equal %d" %
+                tcppacket.checksum)
 
-    def test_ipv4_compare(self):
+    def test_tcpv4_compare(self):
         """Test the underlying __compare__ functionality of the
         packet.  Two packets constructed from the same bytes should be
         equal and two that are not should not be equal."""
-        file = PcapConnector("loopping.out")
+        file = PcapConnector("wwwtcp.out")
         packet = file.read()
-        ip1 = ipv4(packet[file.dloff:len(packet)])
-        ip2 = ipv4(packet[file.dloff:len(packet)])
-        assert (ip1 != None)
-        assert (ip2 != None)
-        self.assertEqual(ip1, ip2, "packets should be equal but are not")
+        ip = ipv4(packet[file.dloff:len(packet)])
+        tcp1 = tcp(ip.data.bytes)
+        tcp2 = tcp(ip.data.bytes)
+        assert (tcp1 != None)
+        assert (tcp2 != None)
+        self.assertEqual(tcp1, tcp2, "packets should be equal but are not")
 
-        ip1.dst = 0xffffffff
-        self.assertNotEqual(ip1, ip2, "packets compare equal but should not")
+        tcp1.dport = 0
+        self.assertNotEqual(tcp1, tcp2, "packets compare equal but should not")
         
-    def test_ipv4_print(self):
+    def test_tcpv4_str(self):
         """This test reads from a pre-stored pcap file generated with
-        tcpdump and ping on the loopback interface and tests the
-        __str__ method to make sure the correct values are printed."""
-        file = PcapConnector("loopping.out")
+        tcpdump and tests the __str__ method to make sure the correct
+        values are printed."""
+        file = PcapConnector("wwwtcp.out")
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
+        tcppacket = tcp(ip.data.bytes)
+        assert (tcppacket)
 
-        test_string = "version 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\n"
+        test_string = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n"
 
-        string = ip.__str__()
+        string = tcppacket.__str__()
 
         self.assertEqual(string, test_string,
                          "strings are not equal \nexpected %s \ngot %s " %
                          (test_string, string))
 
-    def test_ipv4_print(self):
+    def test_tcpv4_println(self):
         """This test reads from a pre-stored pcap file generated with
-        tcpdump and ping on the loopback interface and tests the
-        __str__ method to make sure the correct values are printed."""
-        file = PcapConnector("loopping.out")
+        tcpdump and tests the println method to make sure the correct
+        values are printed."""
+        file = PcapConnector("wwwtcp.out")
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
+        tcppacket = tcp(ip.data.bytes)
+        assert (tcppacket)
 
-        test_string = "version 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\n"
+        test_string = "<TCP: sport: 53678, dport: 80, sequence: 1351059655, ack_number: 0, offset: 11, reserved: 0, urgent: 0, ack: 0, push: 0, reset: 0, syn: 1, fin: 0, window: 65535, checksum: 15295, urg_pointer: 0>"
 
-        string = ip.println()
+        string = tcppacket.println()
 
         self.assertEqual(string, test_string,
                          "strings are not equal \nexpected %s \ngot %s " %

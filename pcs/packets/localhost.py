@@ -59,8 +59,6 @@ class localhost(pcs.Packet):
     def next(self, bytes):
         """Decode the type of a packet and return the correct higher
         level protocol object"""
-        print self.type
-        print socket.AF_INET6
         ## type is the address family, and NOT an ethertype 
         if self.type == socket.AF_INET:
             return ipv4.ipv4(bytes)

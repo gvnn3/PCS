@@ -70,7 +70,7 @@ import pcs.pcap as pcap
 import itertools
 
 def attribreprlist(obj, attrs):
-    return map(lambda x, y = obj: '%s: %s' % (x, repr(getattr(y, x))), itertools.ifilter(lambda x, y = obj: hasattr(y, x), attrs))
+    return map(lambda x, y = obj: '%s: %s' % (x.name, repr(getattr(y, x.name))), itertools.ifilter(lambda x, y = obj: hasattr(y, x.name), attrs))
 
 class FieldBoundsError(Exception):
     """When a programmer tries to set a field with an inappropriately
@@ -114,6 +114,8 @@ layout of the data and how it is addressed."""
             if fieldBR < byteBR:
                 shift = byteBR - fieldBR
                 value = ord(bytes[curr]) >> shift
+                mask = 2 ** fieldBR -1
+                value = (value & mask)
                 byteBR -= fieldBR
                 fieldBR = 0 # next field
             elif fieldBR > byteBR:
@@ -185,7 +187,7 @@ layout of the data and how it is addressed."""
         if ((value == None) or
             (value < 0) or
             (value > (2 ** self.width) - 1)):
-            raise FieldBoundsError, "Value must be between 0 and %d" % (2 ** self.width - 1)
+            raise FieldBoundsError, "Value must be between 0 and %d but is %d" % ((2 ** self.width - 1), value)
         
 class FieldAlignmentError(Exception):
     """When a programmer tries to decode a field that is not
@@ -487,7 +489,7 @@ class Packet(object):
             name = self.description
         else:
             name = 'Packet'
-        return '<%s: %s>' % (name, ', '.join(attribreprlist(self, self._fieldnames.iterkeys())))
+        return '<%s: %s>' % (name, ', '.join(attribreprlist(self, self.layout.__iter__())))
 
     def println(self):
         """Print the packet in line format."""
