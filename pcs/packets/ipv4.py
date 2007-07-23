@@ -85,6 +85,11 @@ class ipv4(pcs.Packet):
                 retval += "%s %s\n" % (field.name, self.__dict__[field.name])
         return retval
 
+    def pretty(self, attr):
+        if attr == "src" or attr == "dst":
+                return inet_ntop(AF_INET,
+                                 struct.pack('!L', getattr(self,attr)))
+
     def next(self, bytes):
         """Decode the type of a packet and return the correct higher
         level protocol object"""

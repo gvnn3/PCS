@@ -36,6 +36,7 @@
 
 import pcs
 from pcs.packets import payload
+import ymsg_hdr
 
 class tcp(pcs.Packet):
     """A TCP class for IPv4"""
@@ -64,18 +65,29 @@ class tcp(pcs.Packet):
                             bytes = bytes)
         self.description = "TCP"
 
-        if (bytes != None):
-            offset = 20
-            self.data = payload.payload(bytes[offset:len(bytes)])
+        if (bytes != None and (self.offset * 4 < len(bytes))):
+            print self.offset * 4
+            print len(bytes)
+            print bytes[(self.offset * 4):len(bytes)]
+            self.data = self.next(bytes[(self.offset * 4):len(bytes)])
         else:
             self.data = None
+
+    def next(self, bytes):
+        """Decode higher layer packets contained in TCP."""
+        if (self.dport == 5050 or self.sport == 5050):
+            return ymsg_hdr.ymsg_hdr(bytes)
+
+        return None
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
         retval = "TCP\n"
         for field in self.layout:
-            if (type(field) == str):
-                retval += "%s %s\n" % (field.name, self.__dict__[field.name])
-            else:
-                retval += "%s %d\n" % (field.name, self.__dict__[field.name])
+            retval += "%s %s\n" % (field.name, self.__dict__[field.name])
         return retval
+
+    def pretty(self, attr):
+        """Pretty prting a field"""
+        pass
+

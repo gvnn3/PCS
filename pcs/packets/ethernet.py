@@ -73,6 +73,10 @@ class ethernet(pcs.Packet):
             return ipv6(bytes)
         return None
 
+    def pretty(self, attr):
+        """pretty print a particular attribute"""
+        if attr == "src" or attr == "dst":
+            return ether_btoa(getattr(self, attr))
 #
 # Functions defined for the module.
 #

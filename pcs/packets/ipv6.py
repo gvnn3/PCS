@@ -62,12 +62,12 @@ class ipv6(pcs.Packet):
         traffic = pcs.Field("traffic_class", 8)
         flow = pcs.Field("flow", 20)
         length = pcs.Field("length", 16)
-        next = pcs.Field("next_header", 8)
+        next_header = pcs.Field("next_header", 8)
         hop = pcs.Field("hop", 8)
         src = pcs.StringField("src", 16 * 8)
         dst = pcs.StringField("dst", 16 * 8)
         pcs.Packet.__init__(self,
-                            [version, traffic, flow, length, next, hop,
+                            [version, traffic, flow, length, next_header, hop,
                              src, dst], bytes)
         self.description = "IPv6"
 
