@@ -8,30 +8,70 @@
 %% This is a stripped version fo the original file.
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{codespelunking}
-\newcommand\rtn[1]{%
-  \texttt{#1}}
-\newcommand\filertn[1]{%
-  \texttt{#1}}
-\newcommand\filelinertn[1]{%
-  \texttt{#1}}
-\newcommand\program[1]{%
-  \textsf{\textbf{#1}}}
-\newcommand\file[1]{%
-  \texttt{#1}}
-\newcommand\fullpath[1]{%
-  \texttt{#1}}
+\newcommand\rtn{%
+  \texttt}
+\newcommand\filertn{%
+  \texttt}
+\newcommand\filelinertn{%
+  \texttt}
+\newcommand\file{%
+  \texttt}
+\newcommand\program{%
+  \texttt}
+\newcommand\fullpath{%
+  \texttt}
 
-\newcommand{\class}[1]{%
-  \textsc{#1}}
+\newenvironment{class}{%
+  \textsc}
+{\textnormal}
 
-\newcommand{\method}[1]{% Methods have parens ()
-  \textsf{{#1}()}}
-\newcommand{\function}[1]{% Functions have parens ()
-  \texttt{{#1}()}}
-\newcommand{\field}[1]{% A field in a structure
-  \texttt{{#1}}}
-\newcommand{\constant}[1]{% A constant
-  \texttt{{#1}}}
+\newenvironment{object}{%
+  \textsc}
+{\textnormal}
+
+\newenvironment{method}{%
+  \textsf}
+{\textnormal}
+\newenvironment{function}{%
+  \texttt}
+{\textnormal}
+\newenvironment{macro}{%
+  \texttt}
+{\textnormal}
+\newenvironment{field}{%
+  \texttt}
+{\textnormal}
+\newenvironment{constant}{%
+  \texttt}
+{\textnormal}
+\newenvironment{variable}{%
+  \texttt}
+{\textnormal}
+\newenvironment{struct}{%
+  \texttt}
+{\textnormal}
+\newenvironment{parameter}{%
+  \texttt}
+{\textnormal}
+\newenvironment{demo}
+    {\begin{alltt}\begin{small}}
+    {\end{small}\end{alltt}}
+\newcommand{\vuln}[6]{
+    %\begin{table}[h!]
+    \begin{center}
+    \begin{tabular}{|c|c|}
+    \hline
+    Title&#2\\\hline
+    Impact&#3\\\hline
+    Date&#4\\\hline
+    CVE&#5\\\hline
+    Affected&#6\\\hline
+    \end{tabular}
+    %\caption{#1}
+    \end{center}}
+    %\end{table}
+\newcommand{\ucommand}[1]{
+  \textbf{\textcolor{magenta}{#1}}}
 %% This is the end of the stripped file.
 %%
 %% End of file `codespelunking.sty'.

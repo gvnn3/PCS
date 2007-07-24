@@ -5,7 +5,7 @@
 \author{George V. Neville-Neil}
 \begin{document}
 \maketitle
-
+\tableofcontents
 \section{Introduction}
 
 PCS is a set of Python modules and objects that make building network
@@ -237,30 +237,42 @@ version:6, hop: 0, next_header: 0>
 \section{Creating Packet Classes}
 
 For a packet to be a part of PCS it must sub-classed from the \class{Packet}
-class as seen in Figure \ref{}
+class as seen in Figure \ref{fig:ipv6-class-definition}.  Thoughout
+this section we will use the example of a network layer packet, IPv6,
+and a packet about the transport layer, DNS.  Using both low and high
+level packets should give the reader a good feel for how to add most
+of the packets they would be expected to work with.
 
 \begin{figure}
   \centering
 \begin{verbatim}
-class ipv6(pcs.Packet):
-    """A class that contains the IPv6 header.  All other data is
-    chained on the end."""
-
-    layout = pcs.Layout()
-
-    def __init__(self, bytes = None):
-        """IPv6 Packet from RFC 2460"""
-        version = pcs.Field("version", 4, default = 6)
-        traffic = pcs.Field("traffic_class", 8)
-        flow = pcs.Field("flow", 20)
-        length = pcs.Field("length", 16)
-        next = pcs.Field("next_header", 8)
-        hop = pcs.Field("hop", 8)
-        src = pcs.Field("src", 16 * 8, type = str)
-        dst = pcs.Field("dst", 16 * 8, type = str)
-        pcs.Packet.__init__(self,
-                            [version, traffic, flow, length, next, hop,
-                             src, dst], bytes)
+ 1: class ipv6(pcs.Packet):
+ 2:    """A class that contains the IPv6 header.  All other data is
+ 3:    chained on the end."""
+ 4:
+ 5:    layout = pcs.Layout()
+ 6:
+ 7:    def __init__(self, bytes = None):
+ 8:        """IPv6 Packet from RFC 2460"""
+ 9:        version = pcs.Field("version", 4, default = 6)
+10:        traffic = pcs.Field("traffic_class", 8)
+11:        flow = pcs.Field("flow", 20)
+12:        length = pcs.Field("length", 16)
+13:        next_header = pcs.Field("next_header", 8)
+14:        hop = pcs.Field("hop", 8)
+15:        src = pcs.Field("src", 16 * 8, type = str)
+16:        dst = pcs.Field("dst", 16 * 8, type = str)
+17:        pcs.Packet.__init__(self,
+18:                            [version, traffic, flow, length, next_header, hop,
+19:                             src, dst], bytes)
+20:        self.description = "IPv6"
+21:
+22:        if (bytes != None):
+23:            ## 40 bytes is the standard size of an IPv6 header
+24:            offset = 40
+25:            self.data = self.next(bytes[offset:len(bytes)])
+26:        else:
+27:            self.data = None
 \end{verbatim}
   \caption{IPv6 Packet Class}
   \label{fig:ipv6-class-definition}
@@ -268,36 +280,88 @@ class ipv6(pcs.Packet):
 
 The code in Figure \ref{fig:ipv6-class-definiition} defines a new
 class, one that will describe an IPv6 packet, sub-classed from the
-\class{Packet} base class.  All PCS packets must have a \field{layout}
-field, which is set via the base class's \method{\_\_init\_\_} method,
-called at the end of the ipv6 class's own \method{\_\_init\_\_}
-method.
-
-Part of packet initialization is to set up the fields that the packet
-will contain.  Each field has several possible arguments, but the two
-that are required are a name, which is the string field specified as
-the first argument and a width in bits, specified as the second
-argument.  Note that all field widths are specified in \emph{bits} and
-not \emph{bytes} or \emph{octets}.  Fields may also have a type (see
-below) and default values.  The name of the field becomes a named
-property of the object which is what makes it possible to have code
-that like that in Figure \ref{fig:setting-a-packet-field} where we set
-the packet's hop count via its \field{hop} property.
+\class{Packet} base class.  There are a small number of reserved field
+names that you \emph{must not} use when defining your packets.  For
+reference all of the reserved field names are given in
+Table~\ref{fig:reserved_fields_and_methods} and they will also be
+discussed here.
 
 \begin{figure}
   \centering
-\begin{verbatim}
-    ip = ipv6()
-    ip.hop = 4 # Set hop count to 4.
-\end{verbatim}
-  \caption{Setting a Packet Field}
-  \label{fig:setting-a-packet-field}
+\begin{tabular}{|l|l|}
+\hline
+Field Name & Use \\
+\hline
+\texttt{layout} & Used to store the layout of the packet\\
+\hline
+\texttt{next} & A method used to unencapsulate higher layer packets\\
+\hline
+\texttt{bytes} & Storage for the raw bytes of the packet\\
+\hline
+\texttt{data} & Pointer to the next higher layer packet\\
+\hline
+\texttt{description} & Textual description of the packet\\
+\hline
+\end{tabular}
+  \caption{Reserved Fields and Methods in PCS}
+  \label{fig:reserved_fields_and_methods}
 \end{figure}
+
+Each packet class in PCS is defined in a similar way.  After
+sub-classing from the \class{Packet} class, there should be a Python
+style text string describing the class.  The fields are defined next,
+in the order in which they are stored in the packet.  Various types of
+fields are supported by PCS and they are all covered in
+Section~\ref{sec:}.  After all of the fields have been listed, the
+\class{Packet} class's \method{init} method is called with three
+arguments.  The \class{self} object, an array of the fields, in the
+order in which they will appear in a packet, and the \field{bytes}
+variable that was passed to the packet object's \method{init} method.
+Once the packet is initalized we set its description, on line 20.
+
+Any packet that may contain data at a higher layer, such as a network
+packet will then use its \method{next} method to unencapsulate any
+higher layer packets.  On lines 22 through 27 the \method{init} method
+attempts to unencapsulate any data after the header itself.  Every
+packet object either has a valid \field{data} or it is set to
+\constant{None}.  Higher level programs using PCS will check for
+\field{data} being set to \variable{None} in order to know when they
+have reached the end of a packet so it must be set correctly by each
+packet class.
+
+\subsection{Working with Different Types of Fields}
+\label{sec:working_with_different_types_of_fields}
+
+Part of packet initialization is to set up the fields that the packet
+will contain.  Fields in PCS are objects in themselves and
+they are initialized in different ways, depending on their type.  A
+brief list of the currently supported fields is given in Table~\ref{}.
+
+\begin{figure}
+  \centering
+  \begin{tabular}{|l|l|l|}
+    \hline
+    Name & Use & Initialiazation Arguments\\
+    \hline
+    Field & Abitrary Bit Field & Name, Width in Bits, Default Value\\
+    \hline
+    StringField & String of Bytes & Name, Width In Bits, Default Value\\
+    \hline
+    LengthValueField & A set of Values with Associated Lengths & Name,
+    Width in Bytes, Default Value\\
+    \hline
+  \end{tabular}
+  \caption{Fields Supported by PCS}
+  \label{fig:fields_supported_by_pcs}
+\end{figure}
+
+Each field has several possible arguments, but the two that are
+required are a name, which is the string field specified as the first
+argument and a width, which is the second argument.  Note that some
+field widths are specified in \emph{bits} and some in \emph{bytes} or
 
 The fields are set by passing them as an array to the PCS base class
 initialization method.
-
-\subsection{Working with Different Types of Fields}
 
 It would have been convenient if all network protocol packets were
 simply lists of fixed length fields, but that is not the case.  PCS
