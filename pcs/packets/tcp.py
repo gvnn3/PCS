@@ -36,7 +36,7 @@
 
 import pcs
 from pcs.packets import payload
-import ymsg_hdr
+import tcp_map
 
 class tcp(pcs.Packet):
     """A TCP class for IPv4"""
@@ -75,8 +75,10 @@ class tcp(pcs.Packet):
 
     def next(self, bytes):
         """Decode higher layer packets contained in TCP."""
-        if (self.dport == 5050 or self.sport == 5050):
-            return ymsg_hdr.ymsg_hdr(bytes)
+        if (self.dport in tcp_map.map):
+            return tcp_map.map[self.dport](bytes)
+        if (self.sport in tcp_map.map):
+            return tcp_map.map[self.sport](bytes)
 
         return None
 

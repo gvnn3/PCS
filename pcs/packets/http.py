@@ -28,32 +28,41 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: http_get.py,v 1.1 2006/07/13 10:05:40 gnn Exp $
+# File: $Id: tcp.py,v 1.5 2006/07/06 09:31:57 gnn Exp $
 #
 # Author: George V. Neville-Neil
 #
-# Description: This script uses PCS to send UDP echo packets (port 7)
+# Description: A class that describes a TCP packet.
 
 import pcs
-from pcs.packets import http
-from socket import *
 
-def main():
+class http(pcs.Packet):
+    """A HTTP class RFC 2616"""
+    layout = pcs.Layout()
 
-    from optparse import OptionParser
+    def __init__(self, bytes = None):
+        """initialize a TCP packet"""
+        # XXX: Right now we just have a 64K request.  Need to augment
+        # from the RFC as this gets fleshed out.
+        request = pcs.StringField("request", 65535*8)
+        pcs.Packet.__init__(self, [request],
+                            bytes = bytes)
+        self.description = "HTTP"
 
-    parser = OptionParser()
-    parser.add_option("-t", "--target",
-                      dest="target", default=None,
-                      help="Host to contact.")
+        self.data = None
 
-    (options, args) = parser.parse_args()
+    def next(self, bytes):
+        """Decode higher layer packets contained in HTTP."""
+        return None
 
-    conn = pcs.TCP4Connector(options.target, 80)
-    conn.write("GET / \n\n")
-    result = conn.read(1024)
-    page = http.http(result)
-    print page
+    def __str__(self):
+        """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
+        retval = "HTTP\n"
+        for field in self.layout:
+            retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+        return retval
 
-main()
+    def pretty(self, attr):
+        """Pretty prting a field"""
+        pass
 

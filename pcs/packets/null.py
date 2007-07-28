@@ -28,32 +28,43 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: http_get.py,v 1.1 2006/07/13 10:05:40 gnn Exp $
+# File: $Id: tcp.py,v 1.5 2006/07/06 09:31:57 gnn Exp $
 #
 # Author: George V. Neville-Neil
 #
-# Description: This script uses PCS to send UDP echo packets (port 7)
+# Description: The most generic possible PCS packet class.  
 
 import pcs
-from pcs.packets import http
-from socket import *
 
-def main():
+class null(pcs.Packet):
+    """A null class for copying from."""
+    layout = pcs.Layout()
 
-    from optparse import OptionParser
+    def __init__(self, bytes = None):
+        """initialize a TCP packet"""
+        null = pcs.StringField("null", 80*8)
+        pcs.Packet.__init__(self, [null],
+                            bytes = bytes)
+        self.description = "NULL"
 
-    parser = OptionParser()
-    parser.add_option("-t", "--target",
-                      dest="target", default=None,
-                      help="Host to contact.")
+        if (bytes != None):
+            self.data = self.next(bytes)
+        else:
+            self.data = None
 
-    (options, args) = parser.parse_args()
+    def next(self, bytes):
+        """Decode higher layer packets contained in TCP."""
 
-    conn = pcs.TCP4Connector(options.target, 80)
-    conn.write("GET / \n\n")
-    result = conn.read(1024)
-    page = http.http(result)
-    print page
+        return None
 
-main()
+    def __str__(self):
+        """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
+        retval = "NULL\n"
+        for field in self.layout:
+            retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+        return retval
+
+    def pretty(self, attr):
+        """Pretty prting a field"""
+        pass
 

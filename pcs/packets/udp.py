@@ -35,7 +35,7 @@
 # Description: A class which implements UDP v4 packets
 
 import pcs
-from pcs.packets.dns import *
+import udp_map
 
 class udp(pcs.Packet):
     """A UDP class."""
@@ -53,11 +53,15 @@ class udp(pcs.Packet):
         self.description = "UDP"
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[8:len(bytes)])
         else:
             self.data = None
 
     def next(self, bytes):
-        """Decode some of the more well known services, such as DNS."""
-        if ((self.dport == 53) or (self.sport ==53)):
-            return dnsheader(bytes[8:len(bytes)])
+        """Decode higher level services."""
+        if (self.dport in udp_map.map):
+            return udp_map.map[self.dport](bytes)
+        if (self.sport in udp_map.map):
+            return udp_map.map[self.sport](bytes)
+
+        return None

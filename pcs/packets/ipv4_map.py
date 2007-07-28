@@ -1,4 +1,4 @@
-# Copyright (c) 2005, Neville-Neil Consulting
+# Copyright (c) 2007, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,32 +28,26 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: http_get.py,v 1.1 2006/07/13 10:05:40 gnn Exp $
+# File: $Id: $
 #
 # Author: George V. Neville-Neil
 #
-# Description: This script uses PCS to send UDP echo packets (port 7)
+# Description: This is a module which maps IPv4 protocol numbers to
+# class names for use by the IPv4 class.
 
-import pcs
-from pcs.packets import http
-from socket import *
+# The map is a dictionary who's key is the protocol type and who's
+# value is the class constructor for that type.
 
-def main():
+from socket import IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_ICMP
 
-    from optparse import OptionParser
+IPPROTO_SCTP = 132
 
-    parser = OptionParser()
-    parser.add_option("-t", "--target",
-                      dest="target", default=None,
-                      help="Host to contact.")
+import udp, tcp, ipsec, icmpv4
 
-    (options, args) = parser.parse_args()
-
-    conn = pcs.TCP4Connector(options.target, 80)
-    conn.write("GET / \n\n")
-    result = conn.read(1024)
-    page = http.http(result)
-    print page
-
-main()
+map = {IPPROTO_UDP: udp.udp,
+       IPPROTO_TCP: tcp.tcp,
+       IPPROTO_AH: ipsec.ah,
+       IPPROTO_ESP: ipsec.esp,
+       IPPROTO_ICMP: icmpv4.icmpv4,
+       IPPROTO_SCTP: sctp.sctp}
 

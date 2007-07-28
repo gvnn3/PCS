@@ -35,9 +35,8 @@
 # Description: A class which implements an IPv4 packet
 
 import pcs
-from socket import AF_INET, IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_ICMP, inet_ntop
-
-import udp, tcp, icmpv4
+from socket import AF_INET, inet_ntop
+import ipv4_map
 import struct
 
 class ipv4(pcs.Packet):
@@ -93,18 +92,9 @@ class ipv4(pcs.Packet):
     def next(self, bytes):
         """Decode the type of a packet and return the correct higher
         level protocol object"""
-        ## the protocol above IP, such as ICMP, UDP, TCP, AH, ESP etc.
-        if self.protocol == IPPROTO_UDP:
-            return udp.udp(bytes)
-        elif self.protocol == IPPROTO_TCP:
-            return tcp.tcp(bytes)
-        elif self.protocol == IPPROTO_AH:
-            return ipsec.ah(bytes)
-        elif self.protocol == IPPROTO_ESP:
-            return ipsec.esp(bytes)
-        elif self.protocol == IPPROTO_ICMP:
-            return icmpv4.icmpv4(bytes)
-        # Fall through
+        if self.protocol in ipv4_map.map:
+            return ipv4_map.map[self.protocol](bytes)
+        
         return None
         
     def cksum(self):

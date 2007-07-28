@@ -1,4 +1,4 @@
-# Copyright (c) 2005, Neville-Neil Consulting
+# Copyright (c) 2007, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,32 +28,14 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: http_get.py,v 1.1 2006/07/13 10:05:40 gnn Exp $
+# File: $Id: $
 #
 # Author: George V. Neville-Neil
 #
-# Description: This script uses PCS to send UDP echo packets (port 7)
+# Description: 
 
-import pcs
-from pcs.packets import http
-from socket import *
+DNS = 53
 
-def main():
+import dns
 
-    from optparse import OptionParser
-
-    parser = OptionParser()
-    parser.add_option("-t", "--target",
-                      dest="target", default=None,
-                      help="Host to contact.")
-
-    (options, args) = parser.parse_args()
-
-    conn = pcs.TCP4Connector(options.target, 80)
-    conn.write("GET / \n\n")
-    result = conn.read(1024)
-    page = http.http(result)
-    print page
-
-main()
-
+map = {DNS: dns.dnsheader}
