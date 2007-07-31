@@ -42,6 +42,7 @@ import struct
 class ipv4(pcs.Packet):
 
     layout = pcs.Layout()
+    map = ipv4_map.map
 
     def __init__(self, bytes = None):
         """ define the fields of an IPv4 packet, from RFC 791
@@ -64,7 +65,6 @@ class ipv4(pcs.Packet):
                             bytes = bytes)
         # Description MUST be set after the PCS layer init
         self.description = "IPv4"
-
 
         if (bytes != None):
             offset = self.hlen << 2
@@ -92,8 +92,8 @@ class ipv4(pcs.Packet):
     def next(self, bytes):
         """Decode the type of a packet and return the correct higher
         level protocol object"""
-        if self.protocol in ipv4_map.map:
-            return ipv4_map.map[self.protocol](bytes)
+        if self.protocol in self.map:
+            return self.map[self.protocol](bytes)
         
         return None
         

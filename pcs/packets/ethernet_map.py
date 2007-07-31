@@ -1,4 +1,4 @@
-# Copyright (c) 2005, Neville-Neil Consulting
+# Copyright (c) 2007, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,42 +28,23 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: tcp.py,v 1.5 2006/07/06 09:31:57 gnn Exp $
+# File: $Id: $
 #
 # Author: George V. Neville-Neil
 #
-# Description: The most generic possible PCS packet class.  
+# Description: This is a module which maps Ethernet protocol types to
+# class names for use by the Ethernet class.
 
-import pcs
+# The map is a dictionary who's key is the protocol type and who's
+# value is the class constructor for that type.
 
-class null(pcs.Packet):
-    """A null class for copying from."""
-    layout = pcs.Layout()
+import ipv4, ipv6, arp
 
-    def __init__(self, bytes = None):
-        """initialize a TCP packet"""
-        null = pcs.StringField("null", 80*8)
-        pcs.Packet.__init__(self, [null],
-                            bytes = bytes)
-        self.description = "NULL"
+ETHERTYPE_IP		= 0x0800	# IP protocol 
+ETHERTYPE_ARP		= 0x0806	# Addr. resolution protocol
+ETHERTYPE_IPV6		= 0x86dd	# IPv6
 
-        if (bytes != None):
-            self.data = self.next(bytes)
-        else:
-            self.data = None
-
-    def next(self, bytes):
-        """Decode higher layer packets contained in..."""
-        return None
-
-    def __str__(self):
-        """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
-        retval = "NULL\n"
-        for field in self.layout:
-            retval += "%s %s\n" % (field.name, self.__dict__[field.name])
-        return retval
-
-    def pretty(self, attr):
-        """Pretty prting a field"""
-        pass
+map = {ETHERTYPE_IP: ipv4.ipv4,
+       ETHERTYPE_ARP: arp.arp,
+       ETHERTYPE_IPV6: ipv6.ipv6}
 

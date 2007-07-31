@@ -1,4 +1,4 @@
-# Copyright (c) 2005, Neville-Neil Consulting
+# Copyright (c) 2007, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,37 +28,47 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: tcp.py,v 1.5 2006/07/06 09:31:57 gnn Exp $
+# File: $Id: $
 #
 # Author: George V. Neville-Neil
 #
-# Description: The most generic possible PCS packet class.  
+# Description: An SCTP packet
 
 import pcs
+import tcp_map
 
-class null(pcs.Packet):
-    """A null class for copying from."""
+class sctp(pcs.Packet):
+    """SCTP class"""
+
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
-        """initialize a TCP packet"""
-        null = pcs.StringField("null", 80*8)
-        pcs.Packet.__init__(self, [null],
+    def __init__(self, bytes=None):
+        """common header initialization"""
+        sport = pcs.Field("sport", 16)
+        dport = pcs.Field("dport", 16)
+        tag = pcs.Field("tag", 32)
+        checksum = pcs.Field("checksum", 32)
+        pcs.Packet.__init__(self, [sport, dport, tag, checksum],
                             bytes = bytes)
-        self.description = "NULL"
+        self.description = "SCTP Common Header"
 
         if (bytes != None):
-            self.data = self.next(bytes)
+            self.data = self.next(bytes[0:len(bytes)])
         else:
             self.data = None
 
     def next(self, bytes):
-        """Decode higher layer packets contained in..."""
+        """Decode higher layer packets contained in STCP."""
+        if (self.dport in tcp_map.map):
+            return tcp_map.map[self.dport](bytes)
+        if (self.sport in tcp_map.map):
+            return tcp_map.map[self.sport](bytes)
+
         return None
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
-        retval = "NULL\n"
+        retval = "STCP\n"
         for field in self.layout:
             retval += "%s %s\n" % (field.name, self.__dict__[field.name])
         return retval
@@ -66,4 +76,3 @@ class null(pcs.Packet):
     def pretty(self, attr):
         """Pretty prting a field"""
         pass
-

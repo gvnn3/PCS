@@ -1,4 +1,4 @@
-# Copyright (c) 2005, Neville-Neil Consulting
+# Copyright (c) 2007, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,42 +28,44 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: tcp.py,v 1.5 2006/07/06 09:31:57 gnn Exp $
+# File: $Id: $
 #
 # Author: George V. Neville-Neil
 #
-# Description: The most generic possible PCS packet class.  
+# Description: 
 
-import pcs
+import unittest
 
-class null(pcs.Packet):
-    """A null class for copying from."""
-    layout = pcs.Layout()
+import sys
+from pcs import PcapConnector
+from pcs.packets.ethernet import *
+from pcs.packets.ipv4 import *
+from pcs.packets.null import *
+from pcs.packets.ethernet_map import *
 
-    def __init__(self, bytes = None):
-        """initialize a TCP packet"""
-        null = pcs.StringField("null", 80*8)
-        pcs.Packet.__init__(self, [null],
-                            bytes = bytes)
-        self.description = "NULL"
+class mapTestCase(unittest.TestCase):
+    def test_map(self):
+        # We're going to replace the higher layer protocol with the NULL
+        # protocol.  (Actually we're replacing it with Folger's Crystals.)
+        """This test reads from a pre-stored pcap file generated with
+        tcpdump and ping on an ethernet interface and tests the
+        __str__ method to make sure the correct values are printed."""
+        file = PcapConnector("etherping.out")
+        packet = file.readpkt()
 
-        if (bytes != None):
-            self.data = self.next(bytes)
-        else:
-            self.data = None
+        self.assertEqual(type(packet.data), ipv4.ipv4)
+        
+        file.close
 
-    def next(self, bytes):
-        """Decode higher layer packets contained in..."""
-        return None
+        # Replace the mapping of IPv4
+        ethernet.map[ETHERTYPE_IP] = null
 
-    def __str__(self):
-        """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
-        retval = "NULL\n"
-        for field in self.layout:
-            retval += "%s %s\n" % (field.name, self.__dict__[field.name])
-        return retval
+        file = PcapConnector("etherping.out")
+        packet = file.readpkt()
 
-    def pretty(self, attr):
-        """Pretty prting a field"""
-        pass
-
+        self.assertEqual(type(packet.data), null)
+        
+        file.close
+        
+if __name__ == "__main__":
+    unittest.main()
