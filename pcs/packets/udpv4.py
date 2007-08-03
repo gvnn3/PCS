@@ -41,7 +41,7 @@ import pcs
 
 class udpv4(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """Initialize a UDP packet for IPv4"""

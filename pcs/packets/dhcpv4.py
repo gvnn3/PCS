@@ -39,7 +39,7 @@ import pcs
 
 class dhcpv4(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize a DHCPv4 packet"""

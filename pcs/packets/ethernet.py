@@ -42,18 +42,19 @@ from pcs.packets.arp import arp
 
 class ethernet(pcs.Packet):
 
-    layout = pcs.Layout()
-    map = ethernet_map.map
+    _layout = pcs.Layout()
+    _map = ethernet_map.map
     
     def __init__(self, bytes = None):
         """initialize an ethernet packet"""
         src = pcs.StringField("src", 48)
         dst = pcs.StringField("dst", 48)
-        type = pcs.Field("type", 16)
+        type = pcs.Field("type", 16, discriminator=True)
         etherlen = 14
 
         pcs.Packet.__init__(self, [dst, src, type], bytes = bytes)
         self.description = "Ethernet"
+
         if (bytes != None):
             self.data = self.next(bytes[etherlen:len(bytes)])
         else:
@@ -92,14 +93,6 @@ class ethernet(pcs.Packet):
         retval += "\ntype: 0x%x" % self.type
 
         return retval
-
-    def next(self, bytes):
-        """Decode the type of a packet and return the correct higher
-        level protocol object"""
-        ## the ethertype of the packet
-        if self.type in self.map:
-            return self.map[self.type](bytes)
-        return None
 
     def pretty(self, attr):
         """pretty print a particular attribute"""

@@ -40,8 +40,8 @@ import tcp_map
 class sctp(pcs.Packet):
     """SCTP class"""
 
-    layout = pcs.Layout()
-
+    _layout = pcs.Layout()
+    
     def __init__(self, bytes=None):
         """common header initialization"""
         sport = pcs.Field("sport", 16)
@@ -57,19 +57,10 @@ class sctp(pcs.Packet):
         else:
             self.data = None
 
-    def next(self, bytes):
-        """Decode higher layer packets contained in STCP."""
-        if (self.dport in tcp_map.map):
-            return tcp_map.map[self.dport](bytes)
-        if (self.sport in tcp_map.map):
-            return tcp_map.map[self.sport](bytes)
-
-        return None
-
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
         retval = "STCP\n"
-        for field in self.layout:
+        for field in self._layout:
             retval += "%s %s\n" % (field.name, self.__dict__[field.name])
         return retval
 

@@ -41,7 +41,7 @@ import pcs
 
 class ipcomp(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         "A class that contains the IPComp header. RFC3173"
@@ -55,6 +55,6 @@ class ipcomp(pcs.Packet):
         of the fields.  Addresses are printed if and only if 
         they are set and not 0."""
         retval = ""
-        for field in self.layout:
+        for field in self._layout:
             retval += "%s %d\n" % (field.name, self.__dict__[field.name])
         return retval

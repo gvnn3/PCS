@@ -1,11 +1,22 @@
 \documentclass[11pt]{article}
 \usepackage{codespelunking}
+\usepackage{fancyvrb}
+\usepackage{listings}
 \usepackage[pdftex]{hyperref}
 \title{Packet Construction Set}
 \author{George V. Neville-Neil}
 \begin{document}
 \maketitle
 \tableofcontents
+\begin{abstract}
+  We had Ethernet headers, IP packets, TCP segments, a gaggle of HTTP
+  requests and responses, also UDP, NTP, and DHCP. Not that we needed
+  all that just to communicate but once you get locked into a serious
+  packet collection the tendency is to push it as far as you can. -
+  Deepest apologies to Hunter S. Thompson
+\end{abstract}
+% All code in this file is in Python, set the listings package correctly
+\lstset{language=Python, escapeinside={(*@}{@*)}, numbers=left}
 \section{Introduction}
 
 PCS is a set of Python modules and objects that make building network
@@ -44,7 +55,7 @@ header from \cite{rfc791} which specifies the IPv4 protocol.
 \begin{figure}
 \label{fig:rfc791-ipheader}
   \centering
-\begin{verbatim}
+\begin{Verbatim}
     0                   1                   2                   3   
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -60,7 +71,7 @@ header from \cite{rfc791} which specifies the IPv4 protocol.
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                    Options                    |    Padding    |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-\end{verbatim}
+\end{Verbatim}
   \caption{IPv4 Header Format}
 \end{figure}
 
@@ -71,10 +82,7 @@ with an IPv4 packet.
 
 \begin{figure}
   \centering
-\begin{verbatim}
-Python 2.4.2 (#1, Mar  7 2006, 15:04:29) 
-[GCC 4.0.1 (Apple Computer, Inc. build 5250)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
+\begin{lstlisting}
 >>> from pcs.packets.ipv4 import *
 >>> ip = ipv4()
 >>> print ip
@@ -105,7 +113,7 @@ protocol 0
 checksum 0
 src 0.0.0.0
 dst 0.0.0.0
-\end{verbatim}
+\end{lstlisting}
   \caption{Quick and Dirty IPv4 Example}
   \label{fig:ipv4-quick-and-dirty}
 \end{figure}
@@ -115,7 +123,7 @@ the wire representation of the packet.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{Verbatim}
 >>> from pcs.packets.ipv4 import *
 >>> ip = ipv4()
 >>> ip.bytes
@@ -123,7 +131,7 @@ the wire representation of the packet.
 >>> ip.hlen = 5 << 2
 >>> ip.bytes
 'D\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-\end{verbatim}
+\end{Verbatim}
   \caption{The \field{bytes} Field of the Packet}
   \label{fig:bytes-field}
 \end{figure}
@@ -170,17 +178,17 @@ object.
 A good example is the IPv6 class:
 \begin{figure}
   \centering
-\begin{verbatim}
-        ip = ipv6()
-        assert (ip != None)
-        ip.traffic_class = 1
-        ip.flow = 0
-        ip.length = 64
-        ip.next_header = 6
-        ip.hop = 64
-        ip.src = inet_pton(AF_INET6, "::1")
-        ip.dst = inet_pton(AF_INET6, "::1")
-\end{verbatim}
+\begin{lstlisting}
+ip = ipv6()
+assert (ip != None)
+ip.traffic_class = 1
+ip.flow = 0
+ip.length = 64
+ip.next_header = 6
+ip.hop = 64
+ip.src = inet_pton(AF_INET6, "::1")
+ip.dst = inet_pton(AF_INET6, "::1")
+\end{lstlisting}
   \caption{IPv6 Class}
   \label{fig:ipv6-class}
 \end{figure}
@@ -192,11 +200,11 @@ working.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{Verbatim}
 >>> ip.bytes
 '`\x10\x00\x00\x00@\x06@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
 \x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
-\end{verbatim}
+\end{Verbatim}
   \caption{Bytes of the IPv6 Packet}
   \label{fig:bytes-ipv6-packet}
 \end{figure}
@@ -208,7 +216,7 @@ string directly as seen in Figure\ref{fig:repr-method}.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{lstlisting}
 >>> print ip
 version 6
 traffic_class 1
@@ -218,18 +226,18 @@ next_header 6
 hop 64
 src ::1
 dst ::1
-\end{verbatim}
+\end{lstlisting}
   \caption{Printing a Packet}
   \label{fig:printing-a-packet}
 \end{figure}
 
-  \begin{figure}[h]
-    \centering
-\begin{verbatim}
+\begin{figure}[h]
+  \centering
+  \begin{Verbatim}
 >>> ip
 <IPv6: src: 0, dst: 0, traffic_class: 0, flow: 0, length: 0, \
 version:6, hop: 0, next_header: 0>
-\end{verbatim}
+\end{Verbatim}
     \caption{Using the \method{\_\_repr\_\_} method}
     \label{fig:repr-method}
   \end{figure}
@@ -245,35 +253,38 @@ of the packets they would be expected to work with.
 
 \begin{figure}
   \centering
-\begin{verbatim}
- 1: class ipv6(pcs.Packet):
- 2:    """A class that contains the IPv6 header.  All other data is
- 3:    chained on the end."""
- 4:
- 5:    layout = pcs.Layout()
- 6:
- 7:    def __init__(self, bytes = None):
- 8:        """IPv6 Packet from RFC 2460"""
- 9:        version = pcs.Field("version", 4, default = 6)
-10:        traffic = pcs.Field("traffic_class", 8)
-11:        flow = pcs.Field("flow", 20)
-12:        length = pcs.Field("length", 16)
-13:        next_header = pcs.Field("next_header", 8)
-14:        hop = pcs.Field("hop", 8)
-15:        src = pcs.Field("src", 16 * 8, type = str)
-16:        dst = pcs.Field("dst", 16 * 8, type = str)
-17:        pcs.Packet.__init__(self,
-18:                            [version, traffic, flow, length, next_header, hop,
-19:                             src, dst], bytes)
-20:        self.description = "IPv6"
-21:
-22:        if (bytes != None):
-23:            ## 40 bytes is the standard size of an IPv6 header
-24:            offset = 40
-25:            self.data = self.next(bytes[offset:len(bytes)])
-26:        else:
-27:            self.data = None
-\end{verbatim}
+\begin{lstlisting}
+class ipv6(pcs.Packet):
+    """A class that contains the IPv6 header.  All other data is
+    chained on the end."""
+
+    _layout = pcs.Layout()
+    _map = None
+    
+    def __init__(self, bytes = None):
+        """IPv6 Packet from RFC 2460"""
+        version = pcs.Field("version", 4, default = 6) (*@\label{list:field_begin}@*)
+        traffic = pcs.Field("traffic_class", 8)
+        flow = pcs.Field("flow", 20)
+        length = pcs.Field("length", 16)
+        next_header = pcs.Field("next_header", 8, discriminator=True)
+        hop = pcs.Field("hop", 8)
+        src = pcs.StringField("src", 16 * 8)
+        dst = pcs.StringField("dst", 16 * 8)(*@\label{list:field_end}@*)
+        pcs.Packet.__init__(self,
+                            [version, traffic, flow, length, next_header, hop,
+                             src, dst], bytes)
+        self.description = "IPv6"
+
+        self._map = ipv6_map.map
+
+        if (bytes != None): (*@\label{list:next_begin}@*)
+            ## 40 bytes is the standard size of an IPv6 header
+            offset = 40
+            self.data = self.next(bytes[offset:len(bytes)])
+        else:
+            self.data = None(*@\label{list:next_end}@*)
+\end{lstlisting}
   \caption{IPv6 Packet Class}
   \label{fig:ipv6-class-definition}
 \end{figure}
@@ -283,8 +294,11 @@ class, one that will describe an IPv6 packet, sub-classed from the
 \class{Packet} base class.  There are a small number of reserved field
 names that you \emph{must not} use when defining your packets.  For
 reference all of the reserved field names are given in
-Table~\ref{fig:reserved_fields_and_methods} and they will also be
-discussed here.
+Table~\ref{fig:reserved_fields_and_methods} and most of them will also
+be discussed in this section.  Resereved names that are part of a
+class, as opposed to an object, are preceeded by an underscore, \_, to
+further set them apart.  Do not use underscores to start your
+fieldnames. \emph{You have been warned!}
 
 \begin{figure}
   \centering
@@ -292,7 +306,9 @@ discussed here.
 \hline
 Field Name & Use \\
 \hline
-\texttt{layout} & Used to store the layout of the packet\\
+\texttt{\_layout} & Used to store the layout of the packet\\
+\hline
+\texttt{\_map} & Used to demultiplex higher layer packets\\
 \hline
 \texttt{next} & A method used to unencapsulate higher layer packets\\
 \hline
@@ -309,33 +325,38 @@ Field Name & Use \\
 
 Each packet class in PCS is defined in a similar way.  After
 sub-classing from the \class{Packet} class, there should be a Python
-style text string describing the class.  The fields are defined next,
-in the order in which they are stored in the packet.  Various types of
-fields are supported by PCS and they are all covered in
-Section~\ref{sec:}.  After all of the fields have been listed, the
-\class{Packet} class's \method{init} method is called with three
-arguments.  The \class{self} object, an array of the fields, in the
-order in which they will appear in a packet, and the \field{bytes}
+style text string describing the class.  The fields are defined
+next,as shown on lines \ref{list:field_begin} through
+\ref{list:field_end}, in the order in which they are stored in the
+packet.  Various types of fields are supported by PCS and they are all
+covered in Section~\ref{sec:}.  After all of the fields have been
+listed, the \class{Packet} class's \method{init} method is called with
+three arguments.  The \class{self} object, an array of the fields, in
+the order in which they will appear in a packet, and the \field{bytes}
 variable that was passed to the packet object's \method{init} method.
 Once the packet is initalized we set its description, on line 20.
 
 Any packet that may contain data at a higher layer, such as a network
 packet will then use its \method{next} method to unencapsulate any
-higher layer packets.  On lines 22 through 27 the \method{init} method
-attempts to unencapsulate any data after the header itself.  Every
-packet object either has a valid \field{data} or it is set to
-\constant{None}.  Higher level programs using PCS will check for
-\field{data} being set to \variable{None} in order to know when they
-have reached the end of a packet so it must be set correctly by each
-packet class.
+higher layer packets.  On lines \ref{list:next_begin} through
+\ref{list:next_end} the \method{init} method attempts to unencapsulate
+any data after the header itself.  Every packet object either has a
+valid \field{data} or it is set to \constant{None}.  Higher level
+programs using PCS will check for \field{data} being set to
+\variable{None} in order to know when they have reached the end of a
+packet so it must be set correctly by each packet class.  The
+\method{next} method used here is from the \class{Packet} base class
+but it can also be overridden by a programmer, and this is done in the
+\class{TCP} class which can be found in \file{pcs/packets/tcp.py}.
 
 \subsection{Working with Different Types of Fields}
 \label{sec:working_with_different_types_of_fields}
 
 Part of packet initialization is to set up the fields that the packet
-will contain.  Fields in PCS are objects in themselves and
-they are initialized in different ways, depending on their type.  A
-brief list of the currently supported fields is given in Table~\ref{}.
+will contain.  Fields in PCS are objects in themselves and they are
+initialized in different ways, depending on their type.  A brief list
+of the currently supported fields is given in
+Table~\ref{fig:fields_supported_by_pcs}.
 
 \begin{figure}
   \centering
@@ -392,8 +413,7 @@ in~\ref{fig:using-a-length-value-field}.
 
 \begin{figure}
   \centering
-\begin{verbatim}
-
+\begin{lstlisting}
 class dnslabel(pcs.Packet):
     """A DNS Label.""" 
 
@@ -420,8 +440,7 @@ class dnslabel(pcs.Packet):
 
     lab4 = dnslabel()
     lab4.name = ""
-
-\end{verbatim}
+\end{lstlisting}
   \caption{Using a \class{LengthValueField}}
   \label{fig:using-a-length-value-field}
 \end{figure}
@@ -454,7 +473,7 @@ must contain a value between zero and fifteen.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{lstlisting}
 >>> from pcs.packets.ipv4 import *
 >>> ip = ipv4()
 >>> ip.hlen = 16
@@ -466,13 +485,109 @@ Traceback (most recent call last):
 [...]
 pcs.FieldBoundsError: 'Value must be between 0 and 15'
 >>> 
-\end{verbatim}
+\end{lstlisting}
   \caption{Bounds Checking}
   \label{fig:bounds-checking-1}
 \end{figure}
 
 \program{PCS} does all the work for the programmer once they have set
 the layout of their packet.
+
+\subsection{Decapsulating Packets}
+\label{sec:decapsulating_packets}
+
+One of the key concepts in networking is that of encapsulation, for
+example an IP packet can be encapsulated in an Ethernet frame.  In
+order to provide a simple way for programmers to specifying the
+mapping between different layers of protocols \program{PCS} provides a
+\method{next} method as part of the \class{Packet} base class. There
+are a few pre-requisites that the programmer must fulfill in order for
+the \method{next} method to do its job.  The first is that at least
+one \class{Field} must be marked as a \emph{discriminator}.  The
+descriminator field is the one that the \method{next} method will use
+to decapsulate the next higher layer packet.  The other pre-requisite
+is that the programmer define a mapping of the discriminator values to
+other packets.  An example seems the best way to make sense of all
+this.
+
+\begin{figure}
+  \begin{lstlisting}
+import pcs
+import ethernet_map
+
+class ethernet(pcs.Packet):
+
+    _layout = pcs.Layout()
+    _map = None(*@\label{list:map_class_variable}@*)
+    
+    def __init__(self, bytes = None):
+        """initialize an ethernet packet"""
+        src = pcs.StringField("src", 48)
+        dst = pcs.StringField("dst", 48)
+        type = pcs.Field("type", 16, discriminator=True)
+        etherlen = 14
+
+        pcs.Packet.__init__(self, [dst, src, type], bytes = bytes)
+        self.description = "Ethernet"
+
+        self._map = ethernet_map.map(*@\label{list:setup_the_map}@*)
+
+        if (bytes != None):
+            self.data = self.next(bytes[etherlen:len(bytes)])
+        else:
+            self.data = None
+...
+
+import ipv4, ipv6, arp (*@\label{list:importing_higher_layer_packets}@*)
+
+ETHERTYPE_IP		= 0x0800	# IP protocol 
+ETHERTYPE_ARP		= 0x0806	# Addr. resolution protocol
+ETHERTYPE_IPV6		= 0x86dd	# IPv6
+
+map = {ETHERTYPE_IP: ipv4.ipv4,(*@\label{list:start_the_mapping}@*)
+       ETHERTYPE_ARP: arp.arp,
+       ETHERTYPE_IPV6: ipv6.ipv6}(*@\label{list:end_the_mapping}@*)
+    
+  \end{lstlisting}
+  \caption{The Ethernet Packet and Mapping Classes}
+  \label{fig:ethernet_packet_and_mapping_classes}
+\end{figure}
+
+Figure \ref{fig:ethernet_packet_and_mapping_classes} shows an
+abbreviated and combined listing of the \class{Ethernet} class and its
+associated mapping class.  The full implementation can be found in the 
+source tree in the files \filepath{pcs/packets/ethernet.py} and
+\filepath{pcs/packets/ethernet_map.py} respectively.  On line
+\ref{list:map_class_variable} a class variable, one that will be
+shared across all instances of this object, is created and set to the
+map that is defined in the \module{ethernet_map} module.
+
+The actual mapping of discriminators to higher layer packets is done
+in the mapping module.  Line \ref{list:importing_higher_layer_packets}
+shows the mapping module importing the higher layer objects, in this
+case the \class{ipv4}, \class{ipv6}, and \class{arp} packets which can
+be encapsulated in an Ethernet frame.  The map is really a
+\program{Python} dictionary where the key is the value that the
+\method{next} method expects to find in the field marked as a
+\emph{discriminator} in the \class{ethernet} packet class.  The values
+in the dictionary are packet class constructors which will be called
+from PCS's \class{Packet} base class.
+
+If the preceeding discussion seems complicated it can be summed up in
+the following way.  A packet class creator marks a single
+\class{Field} as a \emph{discriminator} and then creates a mapping
+module which contains a dictionary that maps a value that can appear
+as a discriminator to a consctructor for a higher layer packet class.
+In the case of Ethernet the discriminator is the \field{type} field
+which contains the protocol type.  An Ethernet frame which contains an
+IPv4 packet will have a \field{type} field containing the value $2048$
+in decimal, $0x800$ hexadecimal.  The \class{Packet} base class in
+this case will handle decapsulation of the higher layer packet.
+
+Mapping classes exist now for most packets, although some packets,
+such as TCP and UDP, require special handling.  Refer to the
+\method{next} method implementations in \filepath{pcs/packets/tcp.py}
+and \filepath{pcs/packets/udp.py} for more information.
 
 \section{Retrieving Packets}
 \label{sec:retrieving-packets}
@@ -500,7 +615,7 @@ possible to ask the file what kind of data it contains, through the
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{lstlisting}
 >>> import pcap
 >>> efile = pcap.pcap("etherping.out")
 >>> efile.datalink()
@@ -515,7 +630,7 @@ True
 >>> lfile.datalink() == pcap.DLT_EN10MB
 False
 >>> 
-\end{verbatim}
+\end{lstlisting}
   \caption{Determining the Bottom Layer}
   \label{fig:determining-the-bottom-layer}
 \end{figure}
@@ -538,13 +653,13 @@ the loopback file 4.
 
   \begin{figure}
     \centering
-\begin{verbatim}
+\begin{lstlisting}
 >>> efile.dloff
 14
 >>> lfile.dloff
 4
 >>> 
-\end{verbatim}
+\end{lstlisting}
     \caption{Finding the Datalink Offset}
     \label{fig:finding-the-datalink-offset}
   \end{figure}
@@ -561,7 +676,7 @@ a packet from a data file.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{lstlisting}
 >>> ip = ipv4(packet[efile.dloff:len(packet)])
 >>> print ip
 version 4
@@ -576,7 +691,7 @@ protocol 1
 checksum 58688
 src 192.168.101.166
 dst 169.229.60.161
-\end{verbatim}
+\end{lstlisting}
   \caption{Reading in a Packet}
   \label{fig:reading-in-a-packet}
 \end{figure}
@@ -589,7 +704,7 @@ when they are read.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{lstlisting}
 >>> from pcs.packets.ethernet import ethernet
 >>> ethernet = ethernet(packet[0:len(packet)])
 >>> ethernet.data
@@ -612,8 +727,7 @@ protocol 1
 checksum 58688
 src 192.168.101.166
 dst 169.229.60.161
-
-\end{verbatim}
+\end{lstlisting}
   \caption{Packet Decapsulation on Read}
   \label{fig:packet-decapsulation-on-read}
 \end{figure}
@@ -655,7 +769,7 @@ execute a simple \em{GET} command, and print the results.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{lstlisting}
 import pcs
 
 from socket import *
@@ -669,7 +783,7 @@ def main():
     print result
 
 main()
-\end{verbatim}
+\end{lstlisting}
   \caption{HTTP Get Script}
   \label{fig:http-get-script}
 \end{figure}
@@ -690,7 +804,7 @@ ping, packet.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{lstlisting}
     def test_icmpv4_ping(self):
         ip = ipv4()
         ip.version = 4
@@ -728,7 +842,7 @@ ping, packet.
 
         output = PcapConnector("lo0")
         out = output.write(packet.bytes, 88)
-\end{verbatim}
+\end{lstlisting}
   \caption{Transmitting a Raw Ping Packet}
   \label{fig:transmitting-a-raw-ping-packet}
 \end{figure}
@@ -749,7 +863,7 @@ possible packet sniffer program that you may ever see.
 
 \begin{figure}
   \centering
-\begin{verbatim}
+\begin{lstlisting}
 import pcs
 from pcs.packets.ethernet import ethernet
 
@@ -772,7 +886,7 @@ def main():
         print packet.data
         
 main()
-\end{verbatim}
+\end{lstlisting}
   \caption{Packet Snarfing Program}
   \label{fig:packet-snarfing-program}
 \end{figure}
@@ -821,9 +935,9 @@ functionality into the \class{Chain} class.
 \section{Displaying Packets}
 \label{sec:displaying-packets}
 
-\begin{verbatim}
+\begin{Verbatim}
 To be done, to be done...
-\end{verbatim}
+\end{Verbatim}
 
 \end{document}
 \begin{thebibliography}{99} 

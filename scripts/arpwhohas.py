@@ -80,11 +80,10 @@ def main():
 
     out = output.write(packet.bytes, len(packet.bytes))
 
-    reply = output.read()
-    reply = output.read()
+    reply = output.readpkt()
+    reply = output.readpkt()
 
-    packet = ethernet(reply)
-    print packet
-    print packet.data
+    print reply
+    print reply.data
 
 main()

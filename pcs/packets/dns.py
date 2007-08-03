@@ -38,7 +38,7 @@ import pcs
 
 class dnsheader(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """Define the fields of a DNS (RFC 1035) header"""
@@ -67,7 +67,7 @@ class dnsheader(pcs.Packet):
 class dnslabel(pcs.Packet):
     """A DNS Label.""" 
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize a DNS label, which is a component of a domain name"""
@@ -81,7 +81,7 @@ class dnslabel(pcs.Packet):
 class dnsquery(pcs.Packet):
     """A DNS query class"""
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize a DNS query packet, which is a query for information"""
@@ -96,7 +96,7 @@ class dnsquery(pcs.Packet):
 class dnsrr(pcs.Packet):
     """A DNS Resource Record"""
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize a DNS resource record, which encodes data returned from a query"""

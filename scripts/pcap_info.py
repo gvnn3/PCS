@@ -69,17 +69,16 @@ def main():
     while not done:
         ip = None
         try:
-            packet = file.read()
+            packet = file.readpkt()
         except:
             done = True
         packets += 1
-        ether = ethernet(packet[0:len(packet)])
-        if type(ether.data) == pcs.packets.ipv4.ipv4:
+        if type(packet.data) == pcs.packets.ipv4.ipv4:
             ip_cnt += 1
-            ip = ether.data
+            ip = packet.data
         else:
             non_ip_cnt += 1
-        if type(ether.data) == pcs.packets.arp.arp:
+        if type(packet.data) == pcs.packets.arp.arp:
             arp_cnt += 1
 
         if ip != None:
@@ -103,9 +102,9 @@ def main():
     print "%d UDP packets" % udp_cnt
     print "%d TCP packets" % tcp_cnt
 
-    print "Top 10 source addresses were"
+    print "Top source addresses were"
     hit_list = sorted(srcmap.itervalues(), reverse = True)
-    for i in range(1,10):
+    for i in range(1,len(hit_list)):
         for addr in srcmap.items():
             if addr[1] == hit_list[i]:
                 print "Address %s\t Count %s\t Percentage %f" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), addr[1], (float(addr[1]) / float(packets)) * float(100))

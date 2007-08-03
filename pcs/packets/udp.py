@@ -40,7 +40,8 @@ import udp_map
 class udp(pcs.Packet):
     """A UDP class."""
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
+    _map = None
 
     def __init__(self, bytes = None):
         """initialize a UDP packet"""
@@ -56,6 +57,9 @@ class udp(pcs.Packet):
             self.data = self.next(bytes[8:len(bytes)])
         else:
             self.data = None
+
+    # XXX UDP MUST have it's own next() function so that it can discrimnate
+    # on either sport or dport.
 
     def next(self, bytes):
         """Decode higher level services."""

@@ -39,13 +39,16 @@ import pcs
 from pcs.packets import ipv4
 from pcs.packets import ipv6
 
+import localhost_map
+
 class localhost(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
+    _map = localhost_map.map
 
     def __init__(self, bytes = None):
         """initialize a localhost header, needed to read or write to lo0"""
-        type = pcs.Field("type", 32)
+        type = pcs.Field("type", 32, discriminator=True)
         lolen = 4
 
         pcs.Packet.__init__(self, [type], bytes = bytes)
@@ -55,14 +58,4 @@ class localhost(pcs.Packet):
             self.data = self.next(bytes[lolen:len(bytes)])
         else:
             self.data = None
-
-    def next(self, bytes):
-        """Decode the type of a packet and return the correct higher
-        level protocol object"""
-        ## type is the address family, and NOT an ethertype 
-        if self.type == socket.AF_INET:
-            return ipv4.ipv4(bytes)
-        if self.type == socket.AF_INET6:
-            return ipv6.ipv6(bytes)
-        return None
 

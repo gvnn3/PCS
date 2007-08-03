@@ -82,16 +82,19 @@ class FieldBoundsError(Exception):
         return repr(self.message)
     
 class Field(object):
-    """A field is a name, a type, a width in bits, and possibly a
-default value.  These classes are used by the packet to define the
+    """A field is a name, a type, a width in bits, possibly a default
+value and can be marked as a dicriminator for higher level packet
+demultiplexing .  These classes are used by the packet to define the
 layout of the data and how it is addressed."""
     
-    def __init__(self, name = "", width = 1, default = None):
+    def __init__(self, name = "", width = 1, default = None,
+                 discriminator = False):
         """initialize a field
 
         name - a string name
         width - a width in bits
         default - a default value
+        discriminator - is this field used to demultiplex packets
         """
         ## the name of the Field
         self.name = name
@@ -99,11 +102,13 @@ layout of the data and how it is addressed."""
         self.width = width
         ## the default value of the field, must fit into bits
         self.default = default
+        ## Is this field used to demultiplex higher layer packets?
+        self.discriminator = discriminator
         
     def __repr__(self):
         """return an appropriate representation for the Field object"""
-        return "<pcs.Field  name %s, %d bits, type %s, default %s>" % \
-               (self.name, self.width, self.type, self.default)
+        return "<pcs.Field  name %s, %d bits, default %s, discriminator %d>" % \
+               (self.name, self.width, self.default, self.discriminator)
 
     def decode(self, bytes, curr, byteBR):
         """Decode a field and return the value and the updated current
@@ -310,6 +315,16 @@ class LengthValueField(Field):
             (len (value) > (((2 ** self.width) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
+
+class LayoutDiscriminatorError(Exception):
+    """When a programmer tries to set more than one field in a Layout as a 
+    discriminator an error is raised."""
+
+    def __init__(self, message):
+        self.message = message
+    def __str__(self):
+        return repr(self.message)
+
 class Layout(list):
     """The layout is a special attribute of a Packet which implements
     the layout of the packet on the wire.  It is actually a list of
@@ -319,7 +334,7 @@ class Layout(list):
     def __get__(self, obj, typ=None): 
         """return the Layout"""
         ## the layout is the ordering of the fields in the packet
-        return self.layout
+        return self._layout
 
     # Update the layout itself.  Right now this does not handle
     # removing fields or anything else but must do so in future.
@@ -332,8 +347,8 @@ class Layout(list):
         obj - the object we are about to set
         value - the value we are setting the field to
         """
-        self.layout = value
-        for field in self.layout:
+        self._layout = value
+        for field in self._layout:
             # This is a special case, we don't want to recurse back
             # through the encapsulating class's __setattr__ routine.
             # We want to set this directly in the class's dictionary
@@ -351,6 +366,7 @@ class FieldError(Exception):
         ## the error message passed when this error is raised
         self.message = message
         
+reserved_names = ["_layout", "_discriminator", "_map"]
 
 class Packet(object):
     """A Packet is a base class for building real packets."""
@@ -386,7 +402,7 @@ class Packet(object):
         self._bytes = bytes
         curr = 0
         byteBR = 8
-        for field in self.layout:
+        for field in self._layout:
             if curr > len(bytes):
                 break
             [value, curr, byteBR]  = field.decode(bytes, curr, byteBR)
@@ -411,7 +427,7 @@ class Packet(object):
         byteBR = 8
         byte = 0
         bytearray = []
-        for field in self.layout:
+        for field in self._layout:
             value = object.__getattribute__(self, field.name)
             [byte, byteBR] = field.encode(bytearray, value, byte, byteBR)
 
@@ -424,19 +440,29 @@ class Packet(object):
         bytes - if the packet is being set up now the bytes to set in it
         """
         self._fieldnames = {}
-        # The layout of the Packet, a list of Field objects.
-        self.layout = layout
+        self._layout = layout
         self._needencode = True
         if bytes != None:
             self.decode(bytes)
 
+        self._discriminator = None
+        # The layout of the Packet, a list of Field objects.
+        for field in layout:
+            if (not hasattr(field, 'discriminator')):
+                continue
+            if ((field.discriminator == True) and
+                (self._discriminator != None)):
+                raise LayoutDiscriminatorError, "Layout can only have one field marked as a discriminator, but there are at least two %s %s" % (field, self._discriminator)
+            if (field.discriminator == True):
+                self._discriminator = field
+                
     def __add__(self, layout = None):
         """add two packets together
 
         This is really an append operation, of one packet after another.
         """
         for field in layout:
-            self.layout.append(field)
+            self._layout.append(field)
             self._needencode = True
 
     def __setattr__(self, name, value):
@@ -445,12 +471,12 @@ class Packet(object):
         in the layout may be set, no other attributes may be added"""
 
         # Handle special fields first.
-        if name == '_fieldnames':
+        if (name == '_fieldnames'):
             object.__setattr__(self, name, value)
             return
 
-        if name != "layout":
-            for field in self.layout:
+        if (name not in reserved_names):
+            for field in self._layout:
                 if field.name == name:
                     field.bounds(value)
 
@@ -459,13 +485,13 @@ class Packet(object):
         # See if we're modifying a value that is controlled by the
         # layout.  If we are we need to update the bytes in the packet
         # so call update after we set the field.
-        if (name != "layout"):
-            if name in self._fieldnames:
+        if (name not in reserved_names):
+            if (name in self._fieldnames):
                 self._needencode = True
                 return
         else:
             self._fieldnames = {}
-            for field in self.layout:
+            for field in self._layout:
                 self._fieldnames[field.name] = True
 
     def __eq__(self, other):
@@ -474,7 +500,7 @@ class Packet(object):
             return False
         if (self.bytes != other.bytes):
             return False
-        for field in self.layout:
+        for field in self._layout:
             if self.__dict__[field.name] != other.__dict__[field.name]:
                 return False
         return True
@@ -489,7 +515,7 @@ class Packet(object):
             name = self.description
         else:
             name = 'Packet'
-        return '<%s: %s>' % (name, ', '.join(attribreprlist(self, self.layout.__iter__())))
+        return '<%s: %s>' % (name, ', '.join(attribreprlist(self, self._layout.__iter__())))
 
     def println(self):
         """Print the packet in line format."""
@@ -500,7 +526,7 @@ class Packet(object):
         retval = ""
         if hasattr(self, 'description'):
             retval += "%s\n" % self.description
-        for field in self.layout:
+        for field in self._layout:
             retval += "%s %s\n" % (field.name, self.__dict__[field.name])
         return retval
 
@@ -521,6 +547,15 @@ class Packet(object):
                 done = True
         return Chain(packet_list)
         
+    def next(self, bytes):
+        """Demultiplex higher layer protocols based on a supplied map and
+        discriminator field."""
+        if ((self._discriminator != None) and (self._map != None)):
+            if (self.__dict__[self._discriminator.name] in self._map):
+                return self._map[self.__dict__[self._discriminator.name]](bytes)
+        
+        return None
+
     def toXML(self):
         """Transform the Packet into XML."""
         pass

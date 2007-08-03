@@ -44,5 +44,4 @@ def main():
 
     UDP4Connector("127.0.0.1", 7)
 
-    
 main()

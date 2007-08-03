@@ -41,8 +41,8 @@ import struct
 
 class ipv4(pcs.Packet):
 
-    layout = pcs.Layout()
-    map = ipv4_map.map
+    _layout = pcs.Layout()
+    _map = ipv4_map.map
 
     def __init__(self, bytes = None):
         """ define the fields of an IPv4 packet, from RFC 791
@@ -55,7 +55,7 @@ class ipv4(pcs.Packet):
         flags = pcs.Field("flags", 3)
         offset = pcs.Field("offset", 13)
         ttl = pcs.Field("ttl", 8, default = 64)
-        protocol = pcs.Field("protocol", 8)
+        protocol = pcs.Field("protocol", 8, discriminator=True)
         checksum = pcs.Field("checksum", 16)
         src = pcs.Field("src", 32)
         dst = pcs.Field("dst", 32)
@@ -75,7 +75,7 @@ class ipv4(pcs.Packet):
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""
         retval = "IPv4\n"
-        for field in self.layout:
+        for field in self._layout:
             if (field.name == "src" or field.name == "dst"):
                 value = inet_ntop(AF_INET,
                                   struct.pack('!L', self.__dict__[field.name]))
@@ -89,14 +89,6 @@ class ipv4(pcs.Packet):
                 return inet_ntop(AF_INET,
                                  struct.pack('!L', getattr(self,attr)))
 
-    def next(self, bytes):
-        """Decode the type of a packet and return the correct higher
-        level protocol object"""
-        if self.protocol in self.map:
-            return self.map[self.protocol](bytes)
-        
-        return None
-        
     def cksum(self):
         """calculate the IPv4 checksum over a packet
 

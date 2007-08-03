@@ -48,11 +48,11 @@ class chainTestCase(unittest.TestCase):
         """Test the underlying __eq__ functionality of the
         packet.  Two packets constructed from the same bytes should be
         equal and two that are not should not be equal."""
-        import pcs.pcap as pcap
-        file = pcap.pcap("loopping.out")
-        packet = file.next()[1]
-        ip1 = ipv4(packet[file.dloff:len(packet)])
-        ip2 = ipv4(packet[file.dloff:len(packet)])
+        file = PcapConnector("loopping.out")
+        packet = file.readpkt()
+        # Create new packets don't just point to them
+        ip1 = ipv4(packet.data.bytes)
+        ip2 = ipv4(packet.data.bytes)
         assert (ip1 != None)
         assert (ip2 != None)
 

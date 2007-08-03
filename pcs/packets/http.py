@@ -38,7 +38,7 @@ import pcs
 
 class http(pcs.Packet):
     """A HTTP class RFC 2616"""
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize a TCP packet"""
@@ -51,14 +51,10 @@ class http(pcs.Packet):
 
         self.data = None
 
-    def next(self, bytes):
-        """Decode higher layer packets contained in HTTP."""
-        return None
-
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
         retval = "HTTP\n"
-        for field in self.layout:
+        for field in self._layout:
             retval += "%s %s\n" % (field.name, self.__dict__[field.name])
         return retval
 

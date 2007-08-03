@@ -44,6 +44,7 @@ import sys
 from pcs.packets.dns import *
 from pcs.packets.ipv4 import ipv4
 from pcs.packets.udpv4 import udpv4
+import pcs
 
 class dnsTestCase(unittest.TestCase):
     def test_dns(self):
@@ -115,10 +116,9 @@ class dnsTestCase(unittest.TestCase):
 
     def test_dns_read(self):
         """This test reads from a pre-stored pcap file generated with tcpdump and ping on the loopback interface."""
-        import pcs.pcap as pcap
-        file = pcap.pcap("dns.out")
-        packet = file.next()[1]
-        ip = ipv4(packet[file.dloff:len(packet)])
+        file = pcs.PcapConnector("dns.out")
+        packet = file.readpkt()
+        ip = packet.data
         assert (ip != None)
         udp = ip.data
         dns = udp.data
@@ -127,10 +127,9 @@ class dnsTestCase(unittest.TestCase):
         """Test the underlying __compare__ functionality of the
         packet.  Two packets constructed from the same bytes should be
         equal and two that are not should not be equal."""
-        import pcs.pcap as pcap
-        file = pcap.pcap("loopping.out")
-        packet = file.next()[1]
-        ip = ipv4(packet[file.dloff:len(packet)])
+        file = pcs.PcapConnector("dns.out")
+        packet = file.readpkt()
+        ip = packet.data
         assert (ip != None)
         udp1 = udpv4(ip.data.bytes)
         udp2 = udpv4(ip.data.bytes)
@@ -145,10 +144,9 @@ class dnsTestCase(unittest.TestCase):
         """This test reads from a pre-stored pcap file generated with
         tcpdump and ping on the loopback interface and tests the
         __str__ method to make sure the correct values are printed."""
-        import pcs.pcap as pcap
-        file = pcap.pcap("dns.out")
-        packet = file.next()[1]
-        ip = ipv4(packet[file.dloff:len(packet)])
+        file = pcs.PcapConnector("dns.out")
+        packet = file.readpkt()
+        ip = packet.data
         assert (ip != None)
 
         test_string = "UDP\nsport 50942\ndport 53\nlength 62\nchecksum 46791\n"

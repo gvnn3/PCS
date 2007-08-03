@@ -46,7 +46,7 @@ import pcs
 
 class ymsg_hdr(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """Define the fields for a Yahoo Messenger header.
@@ -67,7 +67,7 @@ class ymsg_hdr(pcs.Packet):
 
 class ymsg_key_value(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """The actual message is a set of key/value pairs encoded

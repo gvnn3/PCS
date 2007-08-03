@@ -47,7 +47,7 @@ from pcs.packets.dns import *
 class boundaryPacket(pcs.Packet):
     """Define a packet full of bit fields for use in testing.
     """
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
     
     def __init__(self, bytes = None):
         f1 = pcs.Field("f1", 1)
@@ -106,7 +106,7 @@ class boundsTestCase(unittest.TestCase):
             
     def test_allbits(self):
         packet = boundaryPacket()
-        for field in packet.layout:
+        for field in packet._layout:
             self.assertRaises(pcs.FieldBoundsError, setattr,
                               packet, field.name, 2 ** field.width)
             self.assertRaises(pcs.FieldBoundsError, setattr,

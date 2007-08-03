@@ -79,11 +79,11 @@ def main():
 
     while not done:
         try:
-            packet = file.read()
+            packet = file.readpkt()
         except:
             done = True
         packets += 1
-        ip = ipv4(packet[file.dloff:len(packet)])
+        ip = packet.data
         if (ip.src & mask) != network:
             if ip.src in srcmap:
                 srcmap[ip.src] += 1

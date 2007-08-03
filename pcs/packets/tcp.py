@@ -40,8 +40,9 @@ import tcp_map
 
 class tcp(pcs.Packet):
     """A TCP class for IPv4"""
-    layout = pcs.Layout()
-
+    _layout = pcs.Layout()
+    _map = None
+    
     def __init__(self, bytes = None):
         """initialize a TCP packet"""
         sport = pcs.Field("sport", 16)
@@ -66,12 +67,12 @@ class tcp(pcs.Packet):
         self.description = "TCP"
 
         if (bytes != None and (self.offset * 4 < len(bytes))):
-            print self.offset * 4
-            print len(bytes)
-            print bytes[(self.offset * 4):len(bytes)]
             self.data = self.next(bytes[(self.offset * 4):len(bytes)])
         else:
             self.data = None
+
+    # XXX TCP MUST have it's own next() function so that it can discrimnate
+    # on either sport or dport.
 
     def next(self, bytes):
         """Decode higher layer packets contained in TCP."""
@@ -79,13 +80,12 @@ class tcp(pcs.Packet):
             return tcp_map.map[self.dport](bytes)
         if (self.sport in tcp_map.map):
             return tcp_map.map[self.sport](bytes)
-
         return None
-
+    
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
         retval = "TCP\n"
-        for field in self.layout:
+        for field in self._layout:
             retval += "%s %s\n" % (field.name, self.__dict__[field.name])
         return retval
 

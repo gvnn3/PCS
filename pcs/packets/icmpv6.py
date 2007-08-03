@@ -72,7 +72,7 @@ ICMP6_RR_FLAGS_PREVDONE = 0x08
 
 class icmpv6(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, type = 0, bytes = None):
         """icmpv6 header RFC2463 and RFC2461"""
@@ -153,7 +153,7 @@ class icmpv6(pcs.Packet):
 
 class icmpv6option(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
     
     def __init__(self, type = 0, bytes = None):
         """add icmp6 option header RFC2461"""

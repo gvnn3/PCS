@@ -41,7 +41,7 @@ from pcs import PcapConnector
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *
 from pcs.packets.null import *
-from pcs.packets.ethernet_map import *
+import pcs.packets.ethernet_map
 
 class mapTestCase(unittest.TestCase):
     def test_map(self):
@@ -53,12 +53,12 @@ class mapTestCase(unittest.TestCase):
         file = PcapConnector("etherping.out")
         packet = file.readpkt()
 
-        self.assertEqual(type(packet.data), ipv4.ipv4)
+        self.assertEqual(type(packet.data), ipv4)
         
         file.close
 
         # Replace the mapping of IPv4
-        ethernet.map[ETHERTYPE_IP] = null
+        ethernet_map.map[ethernet_map.ETHERTYPE_IP] = null
 
         file = PcapConnector("etherping.out")
         packet = file.readpkt()

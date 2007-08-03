@@ -39,7 +39,7 @@ from socket import AF_INET, inet_ntop, inet_ntoa
 
 class arp(pcs.Packet):
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize an ARP packet"""

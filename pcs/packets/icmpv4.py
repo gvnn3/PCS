@@ -45,7 +45,7 @@ class icmpv4(pcs.Packet):
     field.  It is not generally useful without other information.
     """
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize a ICMPv4 packet"""
@@ -73,7 +73,7 @@ class icmpv4echo(pcs.Packet):
     and sequence field.
     """
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize an ICMPv4 echo packet, used by ping(8) and others"""

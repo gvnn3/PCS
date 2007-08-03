@@ -40,7 +40,7 @@ import pcs
 class ah(pcs.Packet):
     """IP Authentication Header (AH), from RFC 2402"""
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize an AH packet header"""

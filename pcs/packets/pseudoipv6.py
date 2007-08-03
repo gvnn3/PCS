@@ -41,7 +41,7 @@ class pseudoipv6(pcs.Packet):
     """A class that create an IPv6 pseudo header used
     for upper-layer checksums."""
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """IPv6 pseudo header from RFC 2460"""

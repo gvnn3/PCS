@@ -45,8 +45,9 @@ class payload(pcs.Packet):
     packet chain.  When data is not part of a packet, or the packet is
     not known this class is used to encapsulate the data."""
 
-    layout = pcs.Layout()
-
+    _layout = pcs.Layout()
+    _map = None
+    
     def __init__(self, bytes = None):
         """initialize a payload packet"""
         payload = pcs.StringField("payload", len(bytes))

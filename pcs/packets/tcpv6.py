@@ -40,7 +40,7 @@ from pseudoipv6 import *
 
 class tcpv6(pcs.Packet):
     """A TCP class for IPv6"""
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
         """initialize a TCP packet for IPv6"""
@@ -66,7 +66,7 @@ class tcpv6(pcs.Packet):
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
         retval = ""
-        for field in self.layout:
+        for field in self._layout:
             if (field.type == str):
                 retval += "%s %s\n" % (field.name, self.__dict__[field.name])
             else:
