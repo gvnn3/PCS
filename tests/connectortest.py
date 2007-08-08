@@ -38,17 +38,23 @@
 import unittest
 
 import sys
-#sys.path.insert(0, "..") # Look locally first
    
 from socket import *
 
-from pcs.packets.ethernet import ethernet
-from pcs.packets.localhost import localhost
-from pcs.packets.ipv4 import ipv4
-from pcs.packets.icmpv4 import icmpv4
-from pcs.packets.icmpv4 import icmpv4echo
+if __name__ == '__main__':
 
-from pcs import *
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+
+    from pcs.packets.ethernet import ethernet
+    from pcs.packets.localhost import localhost
+    from pcs.packets.ipv4 import ipv4
+    from pcs.packets.icmpv4 import icmpv4
+    from pcs.packets.icmpv4 import icmpv4echo
+    
+    from pcs import *
 
 class pcapTestCase(unittest.TestCase):
     def test_pcap_file(self):

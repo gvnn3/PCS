@@ -37,11 +37,19 @@
 import unittest
 
 import sys
-from pcs import PcapConnector
-from pcs.packets.ethernet import *
-from pcs.packets.ipv4 import *
-from pcs.packets.null import *
-import pcs.packets.ethernet_map
+
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+
+    from pcs import PcapConnector
+    from pcs.packets.ethernet import *
+    from pcs.packets.ipv4 import *
+    from pcs.packets.null import *
+    import pcs.packets.ethernet_map
 
 class mapTestCase(unittest.TestCase):
     def test_map(self):

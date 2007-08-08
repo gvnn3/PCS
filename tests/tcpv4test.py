@@ -38,13 +38,19 @@
 
 import unittest
 
-#import sys
-#sys.path.insert(0, "..") # Look locally first
+import sys
+
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
  
-from pcs import PcapConnector
-from pcs.packets.ipv4 import *
-from pcs.packets.tcp import tcp
-from pcs import inet_atol
+    from pcs import PcapConnector
+    from pcs.packets.ipv4 import *
+    from pcs.packets.tcp import tcp
+    from pcs import inet_atol
 
 class tcpTestCase(unittest.TestCase):
     def test_tcpv4(self):

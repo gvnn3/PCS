@@ -39,11 +39,17 @@
 import unittest
 
 import sys
-#sys.path.insert(0, "../") # Look locally first.
 
-from pcs import PcapConnector
-from pcs import PcapDumpConnector
-from pcs.packets.ethernet import *
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+
+    from pcs import PcapConnector
+    from pcs import PcapDumpConnector
+    from pcs.packets.ethernet import *
 
 class etherTestCase(unittest.TestCase):
     def test_ethernet(self):

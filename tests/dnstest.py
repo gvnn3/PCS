@@ -39,12 +39,18 @@
 import unittest
 
 import sys
-#sys.path.insert(0, "..") # Look locally first.
 
-from pcs.packets.dns import *
-from pcs.packets.ipv4 import ipv4
-from pcs.packets.udpv4 import udpv4
-import pcs
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+
+    from pcs.packets.dns import *
+    from pcs.packets.ipv4 import ipv4
+    from pcs.packets.udpv4 import udpv4
+    import pcs
 
 class dnsTestCase(unittest.TestCase):
     def test_dns(self):

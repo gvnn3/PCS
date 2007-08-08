@@ -39,11 +39,16 @@
 import unittest
 
 import sys
-#sys.path.insert(0, "..") # Look locally first.
 
-from pcs import PcapConnector
-from pcs.packets.ipv6 import *
-from socket import AF_INET6, inet_pton
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+    from pcs import PcapConnector
+    from pcs.packets.ipv6 import *
+    from socket import AF_INET6, inet_pton
 
 class ip6TestCase(unittest.TestCase):
     def test_ipv6(self):

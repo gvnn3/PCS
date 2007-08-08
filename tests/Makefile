@@ -17,3 +17,9 @@ test:
 		echo Running test $$file; \
 		sudo $(PYTHON) $$file; \
 	done
+
+test-local: 
+	for file in $(TESTS); do\
+		echo Running test $$file; \
+		sudo $(PYTHON) $$file -l; \
+	done

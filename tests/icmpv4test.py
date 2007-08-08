@@ -40,12 +40,17 @@
 import unittest
 
 import sys
-#sys.path.insert(0, "..") # Look locally first
    
-from pcs.packets.localhost import *
-from pcs.packets.ipv4 import *
-from pcs.packets.icmpv4 import *
-from pcs import *
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+
+    from pcs.packets.localhost import *
+    from pcs.packets.ipv4 import *
+    from pcs.packets.icmpv4 import *
+    from pcs import *
 
 class icmpTestCase(unittest.TestCase):
     def test_icmpv4(self):

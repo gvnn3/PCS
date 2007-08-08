@@ -39,10 +39,16 @@
 import unittest
 
 import sys
-#sys.path.insert(0, "..") # Look locally first.
 
-from pcs.packets.ipv4 import *
-from pcs.packets.udp import *
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+
+    from pcs.packets.ipv4 import *
+    from pcs.packets.udp import *
 
 class udpTestCase(unittest.TestCase):
     def test_udpv4(self):

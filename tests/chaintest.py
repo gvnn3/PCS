@@ -37,11 +37,19 @@
 import unittest
 
 import sys
-#sys.path.insert(0, '../')
 
-from pcs.packets.ethernet import ethernet
-from pcs.packets.ipv4 import ipv4
-from pcs import *
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+
+    import pcs
+    from pcs.packets.ethernet import ethernet
+    from pcs.packets.ipv4 import ipv4
+    from pcs import *
+
 
 class chainTestCase(unittest.TestCase):
     def test_chain_compare(self):
