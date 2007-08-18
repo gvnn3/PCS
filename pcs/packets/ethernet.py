@@ -40,8 +40,10 @@ from pcs.packets.ipv4 import ipv4
 from pcs.packets.ipv6 import ipv6
 from pcs.packets.arp import arp
 
-class ethernet(pcs.Packet):
+import inspect
 
+class ethernet(pcs.Packet):
+    """Ethernet"""
     _layout = pcs.Layout()
     _map = ethernet_map.map
     
@@ -53,7 +55,7 @@ class ethernet(pcs.Packet):
         etherlen = 14
 
         pcs.Packet.__init__(self, [dst, src, type], bytes = bytes)
-        self.description = "Ethernet"
+        self.description = inspect.getdoc(self)
 
         if (bytes != None):
             self.data = self.next(bytes[etherlen:len(bytes)])

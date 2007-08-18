@@ -37,7 +37,7 @@
 import pcs
 
 class http(pcs.Packet):
-    """A HTTP class RFC 2616"""
+    """HTTP"""
     _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
@@ -47,7 +47,7 @@ class http(pcs.Packet):
         request = pcs.StringField("request", 65535*8)
         pcs.Packet.__init__(self, [request],
                             bytes = bytes)
-        self.description = "HTTP"
+        self.description = inspect.getdoc(self)
 
         self.data = None
 

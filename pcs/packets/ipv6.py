@@ -42,6 +42,8 @@ from socket import AF_INET6, IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, 
 import udp, tcp, icmpv4
 import ipv6_map
 
+import inspect
+
 # extension header next header field.
 IPV6_HOPOPTS = 0
 IPV6_RTHDR = 43
@@ -52,8 +54,7 @@ IPV6_NONE = 59
 IPV6_DSTOPTS = 60
 
 class ipv6(pcs.Packet):
-    """A class that contains the IPv6 header.  All other data is
-    chained on the end."""
+    """IPv6"""
 
     _layout = pcs.Layout()
     _map = ipv6_map.map
@@ -71,7 +72,7 @@ class ipv6(pcs.Packet):
         pcs.Packet.__init__(self,
                             [version, traffic, flow, length, next_header, hop,
                              src, dst], bytes)
-        self.description = "IPv6"
+        self.description = inspect.getdoc(self)
 
         if (bytes != None):
             ## 40 bytes is the standard size of an IPv6 header

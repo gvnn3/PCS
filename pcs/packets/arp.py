@@ -38,6 +38,7 @@ import struct
 from socket import AF_INET, inet_ntop, inet_ntoa
 
 class arp(pcs.Packet):
+    """ARP"""
 
     _layout = pcs.Layout()
 
@@ -55,7 +56,7 @@ class arp(pcs.Packet):
         
         pcs.Packet.__init__(self, [hrd, pro, hln, pln, op,
                                    sha, spa, tha, tpa], bytes = bytes)
-        self.description = "ARP"
+        self.description = inspect.getdoc()
         self.data = None
 
     def __str__(self):

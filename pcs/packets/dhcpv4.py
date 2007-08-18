@@ -38,6 +38,7 @@
 import pcs
 
 class dhcpv4(pcs.Packet):
+    """DHCPv4"""
 
     _layout = pcs.Layout()
 
@@ -63,6 +64,6 @@ class dhcpv4(pcs.Packet):
                              ciaddr, yiaddr, siaddr, giaddr, sname, file,
                              options],
                             bytes)
-        self.description = "DHCPv4"
+        self.description = inspect.getdoc(self)
             
         

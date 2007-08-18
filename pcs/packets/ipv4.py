@@ -38,8 +38,10 @@ import pcs
 from socket import AF_INET, inet_ntop
 import ipv4_map
 import struct
+import inspect
 
 class ipv4(pcs.Packet):
+    """IPv4"""
 
     _layout = pcs.Layout()
     _map = ipv4_map.map
@@ -64,7 +66,7 @@ class ipv4(pcs.Packet):
                              ttl, protocol, checksum, src, dst],
                             bytes = bytes)
         # Description MUST be set after the PCS layer init
-        self.description = "IPv4"
+        self.description = inspect.getdoc(self)
 
         if (bytes != None):
             offset = self.hlen << 2

@@ -36,8 +36,10 @@
 
 import pcs
 
-class dnsheader(pcs.Packet):
+import inspect
 
+class dnsheader(pcs.Packet):
+    """DNS Header"""
     _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
@@ -62,10 +64,10 @@ class dnsheader(pcs.Packet):
                              rcode, qdcount, ancount, nscount, arcount],
                             bytes = bytes)
 
-        self.description = "DNS Header"
+        self.description = inspect.getdoc(self)
 
 class dnslabel(pcs.Packet):
-    """A DNS Label.""" 
+    """DNS Label""" 
 
     _layout = pcs.Layout()
 
@@ -76,10 +78,10 @@ class dnslabel(pcs.Packet):
                             [name],
                             bytes = bytes)
         
-        self.description = "DNS Label"
+        self.description = inspect.getdoc(self)
 
 class dnsquery(pcs.Packet):
-    """A DNS query class"""
+    """DNS Query"""
 
     _layout = pcs.Layout()
 
@@ -91,10 +93,10 @@ class dnsquery(pcs.Packet):
                             [type, qclass],
                             bytes = bytes)
         
-        self.description = "DNS Query"
+        self.description = inspect.getdoc(self)
 
 class dnsrr(pcs.Packet):
-    """A DNS Resource Record"""
+    """DNS Resource Record"""
 
     _layout = pcs.Layout()
 
@@ -110,4 +112,4 @@ class dnsrr(pcs.Packet):
                             [name, type, qclass, ttl, rdata],
                             bytes = bytes)
         
-        self.description = "DNS Resource Record"
+        self.description = inspect.getdoc(self)

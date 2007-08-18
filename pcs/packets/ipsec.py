@@ -37,8 +37,10 @@
 
 import pcs
 
+import inspect
+
 class ah(pcs.Packet):
-    """IP Authentication Header (AH), from RFC 2402"""
+    """AH"""
 
     _layout = pcs.Layout()
 
@@ -53,10 +55,10 @@ class ah(pcs.Packet):
         pcs.Packet.__init__(self,
                             [next, plen, rsvrd, spi, seq, auth],
                             bytes)
-        self.description = "AH"
+        self.description = inspect.getdoc(self)
         
 class esp(pcs.Packet):
-    """IP Encapsulating Security Payload (ESP) Packet from RFC 2406"""
+    """ESP"""
 
     layout = pcs.Layout()
 
@@ -73,4 +75,5 @@ class esp(pcs.Packet):
                             [spi, seq, payload, padding, padlen, next_header,
                              auth],
                             bytes)
-        self.description = "ESP"
+        self.description = inspect.getdoc(self)
+

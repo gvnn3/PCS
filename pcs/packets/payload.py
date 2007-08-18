@@ -36,14 +36,12 @@
 # nothing else.  It is the catch all for data that is not known.
 
 import pcs
+
 from pprint import pformat
+import inspect
 
 class payload(pcs.Packet):
-    """A raw data packet.
-
-    A payload is a raw, set of bytes, and can be used to terminate any
-    packet chain.  When data is not part of a packet, or the packet is
-    not known this class is used to encapsulate the data."""
+    """Payload"""
 
     _layout = pcs.Layout()
     _map = None
@@ -52,7 +50,7 @@ class payload(pcs.Packet):
         """initialize a payload packet"""
         payload = pcs.StringField("payload", len(bytes))
         pcs.Packet.__init__(self, [payload], bytes = bytes)
-        self.description = "Data"
+        self.description = inspect.getdoc(self)
 
         # Unconditionally the last packet in a chain
         self.data = None

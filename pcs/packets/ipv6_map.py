@@ -32,14 +32,21 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A mapping of TCP port numbers to higher level protocols
+# Description: This is a module which maps IPv4 protocol numbers to
+# class names for use by the IPv4 class.
 
-#import ymsg_hdr
-import http
-#ymsg_port = 5050
-http_port = 80
-https_port = 43
+# The map is a dictionary who's key is the protocol type and who's
+# value is the class constructor for that type.
 
-map = {http_port: http.http,
-       https_port: http.http}
+from socket import IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_ICMP
+
+IPPROTO_SCTP = 132
+
+import udp, tcp, ipsec, icmpv6, sctp
+
+map = {IPPROTO_UDP: udp.udp,
+       IPPROTO_TCP: tcp.tcp,
+       IPPROTO_AH: ipsec.ah,
+       IPPROTO_ESP: ipsec.esp,
+       IPPROTO_ICMP: icmpv6.icmpv6}
 

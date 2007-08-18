@@ -32,14 +32,14 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A mapping of TCP port numbers to higher level protocols
+# Description: This is a module which maps Ethernet protocol types to
+# class names for use by the Ethernet class.
 
-#import ymsg_hdr
-import http
-#ymsg_port = 5050
-http_port = 80
-https_port = 43
+# The map is a dictionary who's key is the protocol type and who's
+# value is the class constructor for that type.
 
-map = {http_port: http.http,
-       https_port: http.http}
+import ipv4, ipv6, socket
+
+map = {socket.AF_INET: ipv4.ipv4,
+       socket.AF_INET6: ipv6.ipv6}
 

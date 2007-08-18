@@ -37,13 +37,10 @@
 import pcs
 from pcs.packets import payload
 
-class icmpv4(pcs.Packet):
-    """ICMPv4 Packet
+import inspect
 
-    Internet Control Message Protocol (RFC 792) packet.  This is the
-    most generic version and contains only a type, code, and checksum
-    field.  It is not generally useful without other information.
-    """
+class icmpv4(pcs.Packet):
+    """ICMPv4"""
 
     _layout = pcs.Layout()
 
@@ -53,7 +50,7 @@ class icmpv4(pcs.Packet):
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [type, code, cksum], bytes)
-        self.description = "ICMPv4"
+        self.description = inspect.getdoc(self)
 
         if (bytes != None):
             offset = type.width + code.width + cksum.width
@@ -62,16 +59,9 @@ class icmpv4(pcs.Packet):
             self.data = None
 
 
+
 class icmpv4echo(pcs.Packet):
-    """ICMPv4 Echo (aka ping) Packet
-
-    This packet has sufficient fields to form an ICMPv4 echo packet
-    also known as a 'ping' due to the name of the program that most
-    often uses it.
-
-    Echo packets contain all the fields of an ICMPv4 packet plus an id
-    and sequence field.
-    """
+    """ICMPv4 Echo"""
 
     _layout = pcs.Layout()
 
@@ -80,7 +70,7 @@ class icmpv4echo(pcs.Packet):
         id = pcs.Field("id", 16)
         seq = pcs.Field("sequence", 16)
         pcs.Packet.__init__(self, [id, seq], bytes)
-        self.description = "ICMPv4 Echo"
+        self.description = inspect.getdoc(self)
 
         if (bytes != None):
             offset = id.width + seq.width

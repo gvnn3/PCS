@@ -39,7 +39,7 @@ import pcs
 import icmpv6 # All neighbor discovery messages are inserted in ICMPv6 packets
 
 class nd6_solicit(pcs.Packet):
-    """RFC 2461 neighbor discovery messages"""
+    """Neighbor Discovery"""
 
     _layout = pcs.Layout()
 
@@ -48,4 +48,4 @@ class nd6_solicit(pcs.Packet):
         reserved = pcs.Field("reserved", 32)
         target = pcs.Field("target", 128)
         pcs.Packet.__init__(self, [reserved, target], bytes)
-        self.description = "Neighbor Discovery"
+        self.description = inspect.getdoc(self)

@@ -36,8 +36,10 @@
 
 import pcs
 
+import inspect
+
 class null(pcs.Packet):
-    """A null class for copying from."""
+    """NULL."""
     _layout = pcs.Layout()
 
     def __init__(self, bytes = None):
@@ -45,7 +47,7 @@ class null(pcs.Packet):
         null = pcs.StringField("null", 80*8)
         pcs.Packet.__init__(self, [null],
                             bytes = bytes)
-        self.description = "NULL"
+        self.description = inspect.getdoc(self)
 
         if (bytes != None):
             self.data = self.next(bytes)

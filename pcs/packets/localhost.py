@@ -41,8 +41,10 @@ from pcs.packets import ipv6
 
 import localhost_map
 
-class localhost(pcs.Packet):
+import inspect
 
+class localhost(pcs.Packet):
+    """Localhost"""
     _layout = pcs.Layout()
     _map = localhost_map.map
 
@@ -52,7 +54,7 @@ class localhost(pcs.Packet):
         lolen = 4
 
         pcs.Packet.__init__(self, [type], bytes = bytes)
-        self.description = "Localhost"
+        self.description = inspect.getdoc(self)
 
         if (bytes != None):
             self.data = self.next(bytes[lolen:len(bytes)])
