@@ -65,12 +65,8 @@ class udpTestCase(unittest.TestCase):
         new_packet.decode(packet.bytes)
 
         self.assertEqual(packet.bytes, new_packet.bytes, "bytes not equal")
-        self.assertEqual(new_packet.sport, 67,
-                         "sport not equal %d" % new_packet.sport)
-        self.assertEqual(new_packet.dport, 68, "dport not equal %d" % new_packet.dport)
-        self.assertEqual(new_packet.length, 64, "length not equal %d" % new_packet.length)
-        self.assertEqual(new_packet.checksum, 0, "checksum not equal %d" %
-                         new_packet.checksum)
+        for field in packet._fieldnames:
+            self.assertEqual(getattr(packet, field), getattr(new_packet, field), ("%s not equal" % field))
 
     def test_udpv4_read(self):
         """This test reads from a pre-stored pcap file generated with tcpdump and ping on the loopback interface."""

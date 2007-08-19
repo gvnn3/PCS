@@ -74,26 +74,9 @@ class tcpTestCase(unittest.TestCase):
         tcpnew = tcp()
         tcpnew.decode(tcppacket.bytes)
 
-
         self.assertEqual(tcppacket.bytes, tcpnew.bytes, "bytes not equal")
-        self.assertEqual(tcpnew.sport, 51,
-                "source port not equal %d" % tcpnew.sport)
-        self.assertEqual(tcpnew.dport, 50,
-                "destination port not equal %d" % tcpnew.dport)
-        self.assertEqual(tcpnew.sequence, 42,
-                "sequence number not equal %d" % tcpnew.sequence)
-        self.assertEqual(tcpnew.offset, 10,
-                "offset not equal %d" % tcpnew.offset)
-        self.assertEqual(tcpnew.urgent, 1, "urgent not equal %d" % tcpnew.urgent)
-        self.assertEqual(tcpnew.ack, 1, "ack not equal %d" % tcpnew.ack)
-        self.assertEqual(tcpnew.push, 1, "push not equal %d" % tcpnew.push)
-        self.assertEqual(tcpnew.reset, 1, "reset not equal %d" % tcpnew.reset)
-        self.assertEqual(tcpnew.syn, 1, "syn not equal %d" % tcpnew.syn)
-        self.assertEqual(tcpnew.fin, 1, "fin not equal %d" % tcpnew.fin)
-        self.assertEqual(tcpnew.window, 1024,
-                "window not equal %d" % tcpnew.window)
-        self.assertEqual(tcpnew.checksum, 0,
-                "checksum not equal %d" % tcpnew.checksum)
+        for field in tcppacket._fieldnames:
+            self.assertEqual(getattr(tcppacket, field), getattr(tcpnew, field), ("%s not equal" % field))
 
     def test_tcpv4_read(self):
         """This test reads from a pre-stored pcap file generated with tcpdump."""

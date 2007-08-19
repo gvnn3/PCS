@@ -40,6 +40,8 @@
 import pcs
 import tcp_map
 
+import inspect
+
 class common(pcs.Packet):
     """SCTP common header class"""
 

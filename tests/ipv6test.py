@@ -68,19 +68,8 @@ class ip6TestCase(unittest.TestCase):
         ipnew.decode(ip.bytes)
 
         self.assertEqual(ip.bytes, ipnew.bytes, "bytes not equal")
-        self.assertEqual(ipnew.version, 6,
-                         "version not equal %d" % ipnew.version)
-        self.assertEqual(ipnew.traffic_class, 1,
-                         "traffic_class not equal %d" % ipnew.traffic_class)
-        self.assertEqual(ipnew.flow, 0, "flow not equal %d" % ipnew.flow)
-        self.assertEqual(ipnew.length, 64, "length not equal %d" % ipnew.length)
-        self.assertEqual(ipnew.next_header, 6,
-                         "next_header not equal %d" % ipnew.next_header)
-        self.assertEqual(ipnew.hop, 64, "hop not equal %d" % ipnew.hop)
-        self.assertEqual(ipnew.src, inet_pton(AF_INET6, "::1"),
-                         "src not equal %s" % ipnew.src)
-        self.assertEqual(ipnew.dst, inet_pton(AF_INET6, "::1"),
-                         "dst not equal %s" % ipnew.dst)
+        for field in ip._fieldnames:
+            self.assertEqual(getattr(ip, field), getattr(ipnew, field), ("%s not equal" % field))
 
     def test_ipv6_read(self):
         """This test reads from a pre-stored pcap file generated with tcpdump and ping on the loopback interface."""

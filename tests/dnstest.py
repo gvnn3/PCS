@@ -77,19 +77,8 @@ class dnsTestCase(unittest.TestCase):
         dnsnew.decode(dns.bytes)
 
         self.assertEqual(dns.bytes, dnsnew.bytes, "bytes not equal")
-        self.assertEqual(dns.id, dnsnew.id, "id not equal")
-        self.assertEqual(dns.query, dnsnew.query, "query not equal")
-        self.assertEqual(dns.opcode, dnsnew.opcode, "opcode not equal")
-        self.assertEqual(dns.aa, dnsnew.aa, "aa not equal")
-        self.assertEqual(dns.tc, dnsnew.tc, "tc not equal")
-        self.assertEqual(dns.rd, dnsnew.rd, "rd not equal")
-        self.assertEqual(dns.ra, dnsnew.ra, "ra not equal")
-        self.assertEqual(dns.z, dnsnew.z, "z not equal")
-        self.assertEqual(dns.rcode, dnsnew.rcode, "rcode not equal")
-        self.assertEqual(dns.qdcount, dnsnew.qdcount, "qdcount not equal")
-        self.assertEqual(dns.ancount, dnsnew.ancount, "ancount not equal")
-        self.assertEqual(dns.nscount, dnsnew.nscount, "nscount not equal")
-        self.assertEqual(dns.arcount, dnsnew.arcount, "arcount not equal")
+        for field in dns._fieldnames:
+            self.assertEqual(getattr(dns, field), getattr(dnsnew, field), ("%s not equal" % field))
 
         dns = dnsquery()
 
