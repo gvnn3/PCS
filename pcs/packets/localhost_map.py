@@ -40,6 +40,13 @@
 
 import ipv4, ipv6, socket
 
+# Loopback (localhost) interfaces are a bit funky.  The type is in
+# HOST byte order, not network byte order so depending on where a pcap
+# file was recorded the bytes may be in big or little endian order,
+# hence the following set of double entries.
+
 map = {socket.AF_INET: ipv4.ipv4,
-       socket.AF_INET6: ipv6.ipv6}
+       socket.AF_INET6: ipv6.ipv6,
+       socket.ntohl(socket.AF_INET): ipv4.ipv4,
+       socket.ntohl(socket.AF_INET6): ipv6.ipv6}
 

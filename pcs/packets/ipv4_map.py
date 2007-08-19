@@ -48,5 +48,6 @@ map = {IPPROTO_UDP: udp.udp,
        IPPROTO_TCP: tcp.tcp,
        IPPROTO_AH: ipsec.ah,
        IPPROTO_ESP: ipsec.esp,
-       IPPROTO_ICMP: icmpv4.icmpv4}
+       IPPROTO_ICMP: icmpv4.icmpv4,
+       IPPROTO_SCTP: sctp.common}
 
