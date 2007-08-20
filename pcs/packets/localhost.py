@@ -42,22 +42,28 @@ from pcs.packets import ipv6
 import localhost_map
 
 import inspect
+import time
 
 class localhost(pcs.Packet):
     """Localhost"""
     _layout = pcs.Layout()
     _map = localhost_map.map
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a localhost header, needed to read or write to lo0"""
         type = pcs.Field("type", 32, discriminator=True)
         lolen = 4
 
         pcs.Packet.__init__(self, [type], bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
         if (bytes != None):
-            self.data = self.next(bytes[lolen:len(bytes)])
+            self.data = self.next(bytes[lolen:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 

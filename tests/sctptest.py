@@ -65,5 +65,12 @@ class sctpTestCase(unittest.TestCase):
         for field in packet._fieldnames:
             self.assertEqual(getattr(packet, field), getattr(new_packet, field), ("%s not equal" % field))
 
+    def test_sctp_read(self):
+        """Read a packet from a pcap file."""
+        file = PcapConnector("sctp.pcap")
+        packet = file.readpkt()
+        sctp = packet.data.data
+        assert (sctp != None)
+
 if __name__ == '__main__':
     unittest.main()

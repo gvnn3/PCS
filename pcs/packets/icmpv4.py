@@ -38,19 +38,25 @@ import pcs
 from pcs.packets import payload
 
 import inspect
+import time
 
 class icmpv4(pcs.Packet):
     """ICMPv4"""
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a ICMPv4 packet"""
         type = pcs.Field("type", 8)
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [type, code, cksum], bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
             offset = type.width + code.width + cksum.width
@@ -65,12 +71,17 @@ class icmpv4echo(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize an ICMPv4 echo packet, used by ping(8) and others"""
         id = pcs.Field("id", 16)
         seq = pcs.Field("sequence", 16)
         pcs.Packet.__init__(self, [id, seq], bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
             offset = id.width + seq.width

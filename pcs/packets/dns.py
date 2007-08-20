@@ -37,12 +37,13 @@
 import pcs
 
 import inspect
+import time
 
 class dnsheader(pcs.Packet):
     """DNS Header"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """Define the fields of a DNS (RFC 1035) header"""
         length = pcs.Field("length", 16)
         id = pcs.Field("id", 16)
@@ -65,6 +66,10 @@ class dnsheader(pcs.Packet):
                             bytes = bytes)
 
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
 class dnslabel(pcs.Packet):
     """DNS Label""" 

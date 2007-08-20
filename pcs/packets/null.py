@@ -37,20 +37,26 @@
 import pcs
 
 import inspect
+import time
 
 class null(pcs.Packet):
     """NULL."""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a TCP packet"""
         null = pcs.StringField("null", 80*8)
         pcs.Packet.__init__(self, [null],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes)
+            self.data = self.next(bytes, timestamp = timestamp)
         else:
             self.data = None
 

@@ -39,6 +39,7 @@ import pcs
 
 from pprint import pformat
 import inspect
+import time
 
 class payload(pcs.Packet):
     """Payload"""
@@ -46,11 +47,15 @@ class payload(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a payload packet"""
         payload = pcs.StringField("payload", len(bytes))
         pcs.Packet.__init__(self, [payload], bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
         # Unconditionally the last packet in a chain
         self.data = None

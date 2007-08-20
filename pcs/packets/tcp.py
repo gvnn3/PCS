@@ -38,12 +38,15 @@ import pcs
 from pcs.packets import payload
 import tcp_map
 
+import inspect
+import time
+
 class tcp(pcs.Packet):
-    """A TCP class for IPv4"""
+    """TCP"""
     _layout = pcs.Layout()
     _map = None
     
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a TCP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
@@ -64,10 +67,15 @@ class tcp(pcs.Packet):
                                    urg, ack, psh, rst, syn, fin, window,
                                    cksum, urgp],
                             bytes = bytes)
-        self.description = "TCP"
+        self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
         if (bytes != None and (self.offset * 4 < len(bytes))):
-            self.data = self.next(bytes[(self.offset * 4):len(bytes)])
+            self.data = self.next(bytes[(self.offset * 4):len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 

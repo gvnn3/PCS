@@ -547,12 +547,24 @@ class Packet(object):
                 done = True
         return Chain(packet_list)
         
-    def next(self, bytes):
+    def next(self, bytes, discriminator = None, timestamp = None):
         """Demultiplex higher layer protocols based on a supplied map and
         discriminator field."""
+
+        # If the caller passes their own discriminator then we use the
+        # caller's otherwise we use the one built into the packet.
+        # The use of a caller supplied discriminator allows use to
+        # more easily unpack packets that are chunked, where the
+        # current packet does not contain knowledge about what comes
+        # next.
+
+        if (discriminator != None):
+            if (self.__dict__[self._discriminator.name] in self._map):
+                return self._map[self.__dict__[self._discriminator.name]](bytes, timestamp = timestamp)
+            
         if ((self._discriminator != None) and (self._map != None)):
             if (self.__dict__[self._discriminator.name] in self._map):
-                return self._map[self.__dict__[self._discriminator.name]](bytes)
+                return self._map[self.__dict__[self._discriminator.name]](bytes, timestamp = timestamp)
         
         return None
 
@@ -757,8 +769,8 @@ class PcapConnector(Connector):
 
         This is the most usefule method for use by naive applications
         that do not wish to interrogate the underlying packet data."""
-        packet = self.file.next()[1]
-        return self.unpack(packet, self.dlink, self.dloff)
+        (timestamp, packet) = self.file.next()
+        return self.unpack(packet, self.dlink, self.dloff, timestamp)
 
     def write(self, packet, bytes):
         """Write a packet to a pcap file or network interface.
@@ -779,8 +791,8 @@ class PcapConnector(Connector):
         bytes - the bytes of the packet, and not the packet object"""
         return self.file.inject(packet, bytes)
 
-    def unpack(self, packet, dlink, dloff):
-        """turn a packet into a set of bytes appropriate to transmit
+    def unpack(self, packet, dlink, dloff, timestamp):
+        """create a packet from a set of bytes
 
         packet - a Packet object
         dlink - a data link layer as defined in the pcap module
@@ -790,9 +802,9 @@ class PcapConnector(Connector):
         import packets.localhost
 
         if dlink == pcap.DLT_EN10MB:
-            return packets.ethernet.ethernet(packet)
+            return packets.ethernet.ethernet(packet, timestamp)
         elif dlink == pcap.DLT_NULL:
-            return packets.localhost.localhost(packet)
+            return packets.localhost.localhost(packet, timestamp)
         else:
             raise UnpackError, "Could not interpret packet"
                 

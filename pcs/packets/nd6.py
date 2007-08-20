@@ -38,14 +38,21 @@ import pcs
 
 import icmpv6 # All neighbor discovery messages are inserted in ICMPv6 packets
 
+import time
+
 class nd6_solicit(pcs.Packet):
     """Neighbor Discovery"""
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a Neighbor Solicitaion header"""
         reserved = pcs.Field("reserved", 32)
         target = pcs.Field("target", 128)
         pcs.Packet.__init__(self, [reserved, target], bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+

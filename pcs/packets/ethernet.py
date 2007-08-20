@@ -41,13 +41,14 @@ from pcs.packets.ipv6 import ipv6
 from pcs.packets.arp import arp
 
 import inspect
+import time
 
 class ethernet(pcs.Packet):
     """Ethernet"""
     _layout = pcs.Layout()
     _map = ethernet_map.map
     
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize an ethernet packet"""
         src = pcs.StringField("src", 48)
         dst = pcs.StringField("dst", 48)
@@ -57,8 +58,14 @@ class ethernet(pcs.Packet):
         pcs.Packet.__init__(self, [dst, src, type], bytes = bytes)
         self.description = inspect.getdoc(self)
 
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
         if (bytes != None):
-            self.data = self.next(bytes[etherlen:len(bytes)])
+            self.data = self.next(bytes[etherlen:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 

@@ -36,6 +36,9 @@
 
 import pcs
 
+import inspect
+import time
+
 # ymsg packet = { int magic = "YMSG", short version, short id, short
 # len (does not include header), short command, int status, int
 # sessionid, data[]} data is a set of key/value pairs keys must always
@@ -45,10 +48,10 @@ import pcs
 # c080, that have keys that aren't integers, etc..
 
 class ymsg_hdr(pcs.Packet):
-
+    """YMSG"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """Define the fields for a Yahoo Messenger header.
 
         The header is followed by a set of key value pairs, defined in
@@ -64,6 +67,12 @@ class ymsg_hdr(pcs.Packet):
         pcs.Packet.__init__(self,
                             [version, id, length, command, status, session],
                             bytes = bytes)
+        self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
 class ymsg_key_value(pcs.Packet):
 

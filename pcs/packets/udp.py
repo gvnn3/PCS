@@ -37,13 +37,16 @@
 import pcs
 import udp_map
 
+import inspect
+import time
+
 class udp(pcs.Packet):
-    """A UDP class."""
+    """UDP"""
 
     _layout = pcs.Layout()
     _map = None
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a UDP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
@@ -51,21 +54,25 @@ class udp(pcs.Packet):
         checksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [sport, dport, length, checksum],
                             bytes = bytes)
-        self.description = "UDP"
+        self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
         if (bytes != None):
-            self.data = self.next(bytes[8:len(bytes)])
+            self.data = self.next(bytes[8:len(bytes)], timestamp)
         else:
             self.data = None
 
     # XXX UDP MUST have it's own next() function so that it can discrimnate
     # on either sport or dport.
 
-    def next(self, bytes):
+    def next(self, bytes, timestamp):
         """Decode higher level services."""
         if (self.dport in udp_map.map):
-            return udp_map.map[self.dport](bytes)
+            return udp_map.map[self.dport](bytes, timestamp = timestamp)
         if (self.sport in udp_map.map):
-            return udp_map.map[self.sport](bytes)
+            return udp_map.map[self.sport](bytes, timestamp = timestamp)
 
         return None

@@ -36,13 +36,14 @@
 import pcs
 import struct
 from socket import AF_INET, inet_ntop, inet_ntoa
+import time
 
 class arp(pcs.Packet):
     """ARP"""
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize an ARP packet"""
         hrd = pcs.Field("hrd", 16, default = 1)
         pro = pcs.Field("pro", 16, default = 0x800)
@@ -57,6 +58,11 @@ class arp(pcs.Packet):
         pcs.Packet.__init__(self, [hrd, pro, hln, pln, op,
                                    sha, spa, tha, tpa], bytes = bytes)
         self.description = inspect.getdoc()
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
         self.data = None
 
     def __str__(self):

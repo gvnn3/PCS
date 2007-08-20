@@ -36,13 +36,13 @@
 #
 
 import pcs
-import os
-from socket import AF_INET6, IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_ICMP, inet_ntop
-
 import udp, tcp, icmpv4
 import ipv6_map
 
+import os
+from socket import AF_INET6, inet_ntop
 import inspect
+import time
 
 # extension header next header field.
 IPV6_HOPOPTS = 0
@@ -59,7 +59,7 @@ class ipv6(pcs.Packet):
     _layout = pcs.Layout()
     _map = ipv6_map.map
     
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """IPv6 Packet from RFC 2460"""
         version = pcs.Field("version", 4, default = 6)
         traffic = pcs.Field("traffic_class", 8)
@@ -73,11 +73,17 @@ class ipv6(pcs.Packet):
                             [version, traffic, flow, length, next_header, hop,
                              src, dst], bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
             ## 40 bytes is the standard size of an IPv6 header
             offset = 40
-            self.data = self.next(bytes[offset:len(bytes)])
+            self.data = self.next(bytes[offset:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
         

@@ -41,13 +41,13 @@ import pcs
 import tcp_map
 
 import inspect
-
+import time
 class common(pcs.Packet):
     """SCTP common header class"""
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
@@ -56,9 +56,15 @@ class common(pcs.Packet):
         pcs.Packet.__init__(self, [sport, dport, tag, checksum],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -67,7 +73,7 @@ class payload(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 0)
         reserved = pcs.Field("reserved", 5)
@@ -84,9 +90,15 @@ class payload(pcs.Packet):
                              length, tsn, stream_im, stream_seq, ppi],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -98,7 +110,7 @@ class init(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """init or init ack chunk"""
         type = pcs.Field("type", 8)
         flags = pcs.Field("flags", 8)
@@ -113,9 +125,15 @@ class init(pcs.Packet):
                                    inbound_streams, initial_tsn],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -124,7 +142,7 @@ class sack(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 3)
         flags = pcs.Field("flags", 8)
@@ -140,9 +158,15 @@ class sack(pcs.Packet):
                                    duplicate_tsns],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -151,7 +175,7 @@ class heartbeat(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 4)
         flags = pcs.Field("flags", 8)
@@ -159,9 +183,15 @@ class heartbeat(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -170,7 +200,7 @@ class abort(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 6)
         reserved = pcs.Field("reserved", 7)
@@ -179,9 +209,15 @@ class abort(pcs.Packet):
         pcs.Packet.__init__(self, [type, reserved, tag, length],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -190,7 +226,7 @@ class shutdown(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 7)
         flags = pcs.Field("flags", 8)
@@ -199,9 +235,15 @@ class shutdown(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length, cumulative_tsn],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -210,7 +252,7 @@ class shutdown_ack(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 1)
         flags = pcs.Field("flags", 8)
@@ -218,9 +260,15 @@ class shutdown_ack(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -229,7 +277,7 @@ class operation_error(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 9)
         flags = pcs.Field("flags", 8)
@@ -237,9 +285,15 @@ class operation_error(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -248,7 +302,7 @@ class cookie_echo(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 10)
         flags = pcs.Field("flags", 8)
@@ -256,9 +310,15 @@ class cookie_echo(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -267,7 +327,7 @@ class cookie_ack(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 11)
         flags = pcs.Field("flags", 8)
@@ -275,9 +335,15 @@ class cookie_ack(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 
@@ -286,7 +352,7 @@ class shutdown_complete(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes=None):
+    def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 14)
         reserved = pcs.Field("reserved", 7)
@@ -295,8 +361,14 @@ class shutdown_complete(pcs.Packet):
         pcs.Packet.__init__(self, [type, reserved, tag, length],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 
         if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)])
+            self.data = self.next(bytes[0:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None

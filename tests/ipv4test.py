@@ -103,9 +103,9 @@ class ipTestCase(unittest.TestCase):
         packet.  Two packets constructed from the same bytes should be
         equal and two that are not should not be equal."""
         file = PcapConnector("loopping.out")
-        packet = file.read()
-        ip1 = ipv4(packet[file.dloff:len(packet)])
-        ip2 = ipv4(packet[file.dloff:len(packet)])
+        packet = file.readpkt()
+        ip1 = packet.data
+        ip2 = ipv4(packet.data.bytes)
         assert (ip1 != None)
         assert (ip2 != None)
         self.assertEqual(ip1, ip2, "packets should be equal but are not")
@@ -148,6 +148,14 @@ class ipTestCase(unittest.TestCase):
                          (test_string, string))
 
 
+    def test_ipv4_time(self):
+        """Test the timestamp setting facility."""
+        import time
+        file = PcapConnector("loopping.out")
+        packet = file.readpkt()
+        ip = packet.data
+
+        self.assertEqual(packet.timestamp, ip.timestamp, "lower and upper layer timestamps are different but should not be")
 
 if __name__ == '__main__':
     unittest.main()

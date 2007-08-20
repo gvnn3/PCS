@@ -36,13 +36,14 @@
 #
 
 import pcs
+import time
 
 class dhcpv4(pcs.Packet):
     """DHCPv4"""
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a DHCPv4 packet"""
         op = pcs.Field("op", 8)
         htype = pcs.Field("htype", 8)
@@ -65,5 +66,8 @@ class dhcpv4(pcs.Packet):
                              options],
                             bytes)
         self.description = inspect.getdoc(self)
-            
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
         

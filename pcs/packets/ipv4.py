@@ -37,8 +37,10 @@
 import pcs
 from socket import AF_INET, inet_ntop
 import ipv4_map
+
 import struct
 import inspect
+import time
 
 class ipv4(pcs.Packet):
     """IPv4"""
@@ -46,7 +48,7 @@ class ipv4(pcs.Packet):
     _layout = pcs.Layout()
     _map = ipv4_map.map
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """ define the fields of an IPv4 packet, from RFC 791
         This version does not include options."""
         version = pcs.Field("version", 4, default = 4)
@@ -67,10 +69,15 @@ class ipv4(pcs.Packet):
                             bytes = bytes)
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
         if (bytes != None):
             offset = self.hlen << 2
-            self.data = self.next(bytes[offset:len(bytes)])
+            self.data = self.next(bytes[offset:len(bytes)],
+                                  timestamp = timestamp)
         else:
             self.data = None
 

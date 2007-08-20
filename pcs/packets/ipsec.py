@@ -38,13 +38,14 @@
 import pcs
 
 import inspect
+import time
 
 class ah(pcs.Packet):
     """AH"""
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize an AH packet header"""
         next = pcs.Field("next_header", 8)
         plen = pcs.Field("payload_len", 8)
@@ -56,13 +57,18 @@ class ah(pcs.Packet):
                             [next, plen, rsvrd, spi, seq, auth],
                             bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
         
 class esp(pcs.Packet):
     """ESP"""
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize an ESP packet header"""
         spi = pcs.Field("spi", 32)
         seq = pcs.Field("sequence", 32)
@@ -76,4 +82,9 @@ class esp(pcs.Packet):
                              auth],
                             bytes)
         self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
 

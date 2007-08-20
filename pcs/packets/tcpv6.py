@@ -38,11 +38,14 @@ import pcs
 import struct
 from pseudoipv6 import *
 
+import inspect
+import time
+
 class tcpv6(pcs.Packet):
-    """A TCP class for IPv6"""
+    """TCPv6"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a TCP packet for IPv6"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
@@ -62,6 +65,11 @@ class tcpv6(pcs.Packet):
         pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
                                    urg, ack, psh, rst, syn, fin, window, cksum, urgptr],
                             bytes = bytes)
+        self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
