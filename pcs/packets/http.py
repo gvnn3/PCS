@@ -37,6 +37,7 @@
 import pcs
 
 import time
+import inspect
 
 class http(pcs.Packet):
     """HTTP"""
@@ -46,7 +47,10 @@ class http(pcs.Packet):
         """initialize a TCP packet"""
         # XXX: Right now we just have a 64K request.  Need to augment
         # from the RFC as this gets fleshed out.
-        request = pcs.StringField("request", 65535*8)
+        if bytes == None:
+            request = pcs.StringField("request", 65535*8)
+        else:
+            request = pcs.StringField("request", len(bytes)*8)
         pcs.Packet.__init__(self, [request],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
