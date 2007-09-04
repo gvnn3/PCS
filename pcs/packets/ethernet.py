@@ -53,7 +53,6 @@ class ethernet(pcs.Packet):
         src = pcs.StringField("src", 48)
         dst = pcs.StringField("dst", 48)
         type = pcs.Field("type", 16, discriminator=True)
-        etherlen = 14
 
         pcs.Packet.__init__(self, [dst, src, type], bytes = bytes)
         self.description = inspect.getdoc(self)
@@ -64,7 +63,7 @@ class ethernet(pcs.Packet):
             self.timestamp = timestamp
 
         if (bytes != None):
-            self.data = self.next(bytes[etherlen:len(bytes)],
+            self.data = self.next(bytes[self.sizeof():len(bytes)],
                                   timestamp = timestamp)
         else:
             self.data = None

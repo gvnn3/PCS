@@ -110,7 +110,7 @@ class ipTestCase(unittest.TestCase):
         assert (ip2 != None)
         self.assertEqual(ip1, ip2, "packets should be equal but are not")
 
-        ip1.dst = 0xffffffff
+        ip1.dst = 0xffffffffL
         self.assertNotEqual(ip1, ip2, "packets compare equal but should not")
         
     def test_ipv4_print(self):

@@ -70,6 +70,7 @@ class sctpTestCase(unittest.TestCase):
         file = PcapConnector("sctp.pcap")
         packet = file.readpkt()
         sctp = packet.data.data
+        print sctp
         assert (sctp != None)
 
 if __name__ == '__main__':

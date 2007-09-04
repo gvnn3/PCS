@@ -115,3 +115,31 @@ class ipv4(pcs.Packet):
         total += total >> 16
         return ~total & 0xffff
 
+#
+# Convenience object for higher level protocols that need a fake IPv4
+# header to calculate a checksum.
+
+class pseudoipv4(pcs.Packet):
+    """IPv4 Pseudo Header"""
+
+    _layout = pcs.Layout()
+    _map = None
+
+    def __init__(self, bytes = None, timestamp = None):
+        """For a pseudo header we only need the source and destination ddresses."""
+        from socket import IPPROTO_TCP
+        src = pcs.Field("src", 32)
+        dst = pcs.Field("dst", 32)
+        reserved = pcs.Field("reserved", 8, default = 0)
+        protocol = pcs.Field("protocol", 8, default = IPPROTO_TCP)
+        length = pcs.Field("length", 16)
+        pcs.Packet.__init__(self, [src, dst, reserved, protocol, length],
+                            bytes = bytes)
+        # Description MUST be set after the PCS layer init
+        self.description = inspect.getdoc(self)
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        self.data = None

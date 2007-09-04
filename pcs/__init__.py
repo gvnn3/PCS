@@ -491,8 +491,10 @@ class Packet(object):
                 return
         else:
             self._fieldnames = {}
+            self._bitlength = 0
             for field in self._layout:
                 self._fieldnames[field.name] = True
+                self._bitlength += field.width
 
     def __eq__(self, other):
         """Do a comparison of the packets data, including fields and bytes."""
@@ -558,8 +560,8 @@ class Packet(object):
         # current packet does not contain knowledge about what comes
         # next.
 
-        if (discriminator != None):
-            if (self.__dict__[self._discriminator.name] in self._map):
+        if ((discriminator != None) and (self._map != None)):
+            if (discriminator in self._map):
                 return self._map[self.__dict__[self._discriminator.name]](bytes, timestamp = timestamp)
             
         if ((self._discriminator != None) and (self._map != None)):
@@ -567,6 +569,10 @@ class Packet(object):
                 return self._map[self.__dict__[self._discriminator.name]](bytes, timestamp = timestamp)
         
         return None
+
+    def sizeof(self):
+        """Return the size, in bytes, of the packet."""
+        return (self._bitlength / 8)
 
     def toXML(self):
         """Transform the Packet into XML."""

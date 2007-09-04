@@ -38,14 +38,16 @@
 # chunk is its own packet wrt PCS.
 
 import pcs
-import tcp_map
+import sctp_map
 
 import inspect
 import time
+
 class common(pcs.Packet):
     """SCTP common header class"""
 
     _layout = pcs.Layout()
+    _map = None
     
     def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
@@ -61,9 +63,9 @@ class common(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-
-        if (bytes != None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (bytes != None and len(bytes) > self.sizeof() ):
+            self.data = self.next(bytes[self.sizeof():len(bytes)],
+                                  discriminator = bytes[self.sizeof() + 1],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -72,7 +74,8 @@ class payload(pcs.Packet):
     """SCTP payload chunk class"""
 
     _layout = pcs.Layout()
-    
+    _map = None
+
     def __init__(self, bytes = None, timestamp = None):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 0)
