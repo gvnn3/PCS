@@ -36,7 +36,7 @@
 import pcs
 import struct
 from socket import AF_INET, inet_ntop, inet_ntoa
-import time
+import time, inspect
 
 class arp(pcs.Packet):
     """ARP"""
@@ -57,7 +57,7 @@ class arp(pcs.Packet):
         
         pcs.Packet.__init__(self, [hrd, pro, hln, pln, op,
                                    sha, spa, tha, tpa], bytes = bytes)
-        self.description = inspect.getdoc()
+        self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()
         else:
