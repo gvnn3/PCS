@@ -47,12 +47,23 @@ def main():
     parser.add_option("-a", "--address",
                       dest="addr", default=None,
                       help="Address of the domain name server.")
+    parser.add_option("-u", "--udp",
+                      dest="udp", default=None,
+                      help="Use UDP instead of TCP.")
+    
     
     (options, args) = parser.parse_args()
 
-    conn = TCP4Connector(options.addr, 53)
+    if options.udp != None:
+        conn = UDP4Connector(options.addr, 53)
+    else:
+        conn = TCP4Connector(options.addr, 53)
 
-    header = dnsheader()
+    if (options.udp == None):
+        header = dnsheader(tcp = True)
+    else:
+        header = dnsheader()
+
     header.id = 1
     header.rd = 1
     header.qdcount = 1
@@ -75,15 +86,20 @@ def main():
 
     packet = Chain([header, lab1, lab2, lab3, lab4, query])
 
-    header.length = 38
-    
-    packet = Chain([header, lab1, lab2, lab3, lab4, query])
+    if options.udp == None:
+        header.length = 38
+        packet = Chain([header, lab1, lab2, lab3, lab4, query])
 
     print packet
     print packet.bytes
     print len(packet.bytes)
 
-    conn.write(packet.bytes, 38)
+    conn.write(packet.bytes)
+
+    retval = conn.read(1024)
+
+    print len(retval)
+    print dnsheader(retval)
 
     conn.close()
     

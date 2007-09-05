@@ -43,9 +43,8 @@ class dnsheader(pcs.Packet):
     """DNS Header"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, tcp = None):
         """Define the fields of a DNS (RFC 1035) header"""
-        length = pcs.Field("length", 16)
         id = pcs.Field("id", 16)
         query = pcs.Field("query", 1)
         opcode = pcs.Field("opcode", 4)
@@ -60,8 +59,16 @@ class dnsheader(pcs.Packet):
         nscount = pcs.Field("nscount", 16)
         arcount = pcs.Field("arcount", 16)
         
-        pcs.Packet.__init__(self,
-                            [length, id, query, opcode, aa, tc, rd, ra, z,
+        # DNS Headers on TCP require a length but when encoded in UDP do not.
+        if (tcp != None):
+            length = pcs.Field("length", 16)
+            pcs.Packet.__init__(self,
+                                [length, id, query, opcode, aa, tc, rd, ra, z,
+                                 rcode, qdcount, ancount, nscount, arcount],
+                                bytes = bytes)
+        else:
+            pcs.Packet.__init__(self,
+                            [id, query, opcode, aa, tc, rd, ra, z,
                              rcode, qdcount, ancount, nscount, arcount],
                             bytes = bytes)
 

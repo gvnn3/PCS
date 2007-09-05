@@ -926,7 +926,7 @@ class UDP4Connector(IP4Connector):
 
         if (address != None and port != None):
             try:
-                self.file.connect([address, port])
+                self.file.connect((address, port))
             except:
                 raise
 
