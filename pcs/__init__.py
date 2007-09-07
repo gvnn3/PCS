@@ -316,6 +316,110 @@ class LengthValueField(Field):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
 
+class TypeLengthValueField(Field):
+    """A type-length-value field handles parts of packets where a type
+    is encoded before a length and value.  """
+
+    def __init__(self, name = "", type = None, typewidth = 8, lengthwidth = 8,
+                 valuetype = "s", inclusive = False, default = None):
+        self.name = name
+        self.type = type
+        self.typewidth = typewidth
+        self.lengthwidth = lengthwidth
+        self.width = typewidth + lengthwidth
+        self.valuetype = valuetype
+        self.inclusive = inclusive
+        self.default = default
+
+    def __repr__(self):
+        return "<pcs.TypeLengthValueField type %d, value name %s, length name %s," \
+               "width %d>" % (self.type, self.name, self.length_name, self.typewidth, self.lengthwidth)
+
+    def decode(self, bytes, curr, byteBR):
+        # Grab the type from the packet
+        if (byteBR != None and byteBR != 8):
+            raise FieldAlignmentError, "TypeLengthValue Fields must start on a byte boundary"
+        if self.typewidth == 8:
+            packarg = "B"
+        elif self.typewidth == 16:
+            packarg = "H"
+        elif self.typewidth == 32:
+            packarg = "I"
+        width = self.typewidth / 8
+        type = struct.unpack(packarg, bytes[curr:curr+width])[0]
+        curr += width
+        # Grab the length of the following data from the packet
+        if self.lengthwidth == 8:
+            packarg = "B"
+        elif self.lengthwidth == 16:
+            packarg = "H"
+        elif self.lengthwidth == 32:
+            packarg = "I"
+        width = self.lengthwidth / 8
+        length = struct.unpack(packarg, bytes[curr:curr+width])[0]
+        curr += width
+        # Now grab the data of that length
+        if self.valuetype == "s":
+            packarg = "%ds" % length
+        else:
+            packarg = "!%s" % self.valuetype
+        if self.inclusive == True:
+            length -= (self.typewidth / 8) + (self.lengthwidth / 8)
+        value = struct.unpack(packarg, bytes[curr:curr+length])[0]
+        if self.inclusive == True:
+            length += (self.typewidth / 8) + (self.lengthwidth / 8)
+        curr += length
+        self.width = self.typewidth + self.lengthwidth + (length * 8)
+        return [(type, length, value), curr, byteBR]
+        
+    def encode(self, bytearray, value, byte, byteBR):
+        """Encode a LengthValue field.
+           Make sure to check the byte alignment."""
+        if (byteBR != None and byteBR != 8):
+            raise FieldAlignmentError, "LengthValue Fields must start on a byte boundary"
+        # Put the type into the packet first.
+        if self.typewidth == 8:
+            packarg = "B"
+        elif self.typewidth == 16:
+            packarg = "H"
+        elif self.typewidth == 32:
+            packarg = "I"
+        # Now put the data into the packet after the length
+        bytearray.append(struct.pack(packarg, self.type))
+        if self.lengthwidth == 8:
+            packarg = "B"
+        elif self.lengthwidth == 16:
+            packarg = "H"
+        elif self.lengthwidth == 32:
+            packarg = "I"
+        # Now put the data into the packet after the length
+        length = value[1]
+        bytearray.append(struct.pack(packarg, length))
+        if self.valuetype == "s":
+            packarg = "%d%s" % (length, self.valuetype)
+        else:
+            packarg = "!%s" % self.valuetype
+        bytearray.append(struct.pack(packarg, value[2]))
+        return [byte, byteBR]
+
+    def reset(self):
+        """Return a resonable value to use in resetting a field of this type."""
+        return ""
+
+    def bounds(self, value):
+        """Check the bounds of this field."""
+        if ((value == None) or
+            (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
+            raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
+
+# class OptionListField(Chain):
+#     """A option list field points to a list of options, which
+#     themselves can be packets."""
+#     def __init__(self, name = "", width = 0, default = None):
+#         self.name = name
+#         self.width = width
+#         self.default = default
+
 class LayoutDiscriminatorError(Exception):
     """When a programmer tries to set more than one field in a Layout as a 
     discriminator an error is raised."""

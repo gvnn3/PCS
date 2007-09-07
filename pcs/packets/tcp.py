@@ -63,9 +63,11 @@ class tcp(pcs.Packet):
         window = pcs.Field("window", 16)
         checksum = pcs.Field("checksum", 16)
         urgp = pcs.Field("urg_pointer",16)
+        mss = pcs.TypeLengthValueField("mss", 2, 8, 8, "H", True)
+#        options = pcs.OptionListField("options")
         pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
                                    urg, ack, psh, rst, syn, fin, window,
-                                   checksum, urgp],
+                                   checksum, urgp, mss],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
         if timestamp == None:
@@ -73,6 +75,9 @@ class tcp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
+        # Handle options processing
+#        if (self.offset * 4 > self.sizeof()):
+            
         if (bytes != None and (self.offset * 4 < len(bytes))):
             self.data = self.next(bytes[(self.offset * 4):len(bytes)],
                                   timestamp = timestamp)
