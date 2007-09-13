@@ -1,16 +1,119 @@
 \documentclass[11pt]{article}
+\usepackage{codespelunking}
+\usepackage{fancyvrb}
+\usepackage{listings}
+\usepackage[pdftex]{hyperref}
+\title{Design of the Packet Construction Set}
+\author{George V. Neville-Neil}
 \begin{document}
+\maketitle
+\tableofcontents
 
 \section{Introduction}
 
-\section{Classes}
+This document covers various design decisions in PCS including how
+many of the underlying bits work.
 
-\subsection{Packet}
+\section{Fields}
+\label{sec:fields}
 
-\subsection{Field}
+\subsection{Encoding and Decoding Fields}
+\label{sec:encoding_and_decoding_fields}
 
-\subsection{Layout}
+In order for fields to be useful they must be encoded, that is the
+value of the field must be turned into a set of bytes, and decoded,
+whereby a set of bytes are turned into a usable value.  The fields are
+treated as a list and their \method{encode} and \method{decode}
+methods are called by the \class{Packet} class so they must have a
+unified API and return value signature.
 
-\section{Functions}
+When \program{PCS} wants to encode a value into a set of bits or bytes
+for use in a real packet the \method{encode} method is called.  The
+API for \method{encode} is given in Figure~\ref{fig:encode_API}.
+
+\begin{figure}
+  \begin{lstlisting}
+    def encode(self, bytearray, value, byte, byteBR):
+  \end{lstlisting}
+  \caption{encode API}
+  \label{fig:encode_API}
+\end{figure}
+
+The \parameter{bytearray} parameter is the real set of bytes that are
+part of the \object{Packet} object and which will be used when
+transmitting a packet on the wire.  It is the \parameter{bytearray}
+that must be updated by the \method{encode} method.
+The \parameter{value} parameter is the value that is to be encoded.
+When processing a byte stream we must track two other values are we
+move through the values and encode them into the bytearray.
+The \parameter{byte} parameter is the current byte that is being
+encoded, or written to, and the \parameter{byteBR} is the number of
+Bits Remaining to encode in that byte.
+
+The return value of the \method{encode} method is a list of two
+elements as shown in Figure~\ref{fig:encode_return_value}.
+
+\begin{figure}
+  \begin{lstlisting}
+    return [byte, byteBR]
+  \end{lstlisting}
+  \caption{encode return value}
+  \label{fig:encode_return_value}
+\end{figure}
+
+The \parameter{byte} we are encoding and the \parameter{byteBR} Bits
+Remaining to encode in that byte are both returned so they can be
+passed to the next field's \method{encode} method.
+
+The process of decoding a field requires three values be passed into
+the \method{decode} method and 3 values to be passed back out.  The
+\method{decode} API, shown in Figure~\ref{fig:decode_API}, has 4
+arguments, including the required \parameter{self} parameter.
+
+\begin{figure}
+  \begin{lstlisting}
+    def decode(self, bytes, curr, byteBR):
+  \end{lstlisting}
+  \caption{decode API}
+  \label{fig:decode_API}
+\end{figure}
+
+The example given in~\ref{fig:decode_return_value} is from the
+\class{Field} class which handles the majority of the fields in
+packets.  The \parameter{bytes} parameter is the buffer of raw bytes
+that we are processing.  The \parameter{curr} parameter is the current
+\emph{byte position} in the \variable{bytes} array while
+the \parameter{byteBR} carries the number of Bits Remaining to process
+in this particular bytes.  The \parameter{curr} and \parameter{byteBR}
+\emph{must} be updated by the \method{decode} method so that the next
+field knows where to start decoding its value from.
+
+All \method{decode} methods return a list:
+
+\begin{figure}
+  \begin{lstlisting}
+    return [real_value, curr, byteBR]
+  \end{lstlisting}
+  \caption{decode method return values}
+  \label{fig:decode_return_value}
+\end{figure}
+
+The \parameter{real\_value} parameter contains the value that
+was extracted from the byte stream and which the caller, usually the
+\class{Packet} class's \method{decode} method is supposed to put into
+the \object{Packet} object.  The \parameter{curr} is the updated value
+of the current byte that is to be processed in the byte strea, and the
+byteBR is the number of Bits Remaining to be processed in that byte.
+Both curr and ByteBR are necessary so that we can process values which
+cross byte boundaries.
+
+\section{Layout}
+\label{sec:layout}
+
+\section{Packet}
+\label{sec:packet}
+
+\section{Connectors}
+\label{sec:connectors}
 
 \end{document}
