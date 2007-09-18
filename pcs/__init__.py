@@ -112,7 +112,12 @@ layout of the data and how it is addressed."""
 
     def decode(self, bytes, curr, byteBR):
         """Decode a field and return the value and the updated current
-        pointer into the bytes array"""
+        pointer into the bytes array
+
+        bytes - the byte array for the packet
+        curr - the current byte position in the bytes array
+        byteBR - the number of Bits Remaining in the current byte
+        """
         real_value = 0
         fieldBR = self.width
         while fieldBR > 0 and curr < len(bytes):
@@ -412,13 +417,93 @@ class TypeLengthValueField(Field):
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
-# class OptionListField(Chain):
-#     """A option list field points to a list of options, which
-#     themselves can be packets."""
-#     def __init__(self, name = "", width = 0, default = None):
-#         self.name = name
-#         self.width = width
-#         self.default = default
+class Option(object):
+    """An option contains a field and the value for the field."""
+    def __init__(self, field, value=None):
+        self.field = field
+        self.value = value
+    
+    def encode(self, bytearray, byte, byteBR):
+        return self.field(bytearray, self.value, byte, byteBR)
+
+    def decode(self, bytes, curr, byteBR):
+        [value, curr, byteBR] = self.field(bytes, curr, byteBR)
+        self.value = value
+        return [value, curr, byteBR]
+
+class OptionListField(list):
+    """A option list is a list of fields. Option lists inhabit many
+    protocols including TCP"""
+
+    def __init__(self, name, width = 0, options = None):
+        """initialize a  object
+
+        packets - an optionl array of packets to add to the new Chain
+        """
+        list.__init__(self)
+        self.name = name
+        self.width = width
+        self.options = options
+        self.default = None
+        
+    def __eq__(self, other):
+        """test two Chain objects for equality
+
+        Two chains are equal iff they have the same packets and their
+        packets have the same data in them."""
+        if len(self.options) != len(other.options):
+            return False
+        for i in range(len(self.options)):
+            if self.options[i] != other.options[i]:
+                return False
+        return True
+            
+    def __ne__(self, other):
+        """test two Chain objects for inequality"""
+        return not self.__eq__(other)
+            
+    def __str__(self):
+        """return a pretty printed Chain"""
+        retval = ""
+        for option in self.options:
+            retval += "%s " % option.__str__()
+        return retval
+    
+    def __setitem__(self, index, value):
+        if index > len(self.options):
+            return
+        else:
+            self.options[index].value = value
+            self.encode()
+
+    def append(self, option):
+        """Append a packet to a chain.  Appending a packet requires
+        that we update the bytes as well."""
+        print "fuck me"
+        self.options.append(option)
+        self.encode()
+
+    def encode(self, bytearray, value, byte, byteBR):
+        """Encode all the packets in a chain into a set of bytes for the Chain"""
+        if self.options != None:
+            for option in self.options:
+                value = option.value
+                return (option.field.encode(bytearray, value, byte, byteBR))
+        else:
+            return [byte, byteBR]
+
+    def decode(self, bytes, curr, byteBR):
+        """Decode all the options in the list"""
+        if self.options != None:
+            for option in self.options:
+                [value, curr, byteBR] = option.field.decode(bytes, curr, byteBR)
+                return [None , curr, byteBR]
+        else:
+            return [None, curr, byteBR]
+
+    def reset(self):
+        print self.options
+
 
 class LayoutDiscriminatorError(Exception):
     """When a programmer tries to set more than one field in a Layout as a 
@@ -510,7 +595,8 @@ class Packet(object):
             if curr > len(bytes):
                 break
             [value, curr, byteBR]  = field.decode(bytes, curr, byteBR)
-            object.__setattr__(self, field.name, value)
+            if value != None:
+                object.__setattr__(self, field.name, value)
 
     bytes = property(getbytes, decode)
 
@@ -767,7 +853,6 @@ class Chain(list):
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16
         return ~total
-
 
 class ConnNotImpError(Exception):
     """Calling a method that is not implemented raises this exception.

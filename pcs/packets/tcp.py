@@ -34,12 +34,36 @@
 #
 # Description: A class that describes a TCP packet.
 
+import sys
+
 import pcs
 from pcs.packets import payload
 import tcp_map
 
 import inspect
 import time
+
+class tcppad(pcs.Option):
+    "TCP Pad Byte"
+    
+    def __init__(self):
+        """initialize a TCP pad byte"""
+        pcs.Option.__init__(self, pcs.Field("pad", 8, 0), 0)
+
+class tcpnop(pcs.Option):
+    "TCP NOP Byte"
+    
+    def __init__(self):
+        """initialize a TCP nop"""
+        pcs.Option.__init__(self, pcs.Field("nop", 8, 1), 1)
+
+class tcpoption(pcs.Option):
+    "TCP MSS Option"
+    
+    def __init__(self, value = None):
+        """initialize a TCP mss option"""
+        pcs.Option.__init__(self, pcs.TypeLengthValueField("option",
+                                                     2, 8, 8), value)
 
 class tcp(pcs.Packet):
     """TCP"""
@@ -63,11 +87,10 @@ class tcp(pcs.Packet):
         window = pcs.Field("window", 16)
         checksum = pcs.Field("checksum", 16)
         urgp = pcs.Field("urg_pointer",16)
-        mss = pcs.TypeLengthValueField("mss", 2, 8, 8, "H", True)
-#        options = pcs.OptionListField("options")
+        options = pcs.OptionListField("options")
         pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
                                    urg, ack, psh, rst, syn, fin, window,
-                                   checksum, urgp, mss],
+                                   checksum, urgp, options],
                             bytes = bytes)
         self.description = inspect.getdoc(self)
         if timestamp == None:
@@ -76,8 +99,22 @@ class tcp(pcs.Packet):
             self.timestamp = timestamp
 
         # Handle options processing
-#        if (self.offset * 4 > self.sizeof()):
-            
+        if bytes != None:
+            if (self.offset * 4 > self.sizeof()):
+                curr = self.sizeof()
+                while (curr <= self.offset * 4):
+                    if bytes[curr] == 0:
+                        self.options += tcppad()
+                        curr += 1
+                    elif bytes[curr] == 1:
+                        self.options += tcpnop()
+                        curr += 1
+                    elif bytes[curr] == 2:
+                        self.options += tcpmss()
+                    else:
+                        print "unknown option"
+                        curr += 1
+
         if (bytes != None and (self.offset * 4 < len(bytes))):
             self.data = self.next(bytes[(self.offset * 4):len(bytes)],
                                   timestamp = timestamp)
