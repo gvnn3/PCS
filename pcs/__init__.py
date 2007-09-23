@@ -666,9 +666,8 @@ class Packet(object):
             return
 
         if (name not in reserved_names):
-            for field in self._layout:
-                if field.name == name:
-                    field.bounds(value)
+            if name in self._fieldnames:
+                self._fieldnames[name].bounds(value)
 
         object.__setattr__(self, name, value)
 
@@ -683,7 +682,7 @@ class Packet(object):
             self._fieldnames = {}
             self._bitlength = 0
             for field in self._layout:
-                self._fieldnames[field.name] = True
+                self._fieldnames[field.name] = field
                 self._bitlength += field.width
 
     def __eq__(self, other):
