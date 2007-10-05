@@ -43,28 +43,6 @@ import tcp_map
 import inspect
 import time
 
-class tcppad(pcs.Option):
-    "TCP Pad Byte"
-    
-    def __init__(self):
-        """initialize a TCP pad byte"""
-        pcs.Option.__init__(self, pcs.Field("pad", 8, 0), 0)
-
-class tcpnop(pcs.Option):
-    "TCP NOP Byte"
-    
-    def __init__(self):
-        """initialize a TCP nop"""
-        pcs.Option.__init__(self, pcs.Field("nop", 8, 1), 1)
-
-class tcpoption(pcs.Option):
-    "TCP MSS Option"
-    
-    def __init__(self, value = None):
-        """initialize a TCP mss option"""
-        pcs.Option.__init__(self, pcs.TypeLengthValueField("option",
-                                                     2, 8, 8), value)
-
 class tcp(pcs.Packet):
     """TCP"""
     _layout = pcs.Layout()
@@ -104,13 +82,11 @@ class tcp(pcs.Packet):
                 curr = self.sizeof()
                 while (curr <= self.offset * 4):
                     if bytes[curr] == 0:
-                        self.options += tcppad()
+                        self.options.append([0, pcs.Field("nop", 8)])
                         curr += 1
                     elif bytes[curr] == 1:
-                        self.options += tcpnop()
+                        self.options.append([1, pcs.Field("end", 8)])
                         curr += 1
-                    elif bytes[curr] == 2:
-                        self.options += tcpmss()
                     else:
                         print "unknown option"
                         curr += 1

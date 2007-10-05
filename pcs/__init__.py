@@ -417,25 +417,22 @@ class TypeLengthValueField(Field):
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
-class Option(object):
-    """An option contains a field and the value for the field."""
-    def __init__(self, field, value=None):
-        self.field = field
-        self.value = value
-    
-    def encode(self, bytearray, byte, byteBR):
-        return self.field(bytearray, self.value, byte, byteBR)
+_fieldlist = (Field, StringField, TypeLengthValueField)
 
-    def decode(self, bytes, curr, byteBR):
-        [value, curr, byteBR] = self.field(bytes, curr, byteBR)
-        self.value = value
-        return [value, curr, byteBR]
+class OptionListError(Exception):
+    """When a programmer tries to append to an option list and causes
+    an error this exception is raised."""
+
+    def __init__(self, message):
+        self.message = message
+    def __str__(self):
+        return repr(self.message)
 
 class OptionListField(list):
     """A option list is a list of fields. Option lists inhabit many
     protocols including TCP"""
 
-    def __init__(self, name, width = 0, options = None):
+    def __init__(self, name, width = 0, options = []):
         """initialize a  object
 
         packets - an optionl array of packets to add to the new Chain
@@ -443,14 +440,38 @@ class OptionListField(list):
         list.__init__(self)
         self.name = name
         self.width = width
-        self.options = options
-        self.default = None
+        if options != []:
+            for pair in options:
+                self.append(pair)
+        else:
+            self.options = options
+            self.values = []
         
-    def __eq__(self, other):
-        """test two Chain objects for equality
+        self.default = self
+        
+    def __len__(self):
+        return len(self.options)
+    
+    def __iter__(self):
+        self.index = 0
+        return self
 
-        Two chains are equal iff they have the same packets and their
-        packets have the same data in them."""
+    def next(self):
+        """Option lists return a pair of (value, option) when iterated"""
+        if len(self.values) <= 0:
+            raise StopIteration
+        if self.index > len(self.values):
+            raise StopIteration
+        retval =  (self.values[self.index], self.options[self.index])
+        self.index += 1
+        return retval
+    
+    def __eq__(self, other):
+        """test two option lists for equality
+
+        Two option lists are equal iff they have the samem options and values"""
+        if (other == None):
+            return False
         if len(self.options) != len(other.options):
             return False
         for i in range(len(self.options)):
@@ -462,44 +483,94 @@ class OptionListField(list):
         """test two Chain objects for inequality"""
         return not self.__eq__(other)
             
+    def __repr__(self):
+        return "<pcs.OptionListField>"
+
     def __str__(self):
-        """return a pretty printed Chain"""
-        retval = ""
-        for option in self.options:
-            retval += "%s " % option.__str__()
+        """return a pretty printed option list"""
+        retval = "["
+        for index in range(0, len(self.options)):
+            retval += "[%s, %s]" % (self.values[index], self.options[index].name)
+            if (index == (len(self.options) - 1)):
+                break
+            retval += ", "
+        retval += "]"
         return retval
     
     def __setitem__(self, index, value):
-        if index > len(self.options):
-            return
+        if (index < 0 or index > len(self.options)):
+            raise IndexError, "index %d out of range" % index
         else:
-            self.options[index].value = value
-            self.encode()
+            # Three part harmony
+            # The caller can pass a list of (value, option) 
+            if isinstance(value, list):
+                if len(value) != 2:
+                    raise OptionListError, "Option must be a pair (value, PCS Field)"
+                if not isinstance(value[1], _fieldlist):
+                    raise OptionListError, "Option must be a valid PCS Field."
+                self.values[index] = value[0]
+                self.options[index] = value[1]
+                return
+            # or the caller can pass a field, but we have to check the
+            # underlying value
+            if isinstance(value, _fieldlist):
+                value.bounds(self.values[index])
+                self.options[index] = value
+                return
+            # of the caller can pass a value but we have to check the bounds
+            self.options[index].bounds(value)
+            self.values[index] = value
+
+    def __getitem__(self, index):
+        if (index < 0 or index > len(self.options)):
+            raise IndexError, "index %d out of range" % index
+        else:
+            return (self.values[index], self.options[index])
+
+    def get(self):
+        pass
+
+    def __add__(self, other):
+        if isinstance(other, _fieldlist):
+            self.options += other
+        else:
+            self.values += other
 
     def append(self, option):
-        """Append a packet to a chain.  Appending a packet requires
-        that we update the bytes as well."""
-        print "fuck me"
-        self.options.append(option)
-        self.encode()
+        """Append an option, an option/value pair, or a value to an
+        options list
 
+        Vaue,Option pairs are given as a list (value, option)
+        """
+        if isinstance(option, list):
+            if len(option) != 2:
+                raise OptionListError, "Option must be a pair (value, PCS Field)"
+            if not isinstance(option[1], _fieldlist):
+                raise OptionListError, "Option must be a valid PCS Field."
+            self.values.append(option[0])
+            self.options.append(option[1])
+        else: 
+            raise OptionListError, "Option must be a pair (value, PCS Field)"
+
+        
     def encode(self, bytearray, value, byte, byteBR):
-        """Encode all the packets in a chain into a set of bytes for the Chain"""
+        """Encode all the options in a list into a set of bytes"""
         if self.options != None:
-            for option in self.options:
-                value = option.value
-                return (option.field.encode(bytearray, value, byte, byteBR))
-        else:
-            return [byte, byteBR]
+            for index in range(0, len(self.options)):
+                value = self.values[index]
+                option = self.options[index]
+                option.encode(bytearray, value, byte, byteBR)
+        return [byte, byteBR]
 
     def decode(self, bytes, curr, byteBR):
         """Decode all the options in the list"""
         if self.options != None:
+            index = 0
             for option in self.options:
-                [value, curr, byteBR] = option.field.decode(bytes, curr, byteBR)
-                return [None , curr, byteBR]
-        else:
-            return [None, curr, byteBR]
+                [value, curr, byteBR] = option.decode(bytes, curr, byteBR)
+                self.values[index] = value
+                index += 1 
+        return [None, curr, byteBR]
 
     def reset(self):
         print self.options
@@ -684,6 +755,13 @@ class Packet(object):
             for field in self._layout:
                 self._fieldnames[field.name] = field
                 self._bitlength += field.width
+
+    # XXX This is unlikely to work, infinite recursion.
+    def __getattribute__(self, name):
+        if isinstance(self._fieldnames[name], OptionListField):
+            self._needencode = True
+
+        return object.__getattribute__(self, name)
 
     def __eq__(self, other):
         """Do a comparison of the packets data, including fields and bytes."""
