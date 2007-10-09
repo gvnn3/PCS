@@ -56,8 +56,8 @@ class optionTestCase(unittest.TestCase):
         print packet.options
         packet.sport = 5
         print packet.bytes
-        packet.options.append([33, nop])
-        packet.options.append([99, pad])
+        packet.options.append([1, nop])
+        packet.options.append([0, pad])
         
         print packet
         print packet.bytes

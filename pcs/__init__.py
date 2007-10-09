@@ -756,10 +756,11 @@ class Packet(object):
                 self._fieldnames[field.name] = field
                 self._bitlength += field.width
 
-    # XXX This is unlikely to work, infinite recursion.
     def __getattribute__(self, name):
-        if isinstance(self._fieldnames[name], OptionListField):
-            self._needencode = True
+        """Getting an attribute means we may have extended an option.
+
+        If we append to an options we have to reencode the bytes."""
+        object.__setattr__(self, '_needencode', True)
 
         return object.__getattribute__(self, name)
 
