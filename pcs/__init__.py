@@ -930,7 +930,7 @@ class Chain(list):
             total += (struct.unpack("!H", bytes[2*i:2*i+2])[0])
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16
-        return ~total
+        return ~total & 0xffff
 
 class ConnNotImpError(Exception):
     """Calling a method that is not implemented raises this exception.
