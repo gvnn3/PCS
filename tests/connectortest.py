@@ -118,14 +118,14 @@ class pcapTestCase(unittest.TestCase):
         icmp.checksum = icmp_packet.calc_checksum()
 
         ip.length = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
-        ip.checksum = ip.calc_checksum()
+        ip.checksum = ip.cksum()
 
         packet = Chain([e, ip, icmp, echo])
 	packet.encode()
 
         wfile = PcapConnector("edsc0")
         rfile = PcapConnector("edsc0")
-	rfile.setfiler("icmp")
+	rfile.setfilter("icmp")
 
         count = wfile.write(packet.bytes, 42)
 	assert (count == 42)
