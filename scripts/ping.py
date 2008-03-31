@@ -40,7 +40,9 @@ from pcs.packets.localhost import *
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *
 from pcs.packets.icmpv4 import *
+from pcs.packets.payload import *
 from pcs import *
+from time import sleep
 
 def main():
 
@@ -54,7 +56,7 @@ def main():
     parser.add_option("-D", "--dont_fragment",
                       dest="df", default=False,
                       help="Set the Don't Fragment bit.")
-    
+
     parser.add_option("-s", "--ip_source",
                       dest="ip_source", default=None,
                       help="The IP source address.")
@@ -62,6 +64,10 @@ def main():
     parser.add_option("-d", "--ip_dest",
                       dest="ip_dest", default=None,
                       help="The IP destination address.")
+
+    parser.add_option("-I", "--ether_iface",
+                      dest="ether_iface", default=None,
+                      help="The name of the source interface.")
 
     parser.add_option("-e", "--ether_source",
                       dest="ether_source", default=None,
@@ -74,47 +80,55 @@ def main():
     (options, args) = parser.parse_args()
     
     # Set up the vanilla packet
+    ether = ethernet()
+    ether.type = 0x0800
+    ether.src = ether_atob(options.ether_source)
+    ether.dst = ether_atob(options.ether_dest)
+
     ip = ipv4()
     ip.version = 4
     ip.hlen = 5
     ip.tos = 0
-    ip.length = 84
-    ip.id = 1
+    ip.id = 0
     ip.flags = 0
     ip.offset = 0
     ip.ttl = 64
     ip.protocol = IPPROTO_ICMP
     ip.src = inet_atol(options.ip_source)
     ip.dst = inet_atol(options.ip_dest)
-    ip.checksum = ip.calc_checksum()
     
     icmp = icmpv4()
     icmp.type = 8
     icmp.code = 0
-    icmp.cksum = 0
     
     echo = icmpv4echo()
     echo.id = 12345
-    echo.seq = 0
+    echo.sequence = 0
     
-    icmp_packet = Chain([icmp, echo])
-    icmp.checksum = icmp_packet.calc_checksum()
-    
-    ether = ethernet()
-    ether.type = 0x800
-    ether.src = ether_atob(options.ether_source)
-    ether.dst = ether_atob(options.ether_dest)
-    packet = Chain([ether, ip, icmp, echo])
+    data = payload("foobar")
+    icmp_packet = Chain([icmp, echo, data])
+    ip.length = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes) + len(data.bytes) 
 
-    input = PcapConnector("en0")
-    input.setfilter("icmp")
+    packet = Chain([ether, ip, icmp, echo, data])
     
-    output = PcapConnector("en0")
-    
-    count = 0
-    while (count < options.count):
+    output = PcapConnector(options.ether_iface)
+
+    #input = PcapConnector(options.ether_iface)
+    #input.setfilter("icmp")
+
+    #
+    # Increment ICMP echo sequence number with each iteration.
+    #
+    count = int(options.count)
+    while (count > 0):
+        icmp.checksum = icmp_packet.calc_checksum()
+        ip.checksum = ip.calc_checksum()
+        packet.encode()
         out = output.write(packet.bytes, len(packet.bytes))
 #        packet = input.read()
 #        print packet
-        count += 1
+        sleep(1)
+        count -= 1
+        ip.id += 1
+        echo.sequence += 1
 main()
