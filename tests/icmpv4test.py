@@ -153,7 +153,7 @@ class icmpTestCase(unittest.TestCase):
         icmp.checksum = icmp_packet.calc_checksum()
 
 	ip.len = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
-        ip.checksum = ip.calc_checksum()
+        ip.checksum = ip.cksum()
 
         packet.encode()
 
