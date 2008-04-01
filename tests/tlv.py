@@ -30,10 +30,11 @@
 #
 # File: $Id: $
 #
-# Author: George V. Neville-Neil
+# Author: Bruce M. Simpson
 #
 # Description: Type/Length/Value test
 
+import unittest
 import sys
 
 if __name__ == '__main__':
@@ -44,13 +45,62 @@ if __name__ == '__main__':
                               # with extra arguments.
     import pcs
 
-def main():
-    t = pcs.Field("type", 8)
-    l = pcs.Field("length", 8)
-    v = pcs.Field("value", 255, type = str)
-    tlv = pcs.Packet([t, l, v])
-    tlv.type = 5
-    tlv.length = 4
-    tlv.value = "foo"
-    print tlv.bytes
-    
+# This hack by: Raymond Hettinger
+class hexdumper:
+    """Given a byte array, turn it into a string. hex bytes to stdout."""
+    def __init__(self):
+	self.FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' \
+						    for x in range(256)])
+
+    def dump(self, src, length=8):
+	result=[]
+	for i in xrange(0, len(src), length):
+	    s = src[i:i+length]
+	    hexa = ' '.join(["%02X"%ord(x) for x in s])
+	    printable = s.translate(self.FILTER)
+	    result.append("%04X   %-*s   %s\n" % \
+			  (i, length*3, hexa, printable))
+	return ''.join(result)
+
+class testPacket(pcs.Packet):
+    """Define a packet containing a TLV field for use in testing."""
+    _layout = pcs.Layout()
+
+    def __init__(self, bytes = None):
+        f1 = pcs.Field("f1", 32)
+	f2 = pcs.TypeLengthValueField("f2", 0x7C)
+        pcs.Packet.__init__(self, [f1, f2], bytes = None)
+
+    def __str__(self):
+        """Walk the entire packet and pretty print the values of the fields."""
+        retval = "TEST\n"
+        for field in self._layout:
+                retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+        return retval
+
+class tlvTestCase(unittest.TestCase):
+    def test_tlv(self):
+        """Create one packet containing a TLV field."""
+	packet = testPacket()
+	packet.f1 = 9
+	# Note: TLV is gnarly at the moment, the first element of the
+	# value list for a TLV is the type. It is totally ignored,
+	# and overwritten with what you provided to the constructor,
+	# which means the representation is inconsistent with what
+	# you actually get when you encode.
+	# Also, you MUST specify a type field in the constructor even
+	# though it's declared as an optional argument.
+	#  TODO: Throw an exception in that case.
+	packet.f2 = (123, 4, "foo")	# must fill out all fields t,l,v.
+					# Note: type 123 is ignored.
+	# Now overwrite, observe that 124 (0x7C) actually appears.
+	packet.f2 = (0, 6, "foobar")
+	print packet
+	packet.encode()
+	print packet.bytes
+	hd = hexdumper()
+	print hd.dump(packet.bytes)
+	return
+
+if __name__ == '__main__':
+    unittest.main()
