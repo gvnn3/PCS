@@ -17,13 +17,13 @@ TESTS:= $(wildcard *test.py)
 test: 
 	for file in $(TESTS); do\
 		echo Running test $$file; \
-		sudo $(PYTHON) $$file; \
+		sudo PYTHONPATH=${PYTHONPATH} $(PYTHON) $$file; \
 	done
 
 test-local: 
 	for file in $(TESTS); do\
 		echo Running test $$file; \
-		sudo $(PYTHON) $$file -l; \
+		sudo PYTHONPATH=${PYTHONPATH} $(PYTHON) $$file -l; \
 	done
 
 test-versions:
@@ -31,6 +31,6 @@ test-versions:
 		echo testing version $$version; \
 		for file in $(TESTS); do\
 			echo Running test $$file; \
-			sudo $$version $$file -l; \
+			sudo PYTHONPATH=${PYTHONPATH} $$version $$file -l; \
 		done \
 	done
