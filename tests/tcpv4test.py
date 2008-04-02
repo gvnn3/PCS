@@ -37,10 +37,8 @@
 # sure that the data matches.
 
 import unittest
-
 import sys
-
-#import pydb
+from hexdumper import hexdumper
 
 if __name__ == '__main__':
 
@@ -114,16 +112,26 @@ class tcpTestCase(unittest.TestCase):
         file = PcapConnector("wwwtcp.out")
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
-        #pydb.debugger()
         tcp1 = tcp(ip.data.bytes)
         tcp2 = tcp(ip.data.bytes)
         assert (tcp1 != None)
         assert (tcp2 != None)
-        #print tcp1.options
-        #print tcp2.options
-        self.assertEqual(tcp1, tcp2, "packets should be equal but are not")
+
+	#hd = hexdumper()
+	#print hd.dump(tcp1.bytes)
+	#print hd.dump(tcp2.bytes)
+
+	# tcp1 should not equal tcp2, they are different instances,
+	# and will therefore have different timestamps -- unless
+	# we end up racing the system clock.
+        self.assertNotEqual(tcp1, tcp2,
+			    "instances SHOULD be equal")
+
+        self.assertEqual(tcp1.bytes, tcp2.bytes,
+			 "packet data SHOULD be equal")
         tcp1.dport = 0
-        self.assertNotEqual(tcp1, tcp2, "packets compare equal but should not")
+        self.assertNotEqual(tcp1.bytes, tcp2.bytes,
+			    "packet data SHOULD NOT be equal")
         
     def test_tcpv4_str(self):
         """Test the ___str__ method to make sure the correct
