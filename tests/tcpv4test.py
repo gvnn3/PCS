@@ -143,13 +143,36 @@ class tcpTestCase(unittest.TestCase):
         tcppacket = tcp(ip.data.bytes)
         assert (tcppacket)
 
-        expected = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n"
+	# pre tcp options:
+        #expected = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n"
 
-        got = tcppacket.__str__()
+	# post tcp options:
+        expected = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n" \
+		   "options [" \
+			"[Field: mss, Value: " \
+				"<pcs.Field  name v, 16 bits, " \
+				"default 1460, discriminator 0>], " \
+			"[Field: nop, Value: 1], " \
+			"[Field: wscale, Value: " \
+				"<pcs.Field  name v, 8 bits, " \
+				"default 0, discriminator 0>], " \
+			"[Field: nop, Value: 1], " \
+			"[Field: nop, Value: 1], " \
+			"[Field: tstamp, Value: " \
+				"<pcs.Field  name v, 64 bits, " \
+				"default 0, discriminator 0>], " \
+			"[Field: sackok, Value: " \
+				"<pcs.Field  name v, 0 bits, " \
+				"default 0, discriminator 0>], " \
+			"[Field: end, Value: 0], " \
+			"[Field: end, Value: 0]" \
+		    "]\n"
 
-        self.assertEqual(expected, got,
-                         "strings are not equal \nexpected %s \ngot %s " %
-                         (expected, got))
+        gotttted = tcppacket.__str__()
+
+        self.assertEqual(expected, gotttted,
+                         "strings are not equal \nexpected %s \ngotttted %s " %
+                         (expected, gotttted))
 
     def test_tcpv4_println(self):
         """Test the println method."""
@@ -160,14 +183,44 @@ class tcpTestCase(unittest.TestCase):
         tcppacket = tcp(ip.data.bytes)
         assert (tcppacket)
 
-        expected = "<TCP: sport: 53678, dport: 80, sequence: 1351059655, ack_number: 0, offset: 11, reserved: 0, urgent: 0, ack: 0, push: 0, reset: 0, syn: 1, fin: 0, window: 65535, checksum: 15295, urg_pointer: 0>"
+	# pre tcp options:
+        #expected = "<TCP: sport: 53678, dport: 80, sequence: 1351059655, ack_number: 0, offset: 11, reserved: 0, urgent: 0, ack: 0, push: 0, reset: 0, syn: 1, fin: 0, window: 65535, checksum: 15295, urg_pointer: 0>"
 
-        got = tcppacket.println()
+	# post tcp options:
+	# XXX println() uses __repr__(), not __str__(). the rules for the
+	# game "python" say we have to preserve the structure of
+	# objects returned by __repr__().
+        expected = "<TCP: sport: 53678, dport: 80, sequence: 1351059655, " \
+		   "ack_number: 0, offset: 11, reserved: 0, urgent: 0, " \
+		   "ack: 0, push: 0, reset: 0, syn: 1, fin: 0, " \
+		   "window: 65535, checksum: 15295, urg_pointer: 0, " \
+		   "options: [" \
+			"[Field: mss, Value: " \
+				"<pcs.Field  name v, 16 bits, " \
+				"default 1460, discriminator 0>], " \
+			"[Field: nop, Value: 1], " \
+			"[Field: wscale, Value: " \
+				"<pcs.Field  name v, 8 bits, " \
+				"default 0, discriminator 0>], " \
+			"[Field: nop, Value: 1], " \
+			"[Field: nop, Value: 1], " \
+			"[Field: tstamp, Value: " \
+				"<pcs.Field  name v, 64 bits, " \
+				"default 0, discriminator 0>], " \
+			"[Field: sackok, Value: " \
+				"<pcs.Field  name v, 0 bits, " \
+				"default 0, discriminator 0>], " \
+			"[Field: end, Value: 0], " \
+			"[Field: end, Value: 0]" \
+		    "]>"
 
-        self.assertEqual(expected, got,
-                         "strings are not equal \nexpected %s \ngot %s " %
-                         (expected, got))
+	# unusual naming to make it easier to spot deltas in an
+	# 80 column display.
+        gotttted = tcppacket.println()
 
+        self.assertEqual(expected, gotttted,
+                         "strings are not equal \nexpected %s \ngotttted %s " %
+                         (expected, gotttted))
 
 if __name__ == '__main__':
     unittest.main()
