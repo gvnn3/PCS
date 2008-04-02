@@ -36,7 +36,7 @@
 
 import unittest
 import sys
-import hexdumper
+from hexdumper import hexdumper
 
 if __name__ == '__main__':
 
@@ -52,7 +52,9 @@ class testPacket(pcs.Packet):
 
     def __init__(self, bytes = None):
         f1 = pcs.Field("f1", 32)
-	f2 = pcs.TypeLengthValueField("f2", 0x7C)
+        f2 = pcs.TypeLengthValueField("f2", pcs.Field("t", 8),
+				     pcs.Field("l", 8),
+                                     pcs.StringField("v", 10 * 8))
         pcs.Packet.__init__(self, [f1, f2], bytes = None)
 
     def __str__(self):
@@ -65,26 +67,25 @@ class testPacket(pcs.Packet):
 class tlvTestCase(unittest.TestCase):
     def test_tlv(self):
         """Create one packet containing a TLV field."""
+	data = "\x12\x34\xAB\xCD\xAB\x50\x66\x6F" \
+	       "\x6F\x62\x61\x72\x00\x00\x00\x00"
+
+	# XXX The length of the f2 field is filled out with
+	# the maximum length of the value field, NOT its packed
+	# length. LengthValueField also has this issue.
 	packet = testPacket()
-	packet.f1 = 9
-	# Note: TLV is gnarly at the moment, the first element of the
-	# value list for a TLV is the type. It is totally ignored,
-	# and overwritten with what you provided to the constructor,
-	# which means the representation is inconsistent with what
-	# you actually get when you encode.
-	# Also, you MUST specify a type field in the constructor even
-	# though it's declared as an optional argument.
-	#  TODO: Throw an exception in that case.
-	packet.f2 = (123, 4, "foo")	# must fill out all fields t,l,v.
-					# Note: type 123 is ignored.
-	# Now overwrite, observe that 124 (0x7C) actually appears.
-	packet.f2 = (0, 6, "foobar")
-	print packet
+	packet.f1 = 0x1234abcd
+	packet.f2.type.value = 0xab
+	packet.f2.length.value = len("foobar")
+	packet.f2.value.value = "foobar"
 	packet.encode()
-	print packet.bytes
-	hd = hexdumper()
-	print hd.dump(packet.bytes)
-	return
+
+	#hd = hexdumper()
+	#print hd.dump(packet.bytes)
+	#print hd.dump(data)
+
+	self.assertEqual(packet.bytes, data, \
+			 "packets should be equal but are not")
 
 if __name__ == '__main__':
     unittest.main()
