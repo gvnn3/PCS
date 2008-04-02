@@ -35,8 +35,9 @@
 # Description: A test of the option fields in PCS.
 
 import unittest
-
 import sys
+
+from hexdumper import hexdumper
 
 if __name__ == '__main__':
 
@@ -47,20 +48,49 @@ if __name__ == '__main__':
 
     import pcs
     from pcs.packets.tcp import *
-    
+
+
+#
+# TODO: Rototile interface so that consumers do not need to
+# have knowledge of option structure, currently the option
+# code needs to be explicitly specified.
+#
+# Also this doesn't forcibly pad to 32 bits, nor does it check
+# that the length of all options wouldn't exceed 40.
+#
 class optionTestCase(unittest.TestCase):
     def test_option_create(self):
         packet = tcp()
+
         nop = pcs.Field("nop", 8)
-        pad = pcs.Field("pad", 8)
-        #mss = pcs.TypeValueField("mss", type = 2, typewidth = 8, valuewidth = 32, default = 266)
+	mss = pcs.TypeLengthValueField("mss",
+	                               pcs.Field("t", 8, default = 0x02),
+				       pcs.Field("l", 8),
+				       pcs.Field("v", 16))
+        end = pcs.Field("end", 8)
+
         nop.value = 1
-        pad.value = 0
-        #mss.value = 266
+        mss.value.value = 1460		# Most common Internet MSS value.
+
+	# Build a TCP option list which will be 32-bits aligned.
         packet.options.append(nop)
-        packet.options.append(pad)
-        #packet.options.append(mss)
-        self.assertEqual(packet.bytes,"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x00\x00\x01\n")
-        
+        packet.options.append(nop)
+        packet.options.append(mss)
+        packet.options.append(nop)
+        packet.options.append(end)
+
+	expected = "\x00\x00\x00\x00\x00\x00\x00\x00" \
+		   "\x00\x00\x00\x00\x00\x00\x00\x00" \
+		   "\x00\x00\x00\x00\x01\x01\x02\x04" \
+		   "\x05\xb4\x01\x00"
+	got = packet.bytes
+
+	#packet.encode()
+	#hd = hexdumper()
+	#print hd.dump(expected)
+	#print hd.dump(got)
+
+        self.assertEqual(expected, got)
+
 if __name__ == '__main__':
     unittest.main()
