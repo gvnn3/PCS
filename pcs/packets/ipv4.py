@@ -35,12 +35,17 @@
 # Description: A class which implements an IPv4 packet
 
 import pcs
+from pcs import FieldBoundsError
 from socket import AF_INET, inet_ntop
 import ipv4_map
 
 import struct
 import inspect
 import time
+
+IPOPT_EOL = 0
+IPOPT_NOP = 1
+IPOPT_RA = 148
 
 class ipv4(pcs.Packet):
     """IPv4"""
@@ -63,16 +68,67 @@ class ipv4(pcs.Packet):
         checksum = pcs.Field("checksum", 16)
         src = pcs.Field("src", 32)
         dst = pcs.Field("dst", 32)
+        options = pcs.OptionListField("options")
         pcs.Packet.__init__(self,
                             [version, hlen, tos, length, id, flags, offset,
-                             ttl, protocol, checksum, src, dst],
+                             ttl, protocol, checksum, src, dst, options],
                             bytes = bytes)
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
+
         if timestamp == None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
+
+        if bytes != None:
+            hlen_bytes = self.hlen * 4
+            options_len = hlen_bytes - self.sizeof()
+
+            if hlen_bytes > len(bytes):
+                raise FieldBoundsError, \
+                      "IP header is larger than input (%d > %d)" % \
+                      (hlen_bytes, len(bytes))
+
+            if options_len > 0:
+                curr = self.sizeof()
+                while curr < hlen_bytes:
+                    option = struct.unpack('!B', bytes[curr])[0]
+
+                    if option == IPOPT_EOL:
+                        options.append(pcs.Field("end", 8, default = IPOPT_EOL))
+                        curr += 1
+                        continue
+                    elif option == IPOPT_NOP:
+                        options.append(pcs.Field("nop", 8, default = IPOPT_NOP))
+                        curr += 1
+                        continue
+
+                    optlen = struct.unpack('!B', bytes[curr+1])[0]
+                    if option == IPOPT_RA:
+                        # The IPv4 Router Alert option (RFC 2113) is a
+                        # single 16 bit value. Its existence indicates
+                        # that a router must examine the packet. It is
+                        # 32 bits wide including option code and length.
+                        if optlen != 4:
+                            raise FieldBoundsError, \
+                                  "Bad length %d for IP option %d, " \
+                                  "should be %d" % (optlen, option, 4)
+                        value = struct.unpack("!H", bytes[curr+2:curr+4])[0]
+                        options.append(pcs.TypeLengthValueField("ra",
+                                       pcs.Field("t", 8, default = option),
+                                       pcs.Field("l", 8, default = optlen),
+                                       pcs.Field("v", 16, default = value)))
+                        curr += optlen
+                    else:
+                        print "warning: unknown IP option %d" % option
+                        optdatalen = optlen - 2
+                        options.append(pcs.TypeLengthValueField("unknown",
+                                       pcs.Field("t", 8, default = option),
+                                       pcs.Field("l", 8, default = optlen),
+                                       pcs.Field("v", optdatalen * 8,
+                                                 default = value)))
+                        curr += optlen
 
         if (bytes != None):
             offset = self.hlen << 2

@@ -16,10 +16,6 @@ def main():
     
     parser = OptionParser()
 
-    parser.add_option("-s", "--ip_source",
-                      dest="ip_source", default=None,
-                      help="The IP source address.")
-
     parser.add_option("-I", "--ether_iface",
                       dest="ether_iface", default=None,
                       help="The name of the source interface.")
@@ -28,12 +24,23 @@ def main():
                       dest="ether_source", default=None,
                       help="The host Ethernet source address.")
 
+    parser.add_option("-s", "--ip_source",
+                      dest="ip_source", default=None,
+                      help="The IP source address.")
+
     parser.add_option("-G", "--igmp_group",
                       dest="igmp_group", default=None,
                       help="The IPv4 group to spoof a leave message for.")
 
     (options, args) = parser.parse_args()
-    
+
+    if options.igmp_group is None or \
+       options.ether_source is None or \
+       options.ether_iface is None or \
+       options.ip_source is None:
+           print "A required argument is missing."
+           return
+
     # Set up the vanilla packet
     ether = ethernet()
     ether.type = 0x0800
@@ -63,20 +70,23 @@ def main():
     #######################
 
     # without RA option
-    ip.length = len(ip.bytes) + len(igmp.bytes)
-    ip.hlen = len(ip.bytes) >> 2
-    ip.checksum = ip.cksum()
-    packet = Chain([ether, ip, igmp])
+    #ip.length = len(ip.bytes) + len(igmp.bytes)
+    #ip.hlen = len(ip.bytes) >> 2
+    #ip.checksum = ip.cksum()
+    #packet = Chain([ether, ip, igmp])
 
     #######################
 
-    # with RA option XXX This is now broken.
-    #ip_ra_opt = payload("\x94\x04\x00\x00")	# Router Alert option
-    #ip.length = len(ip.bytes) + len(ip_ra_opt.bytes) + len(igmp.bytes)
-    #ip.hlen = (len(ip.bytes) + len(ip_ra_opt.bytes)) >> 2
-    #ipopts = Chain([ip, ip_ra_opt])
-    #ip.checksum = ipopts.calc_checksum()
-    #packet = Chain([ether, ip, ip_ra_opt, igmp])
+    # with RA option (new option list code)
+    ra = pcs.TypeLengthValueField("ra",
+                                  pcs.Field("t", 8, default = 148),
+                                  pcs.Field("l", 8),
+                                  pcs.Field("v", 16))
+    ip.options.append(ra)
+    ip.hlen = len(ip.bytes) >> 2
+    ip.length = len(ip.bytes) + len(igmp.bytes)
+    ip.checksum = ip.cksum()
+    packet = Chain([ether, ip, igmp])
 
     #######################
 

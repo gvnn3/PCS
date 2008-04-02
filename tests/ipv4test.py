@@ -39,7 +39,8 @@
 import unittest
 
 import sys
-   
+from hexdumper import hexdumper
+
 if __name__ == '__main__':
 
     if "-l" in sys.argv:
@@ -122,13 +123,16 @@ class ipTestCase(unittest.TestCase):
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
 
-        test_string = "IPv4\nversion 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\n"
+        expected = "IPv4\nversion 4\nhlen 5\ntos 0\nlength 84\n" \
+                   "id 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\n" \
+                   "checksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\n" \
+                   "options []\n"
 
-        string = ip.__str__()
+        gotttted = ip.__str__()
 
-        self.assertEqual(string, test_string,
-                         "strings are not equal \nexpected %s \ngot %s " %
-                         (test_string, string))
+        self.assertEqual(expected, gotttted,
+                         "strings are not equal \nexpected %s \ngotttted %s " %
+                         (expected, gotttted))
 
     def test_ipv4_println(self):
         """This test reads from a pre-stored pcap file generated with
@@ -139,13 +143,15 @@ class ipTestCase(unittest.TestCase):
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
 
-        test_string = "<IPv4: version: 4, hlen: 5, tos: 0, length: 84, id: 59067, flags: 0, offset: 0, ttl: 64, protocol: 1, checksum: 0, src: 2130706433, dst: 2130706433>"
+        expected = "<IPv4: version: 4, hlen: 5, tos: 0, length: 84, " \
+                   "id: 59067, flags: 0, offset: 0, ttl: 64, protocol: 1, " \
+                   "checksum: 0, src: 2130706433, dst: 2130706433, options: []>"
 
-        string = ip.println()
+        gotttted = ip.println()
 
-        self.assertEqual(string, test_string,
-                         "strings are not equal \nexpected %s \ngot %s " %
-                         (test_string, string))
+        self.assertEqual(expected, gotttted,
+                         "strings are not equal \nexpected %s \ngotttted %s " %
+                         (expected, gotttted))
 
 
     def test_ipv4_time(self):
@@ -156,6 +162,44 @@ class ipTestCase(unittest.TestCase):
         ip = packet.data
 
         self.assertEqual(packet.timestamp, ip.timestamp, "lower and upper layer timestamps are different but should not be")
+
+    def test_ipv4_ra(self):
+        # create one packet with the IP Router Alert option,
+        # and check that it is as you'd expect.
+        ip = ipv4()
+        assert (ip != None)
+        ip.version = 4
+        ip.hlen = 6
+        ip.tos = 0
+        ip.length = 24 		# a bare IP header w/o data
+        ip.id = 1
+        ip.flags = 0x02		# df
+        ip.offset = 0
+        ip.ttl = 1
+        ip.protocol = 2		# a fake IGMP packet
+        ip.src = inet_atol("192.0.2.1")
+        ip.dst = inet_atol("224.0.0.22")
+
+        # Add Router Alert option.
+	# XXX: Note well: just because you add an option list,
+	# doesn't mean the IP hlen is correct.
+        # hlen should, in fact, be 6 words after adding a single RA option.
+        ra = pcs.TypeLengthValueField("ra",
+                                      pcs.Field("t", 8, default = 148),
+                                      pcs.Field("l", 8),
+                                      pcs.Field("v", 16))
+        ip.options.append(ra)
+	ip.checksum = ip.cksum()
+
+        #hd = hexdumper()
+        #print hd.dump(ip.bytes)
+
+	expected = "\x46\x00\x00\x18\x00\x01\x40\x00" \
+                   "\x01\x02\x42\xC7\xC0\x00\x02\x01" \
+                   "\xE0\x00\x00\x16\x94\x04\x00\x00"
+	gotttted = ip.bytes
+
+	self.assertEqual(expected, gotttted, "packet bytes not expected")
 
 if __name__ == '__main__':
     unittest.main()

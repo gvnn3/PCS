@@ -91,6 +91,9 @@ class optionTestCase(unittest.TestCase):
 	#print hd.dump(expected)
 	#print hd.dump(got)
 
+	# XXX: Note well: just because you added an option list,
+	# doesn't mean the TCP option length is correct.
+
         self.assertEqual(expected, got)
 
     def test_tcp_without_options(self):
