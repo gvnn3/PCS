@@ -79,7 +79,7 @@ def main():
     # destined for end stations, not routers.
 
     ip.length = len(ip.bytes) + len(igmp.bytes)
-    ip.checksum = ip.calc_checksum()
+    ip.checksum = ip.cksum()
 
     packet = Chain([ether, ip, igmp])
     packet.encode()
