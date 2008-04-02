@@ -59,7 +59,8 @@ if __name__ == '__main__':
 # that the length of all options wouldn't exceed 40.
 #
 class optionTestCase(unittest.TestCase):
-    def test_option_create(self):
+    def test_tcp_with_options(self):
+	"""Assert that a TCP with options is correctly encoded."""
         packet = tcp()
 
         nop = pcs.Field("nop", 8)
@@ -90,6 +91,24 @@ class optionTestCase(unittest.TestCase):
 	#print hd.dump(expected)
 	#print hd.dump(got)
 
+        self.assertEqual(expected, got)
+
+    def test_tcp_without_options(self):
+	"""Assert that a TCP without options does not get any additional
+	   fields appended to it on the wire."""
+        packet = tcp()
+
+	expected = "\x00\x00\x00\x00\x00\x00\x00\x00" \
+		   "\x00\x00\x00\x00\x00\x00\x00\x00" \
+		   "\x00\x00\x00\x00"
+	got = packet.bytes
+
+	#packet.encode()
+	#hd = hexdumper()
+	#print hd.dump(expected)
+	#print hd.dump(got)
+
+	self.assertEqual(len(packet.options), 0)
         self.assertEqual(expected, got)
 
 if __name__ == '__main__':
