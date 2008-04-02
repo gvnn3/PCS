@@ -87,10 +87,10 @@ class ipv4(pcs.Packet):
         for field in self._layout:
             if (field.name == "src" or field.name == "dst"):
                 value = inet_ntop(AF_INET,
-                                  struct.pack('!L', self.__dict__[field.name]))
+                                  struct.pack('!L', field.value))
                 retval += "%s %s\n" % (field.name, value)
             else:
-                retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+                retval += "%s %s\n" % (field.name, field.value)
         return retval
 
     def pretty(self, attr):

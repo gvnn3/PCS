@@ -42,6 +42,7 @@ import tcp_map
 
 import inspect
 import time
+import struct
 
 class tcp(pcs.Packet):
     """TCP"""
@@ -78,18 +79,24 @@ class tcp(pcs.Packet):
 
         # Handle options processing
         if bytes != None:
-            if (self.offset * 4 > self.sizeof()):
+            if ((self.offset * 4) > self.sizeof()):
                 curr = self.sizeof()
-                while (curr <= self.offset * 4):
-                    if bytes[curr] == 0:
-                        self.options.append([0, pcs.Field("nop", 8)])
+                while (curr < (self.offset * 4)):
+                    option = struct.unpack('!B', bytes[curr])[0]
+                    if option == 0:
+                        options.append(pcs.Field("nop", 8, default = 0))
                         curr += 1
-                    elif bytes[curr] == 1:
-                        self.options.append([1, pcs.Field("end", 8)])
+                    elif option == 1:
+                        options.append(pcs.Field("end", 8, default = 1))
                         curr += 1
+                    elif option == 2:
+                        curr += 2
+                        value = struct.unpack("!H", bytes[curr:curr + 2])[0]
+                        options.append(pcs.TypeLengthValueField("mss", type = 2, typewidth = 8, lengthwidth = 8, valuetype = "H", default = value))
+                        curr += 2
                     else:
-                        print "unknown option"
-                        curr += 1
+                        # unknown option, end processing
+                        break
 
         if (bytes != None and (self.offset * 4 < len(bytes))):
             self.data = self.next(bytes[(self.offset * 4):len(bytes)],
@@ -112,7 +119,7 @@ class tcp(pcs.Packet):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
         retval = "TCP\n"
         for field in self._layout:
-            retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+            retval += "%s %s\n" % (field.name, field.value)
         return retval
 
     def pretty(self, attr):

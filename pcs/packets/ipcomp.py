@@ -56,5 +56,5 @@ class ipcomp(pcs.Packet):
         they are set and not 0."""
         retval = ""
         for field in self._layout:
-            retval += "%s %d\n" % (field.name, self.__dict__[field.name])
+            retval += "%s %d\n" % (field.name, field.value)
         return retval

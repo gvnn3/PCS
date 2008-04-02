@@ -76,9 +76,9 @@ class tcpv6(pcs.Packet):
         retval = ""
         for field in self._layout:
             if (field.type == str):
-                retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+                retval += "%s %s\n" % (field.name, field.value)
             else:
-                retval += "%s %d\n" % (field.name, self.__dict__[field.name])
+                retval += "%s %d\n" % (field.name, field.value)
         return retval
 
     def cksum(self, ip, data = "", nx = 0):
