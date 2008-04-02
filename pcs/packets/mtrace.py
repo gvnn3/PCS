@@ -51,6 +51,8 @@
 
 import pcs
 import struct
+import time
+
 from pcs.packets import payload
 from pcs.igmpv2 import *
 from socket import AF_INET, inet_ntop, inet_ntoa
@@ -63,7 +65,8 @@ IGMP_MTRACE_QUERY = 0x1f
 
 class mtrace_query(pcs.Packet):
     layout = pcs.Layout()
-    def __init__(self, bytes = None)
+
+    def __init__(self, bytes = None, timestamp = None):
         """initialize the MTRACE query/response header."""
 	type = pcs.Field("type", 8)
         hops = pcs.Field("hops", 8)
@@ -86,6 +89,11 @@ class mtrace_query(pcs.Packet):
 				   response_hoplimit, query_id], bytes)
 
         self.description = "MTRACE"
+
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
         if (bytes != None):
             offset = type.width + hops.width + cksum.width + group.width + \

@@ -41,6 +41,8 @@
 
 import pcs
 import struct
+import time
+
 from pcs.packets import payload
 #from pcs.packets import igmpv2
 from pcs.packets.igmpv2 import *
@@ -81,7 +83,7 @@ class igmpv3_query(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, sources = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize an IGMPv3 query"""
         type = pcs.Field("type", 8)
         maxresp = pcs.Field("maxresp", 8)  # 3-bit exp/4 bit mantissa packed fixed point
@@ -100,6 +102,11 @@ class igmpv3_query(pcs.Packet):
         self.description = "IGMPv3"
 	self.type = IGMP_MEMBERSHIP_QUERY
 	self.reserved00 = 0
+
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
 
         if (sources != None):
 	    raise "unfinished symphony"

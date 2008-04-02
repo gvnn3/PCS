@@ -37,6 +37,8 @@
 
 import pcs
 import struct
+import time
+
 from pcs.packets import payload
 from socket import AF_INET, inet_ntop, inet_ntoa
 
@@ -64,7 +66,7 @@ class igmpv2(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize an IGMPv1/v2 header"""
         type = pcs.Field("type", 8)
         code = pcs.Field("code", 8)
@@ -72,6 +74,15 @@ class igmpv2(pcs.Packet):
 	group = pcs.Field("group", 32)
         pcs.Packet.__init__(self, [type, code, cksum, group], bytes)
         self.description = "IGMP"
+
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+	# TODO: Put the demux logic into a separate igmp shim class,
+	# so that we can capture all the IGMP derived subprotocols somehow.
+	# For now, don't propagate the timestamp.
 
         if (bytes != None):
             offset = type.width + code.width + cksum.width + group.width

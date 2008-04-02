@@ -38,6 +38,8 @@
 
 import pcs
 import struct
+import time
+
 from pcs.packets import payload
 from pcs.igmpv2 import *
 from socket import AF_INET, inet_ntop, inet_ntoa
@@ -72,7 +74,7 @@ class dvmrp(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize a header very similar to that of IGMPv1/v2"""
 	version = pcs.Field("version", 4)
         type = pcs.Field("type", 4)
