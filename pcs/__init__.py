@@ -436,9 +436,16 @@ class TypeLengthValueField(object):
         return [value, curr, byteBR]
         
     def encode(self, bytearray, value, byte, byteBR):
-        """Encode a LengthValue field."""
+        """Encode a TypeLengthValue field."""
+	# XXX Break existing assumptions and assume the TLV encodes
+	# the length in bytes, not bits, and that this length INCLUDES
+	# the type and length fields.
+	#  In PCS all field widths are currently defined in bits.
+	# This, uh, fixes the TCP option stuff...
         if isinstance(self.value, Field):
-            self.length.value = self.value.width
+            self.length.value = (self.type.width +
+				 self.length.width +
+				 self.value.width) / 8
         else:
             self.length.value = len(self.value)
         [byte, byteBR] = self.type.encode(bytearray, self.type.value, byte, byteBR)
