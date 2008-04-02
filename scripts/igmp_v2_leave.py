@@ -63,8 +63,10 @@ def main():
     igmp.checksum = igmp_packet.calc_checksum()
 
     ip.length = len(ip.bytes) + len(ip_ra_opt.bytes) + len(igmp.bytes)
-
     ip.hlen = (len(ip.bytes) + len(ip_ra_opt.bytes)) >> 2
+
+    # XXX This is a hack until IP options are reflected correctly
+    # in PCS's metasyntax.
     ipopts = Chain([ip, ip_ra_opt])
     ip.checksum = ipopts.calc_checksum()
    
