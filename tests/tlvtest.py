@@ -67,12 +67,15 @@ class testPacket(pcs.Packet):
 class tlvTestCase(unittest.TestCase):
     def test_tlv(self):
         """Create one packet containing a TLV field."""
-	data = "\x12\x34\xAB\xCD\xAB\x50\x66\x6F" \
+	data = "\x12\x34\xAB\xCD\xAB\x0c\x66\x6F" \
 	       "\x6F\x62\x61\x72\x00\x00\x00\x00"
 
 	# XXX The length of the f2 field is filled out with
 	# the maximum length of the value field, NOT its packed
 	# length. LengthValueField also has this issue.
+	# Also, the TLV fields are ambiguous as to whether the
+	# length represents bits or bytes.
+	# IP protocols are usually byte or 32-bit word aligned.
 	packet = testPacket()
 	packet.f1 = 0x1234abcd
 	packet.f2.type.value = 0xab
