@@ -1,6 +1,13 @@
 TODO for PCS
 
+*) Eliminate the assumption that a TLV or LV always encodes its length
+   in bytes. This is inconsistent with the definition of Field.
+
+  *) Eliminate the assumption that a TLV always contains itself or
+     indeed counts itself in its length, see below.
+
 *) Fix the lack of variable-width bounds in the PCS meta-language.
+
    At the moment, LengthValueFields and TypeLengthValueFields have
    no notion of a variable width, so they always encode and decode
    as fixed length fields. This makes it very difficult to capture
