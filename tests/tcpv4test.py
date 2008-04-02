@@ -119,8 +119,8 @@ class tcpTestCase(unittest.TestCase):
         tcp2 = tcp(ip.data.bytes)
         assert (tcp1 != None)
         assert (tcp2 != None)
-        print tcp1.options
-        print tcp2.options
+        #print tcp1.options
+        #print tcp2.options
         self.assertEqual(tcp1, tcp2, "packets should be equal but are not")
         tcp1.dport = 0
         self.assertNotEqual(tcp1, tcp2, "packets compare equal but should not")
@@ -135,13 +135,13 @@ class tcpTestCase(unittest.TestCase):
         tcppacket = tcp(ip.data.bytes)
         assert (tcppacket)
 
-        test_string = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n"
+        expected = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n"
 
-        string = tcppacket.__str__()
+        got = tcppacket.__str__()
 
-        self.assertEqual(string, test_string,
+        self.assertEqual(expected, got,
                          "strings are not equal \nexpected %s \ngot %s " %
-                         (test_string, string))
+                         (expected, got))
 
     def test_tcpv4_println(self):
         """Test the println method."""
@@ -152,13 +152,13 @@ class tcpTestCase(unittest.TestCase):
         tcppacket = tcp(ip.data.bytes)
         assert (tcppacket)
 
-        test_string = "<TCP: sport: 53678, dport: 80, sequence: 1351059655, ack_number: 0, offset: 11, reserved: 0, urgent: 0, ack: 0, push: 0, reset: 0, syn: 1, fin: 0, window: 65535, checksum: 15295, urg_pointer: 0>"
+        expected = "<TCP: sport: 53678, dport: 80, sequence: 1351059655, ack_number: 0, offset: 11, reserved: 0, urgent: 0, ack: 0, push: 0, reset: 0, syn: 1, fin: 0, window: 65535, checksum: 15295, urg_pointer: 0>"
 
-        string = tcppacket.println()
+        got = tcppacket.println()
 
-        self.assertEqual(string, test_string,
+        self.assertEqual(expected, got,
                          "strings are not equal \nexpected %s \ngot %s " %
-                         (test_string, string))
+                         (expected, got))
 
 
 if __name__ == '__main__':
