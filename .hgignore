@@ -7,8 +7,11 @@ syntax: glob
 *.ps
 *.dvi
 *.pdf
+*.swp
+build/*
 docs/Web/*
 docs/latex/*
 docs/man/*
 make.out
-
+tests/etherdump.out
+tests/pcaptest.dump
