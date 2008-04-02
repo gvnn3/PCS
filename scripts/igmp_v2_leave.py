@@ -44,15 +44,13 @@ def main():
     ip.version = 4
     ip.hlen = 5
     ip.tos = 0
-    ip.id = 0
-    ip.flags = 0
+    ip.id = 123
+    ip.flags = 0x02		# DF bit
     ip.offset = 0
     ip.ttl = 1
     ip.protocol = IPPROTO_IGMP
     ip.src = inet_atol(options.ip_source)
     ip.dst = inet_atol("224.0.0.2")		# XXX should be a constant
-
-    ip_ra_opt = payload("\x94\x04\x00\x00")	# Router Alert option
 
     igmp = igmpv2()
     igmp.type = IGMP_HOST_LEAVE_MESSAGE
@@ -62,16 +60,26 @@ def main():
     igmp_packet = Chain([igmp])
     igmp.checksum = igmp_packet.calc_checksum()
 
-    ip.length = len(ip.bytes) + len(ip_ra_opt.bytes) + len(igmp.bytes)
-    ip.hlen = (len(ip.bytes) + len(ip_ra_opt.bytes)) >> 2
+    #######################
 
-    # XXX This is a hack until IP options are reflected correctly
-    # in PCS's metasyntax.
-    ipopts = Chain([ip, ip_ra_opt])
-    ip.checksum = ipopts.calc_checksum()
-   
-    packet = Chain([ether, ip, ip_ra_opt, igmp])
-    
+    # without RA option
+    ip.length = len(ip.bytes) + len(igmp.bytes)
+    ip.hlen = len(ip.bytes) >> 2
+    ip.checksum = ip.cksum()
+    packet = Chain([ether, ip, igmp])
+
+    #######################
+
+    # with RA option XXX This is now broken.
+    #ip_ra_opt = payload("\x94\x04\x00\x00")	# Router Alert option
+    #ip.length = len(ip.bytes) + len(ip_ra_opt.bytes) + len(igmp.bytes)
+    #ip.hlen = (len(ip.bytes) + len(ip_ra_opt.bytes)) >> 2
+    #ipopts = Chain([ip, ip_ra_opt])
+    #ip.checksum = ipopts.calc_checksum()
+    #packet = Chain([ether, ip, ip_ra_opt, igmp])
+
+    #######################
+
     output = PcapConnector(options.ether_iface)
 
     packet.encode()
