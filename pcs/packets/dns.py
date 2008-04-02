@@ -117,7 +117,7 @@ class dnsrr(pcs.Packet):
         name = pcs.LengthValueField("name", 8)
         type = pcs.Field("type", 16)
         qclass = pcs.Field("query_class", 16)
-        ttl = pcs.Field("ttl", 16)
+        ttl = pcs.Field("ttl", 32)
         rdata = pcs.LengthValueField("rdata", 16)
 
         pcs.Packet.__init__(self,
