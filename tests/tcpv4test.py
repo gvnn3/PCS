@@ -40,6 +40,8 @@ import unittest
 
 import sys
 
+#import pydb
+
 if __name__ == '__main__':
 
     if "-l" in sys.argv:
@@ -112,18 +114,19 @@ class tcpTestCase(unittest.TestCase):
         file = PcapConnector("wwwtcp.out")
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
+        #pydb.debugger()
         tcp1 = tcp(ip.data.bytes)
         tcp2 = tcp(ip.data.bytes)
         assert (tcp1 != None)
         assert (tcp2 != None)
+        print tcp1.options
+        print tcp2.options
         self.assertEqual(tcp1, tcp2, "packets should be equal but are not")
-
         tcp1.dport = 0
         self.assertNotEqual(tcp1, tcp2, "packets compare equal but should not")
         
     def test_tcpv4_str(self):
-        """This test reads from a pre-stored pcap file generated with
-        tcpdump and tests the __str__ method to make sure the correct
+        """Test the ___str__ method to make sure the correct
         values are printed."""
         file = PcapConnector("wwwtcp.out")
         packet = file.read()
@@ -141,9 +144,7 @@ class tcpTestCase(unittest.TestCase):
                          (test_string, string))
 
     def test_tcpv4_println(self):
-        """This test reads from a pre-stored pcap file generated with
-        tcpdump and tests the println method to make sure the correct
-        values are printed."""
+        """Test the println method."""
         file = PcapConnector("wwwtcp.out")
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])

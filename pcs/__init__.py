@@ -104,6 +104,11 @@ layout of the data and how it is addressed."""
         self.default = default
         ## Is this field used to demultiplex higher layer packets?
         self.discriminator = discriminator
+        ## Fields store the values
+        if default == None:
+            self.value = 0
+        else:
+            self.value = default
         
     def __repr__(self):
         """return an appropriate representation for the Field object"""
@@ -142,6 +147,7 @@ layout of the data and how it is addressed."""
                 byteBR = 8
                 curr += 1 # next byte
             real_value += value << fieldBR
+        self.value = real_value
         return [real_value, curr, byteBR]
 
     def encode(self, bytearray, value, byte, byteBR):
@@ -188,6 +194,13 @@ layout of the data and how it is addressed."""
 
         return [byte, byteBR]
 
+    def set_value(self, value):
+        """Set the value of a field."""
+        self.value = value
+
+    def get_value(self):
+        return self.value
+    
     def reset(self):
         """Return a resonable value to use in resetting a field of this type."""
         return 0
@@ -208,7 +221,7 @@ class FieldAlignmentError(Exception):
         ## the message that will be output when this error is raised
         self.message = message
 
-class StringField(object):
+class StringField(Field):
     """A string field is a name, a width in bits, and possibly a
 default value.  The data is to be interpreted as a string, but does
 not encode the length into the packet.  Length encoded values are
@@ -222,11 +235,16 @@ handled by the LengthValueField."""
         self.width = width
         ## the default value, if any, of the StringField
         self.default = default
+        ## Fields store the values
+        if default == None:
+            self.value = ""
+        else:
+            self.value = default
         
     def __repr__(self):
         """return a human readable form of a StringFeild object"""
-        return "<pcs.StringField  name %s, %d bits, type %s, default %s>" % \
-               (self.name, self.width, self.type, self.default) # 
+        return "<pcs.StringField  name %s, %d bits, default %s>" % \
+               (self.name, self.width, self.default) # 
 
     def decode(self, bytes, curr, byteBR):
         """Decode the field and return the value as well as the new
@@ -238,6 +256,7 @@ handled by the LengthValueField."""
         end = curr + self.width / 8
         value = struct.unpack(packarg, bytes[curr:end])[0]
         curr += self.width / 8
+        self.value = value
         return [value, curr, byteBR]
 
     def encode(self, bytearray, value, byte, byteBR):
@@ -257,58 +276,75 @@ handled by the LengthValueField."""
         if (value == None) or (len (value) > (self.width / 8)):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (self.width / 8)
 
-class LengthValueField(Field):
+class LengthValueFieldError(Exception):
+    """LengthValue fields only allow access to two internal pieces of data."""
+    
+    def __init__(self, message):
+        """set the error message"""
+        ## the message that will be output when this error is raised
+        self.message = message
+
+# TODO: Add a means of packing fields according to the length actually
+# encoded in them, where a field has variable length.
+class LengthValueField(object):
     """A length value field handles parts of packets where a length
-    and value are encoded toghther, usually used to shove strings into
+    and value are encoded together, usually used to shove strings into
     packets.
     """
 
-    def __init__(self, name = "", width = 8, default = None):
+    def __init__(self, name, length, value):
+        self.packet = None
         self.name = name
-        self.width = width
-        self.default = default
+        if not isinstance(length, Field):
+            raise LengthValueFieldError, "Length must be of type Field but is %s" % type(length)
+        object.__setattr__(self, 'length', length)
+        if isinstance(value, Field) or isinstance(value, StringField):
+            object.__setattr__(self, 'value', value)
+        else:
+            raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
+        self.width = length.width + value.width
+        #self.packed = packed
 
     def __repr__(self):
-        return "<pcs.LengthValueField value name %s, length name %s," \
-               "width %d>" % (self.name, self.length_name, self.width)
+        return "<pcs.LengthValueField name %s, length %s, value %s" \
+               % (self.name, self.length, self.value)
+
+    def __len__(self):
+        return self.length.width + self.value.width
+    
+    # XXX is this valid? surely if I'm setting the value of a LengthValueField,
+    # I mean to set all of its fields?
+    def __setattr__(self, name, value):
+        object.__setattr__(self, name, value)
+        if self.packet != None:
+            self.packet.__needencode = True
 
     def decode(self, bytes, curr, byteBR):
-        # Grab the length from the packet
-        if (byteBR != None and byteBR != 8):
-            raise FieldAlignmentError, "LengthValue Fields must start on a byte boundary"
-        if self.width == 8:
-            packarg = "B"
-        elif self.width == 16:
-            packarg = "H"
-        elif self.width == 32:
-            packarg = "I"
-        width = self.width / 8
-        length = struct.unpack(packarg, bytes[curr:curr+width])[0]
-        curr += width
-        # Now grab the data of that length
-        packarg ="%ds" % length
-        value = struct.unpack(packarg, bytes[curr:curr+length])[0]
-        curr += length
-        return [value, curr, byteBR]
+        """Decode a LengthValue field."""
+        [self.length.value, curr, byteBR] = self.length.decode(bytes, curr, byteBR)
+        [self.value.value, curr, byteBR] = self.value.decode(bytes, curr, byteBR)
+        return [self.value.value, curr, byteBR]
         
     def encode(self, bytearray, value, byte, byteBR):
-        """Encode a LengthValue field.
-           Make sure to check the byte alignment."""
-        if (byteBR != None and byteBR != 8):
-            raise FieldAlignmentError, "LengthValue Fields must start on a byte boundary"
-        # Put the length into the packet first.
-        if self.width == 8:
-            packarg = "B"
-        elif self.width == 16:
-            packarg = "H"
-        elif self.width == 32:
-            packarg = "I"
-        length = len(value)
-        # Now put the data into the packet after the length
-        bytearray.append(struct.pack(packarg, length))
-        packarg = "%ds" % length
-        bytearray.append(struct.pack(packarg, value))
+        """Encode a LengthValue field."""
+        if not isinstance(self.value, StringField):
+            self.length.value = self.value.width
+        else:
+            self.length.value = len(self.value.value)
+            #self.value.width = len(self.value.value) * 8	# XXX packed
+        [byte, byteBR] = self.length.encode(bytearray, self.length.value, byte, byteBR)
+        [byte, byteBR] = self.value.encode(bytearray, self.value.value, byte, byteBR)
         return [byte, byteBR]
+
+    def set_value(self, value):
+        """Set the value of a LengthValueField."""
+	self.length.value = len(value)
+        self.value.value = value
+        if self.packet != None:
+            self.packet.__needencode = True
+
+    #def get_value(self):
+    #    return self.value.value
 
     def reset(self):
         """Return a resonable value to use in resetting a field of this type."""
@@ -316,95 +352,98 @@ class LengthValueField(Field):
 
     def bounds(self, value):
         """Check the bounds of this field."""
+        self.value.bounds(value)
+
+class TypeValueField(object):
+    """A type-value field handles parts of packets where a type
+    is encoded before a value.  """
+
+    def __init__(self, name, type, value):
+        self.packet = None
+        self.name = name
+        if not isinstance(type, Field):
+            raise LengthValueFieldError, "Type must be of type Field but is %s" % type(type)
+        self.type = type
+        if isinstance(value, Field) or isinstance(value, StringField):
+            self.value = value
+        else:
+            raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
+        self.width = type.width + value.width
+
+    def __repr__(self):
+        return "<pcs.TypeValueField name %s, type %s, value %s," % (self.name, self.type, self.value)
+
+    def __setattr__(self, name, value):
+        object.__setattr__(self, name, value)
+        if self.packet != None:
+            self.packet.__needencode = True
+
+    def decode(self, bytes, curr, byteBR):
+        [self.type.value, curr, byteBR] = self.type.decode(bytes, curr, byteBR)
+        [self.value.value, curr, byteBR] = self.value.decode(bytes, curr, byteBR)
+        return [value, curr, byteBR]
+        
+    def encode(self, bytearray, value, byte, byteBR):
+        [byte, byteBR] = self.type.encode(bytearray, self.type.value, byte, byteBR)
+        [byte, byteBR] = self.value.encode(bytearray, self.value.value, byte, byteBR)
+        return [byte, byteBR]
+        
+    def reset(self):
+        """Return a resonable value to use in resetting a field of this type."""
+        return ""
+
+    def bounds(self, value):
+        """Check the bounds of this field."""
         if ((value == None) or
-            (len (value) > (((2 ** self.width) - 1) / 8))):
+            (len (value) > (((2 ** self.valuewidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
 
-class TypeLengthValueField(Field):
+class TypeLengthValueField(object):
     """A type-length-value field handles parts of packets where a type
     is encoded before a length and value.  """
 
-    def __init__(self, name = "", type = None, typewidth = 8, lengthwidth = 8,
-                 valuetype = "s", inclusive = False, default = None):
+    def __init__(self, name, type, length, value,
+                 inclusive = False):
+        self.packet = None
         self.name = name
+        if not isinstance(type, Field):
+            raise LengthValueFieldError, "Type must be of type Field but is %s" % type(type)
         self.type = type
-        self.typewidth = typewidth
-        self.lengthwidth = lengthwidth
-        self.width = typewidth + lengthwidth
-        self.valuetype = valuetype
+        if not isinstance(length, Field):
+            raise LengthValueFieldError, "Length must be of type Field but is %s" % type(type)
+        self.length = length
+        if isinstance(value, Field) or isinstance(value, StringField):
+            self.value = value
+        else:
+            raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
+        self.width = type.width + length.width + value.width
         self.inclusive = inclusive
-        self.default = default
 
     def __repr__(self):
-        return "<pcs.TypeLengthValueField type %d, value name %s, length name %s," \
-               "width %d>" % (self.type, self.name, self.length_name, self.typewidth, self.lengthwidth)
+        return "<pcs.TypeLengthValueField type %s, length %s, value %s>" \
+                % (self.type, self.length, self.value)
+
+    def __setattr__(self, name, value):
+        object.__setattr__(self, name, value)
+        if self.packet != None:
+            self.packet.__needencode = True
 
     def decode(self, bytes, curr, byteBR):
-        # Grab the type from the packet
-        if (byteBR != None and byteBR != 8):
-            raise FieldAlignmentError, "TypeLengthValue Fields must start on a byte boundary"
-        if self.typewidth == 8:
-            packarg = "B"
-        elif self.typewidth == 16:
-            packarg = "H"
-        elif self.typewidth == 32:
-            packarg = "I"
-        width = self.typewidth / 8
-        type = struct.unpack(packarg, bytes[curr:curr+width])[0]
-        curr += width
-        # Grab the length of the following data from the packet
-        if self.lengthwidth == 8:
-            packarg = "B"
-        elif self.lengthwidth == 16:
-            packarg = "H"
-        elif self.lengthwidth == 32:
-            packarg = "I"
-        width = self.lengthwidth / 8
-        length = struct.unpack(packarg, bytes[curr:curr+width])[0]
-        curr += width
-        # Now grab the data of that length
-        if self.valuetype == "s":
-            packarg = "%ds" % length
-        else:
-            packarg = "!%s" % self.valuetype
-        if self.inclusive == True:
-            length -= (self.typewidth / 8) + (self.lengthwidth / 8)
-        value = struct.unpack(packarg, bytes[curr:curr+length])[0]
-        if self.inclusive == True:
-            length += (self.typewidth / 8) + (self.lengthwidth / 8)
-        curr += length
-        self.width = self.typewidth + self.lengthwidth + (length * 8)
-        return [(type, length, value), curr, byteBR]
+        [self.type.value, curr, byteBR] = self.type.decode(bytes, curr, byteBR)
+        [self.length.value, curr, byteBR] = self.length.decode(bytes, curr, byteBR)
+        [self.value.value, curr, byteBR] = self.value.decode(bytes, curr, byteBR)
+        return [value, curr, byteBR]
         
     def encode(self, bytearray, value, byte, byteBR):
-        """Encode a LengthValue field.
-           Make sure to check the byte alignment."""
-        if (byteBR != None and byteBR != 8):
-            raise FieldAlignmentError, "LengthValue Fields must start on a byte boundary"
-        # Put the type into the packet first.
-        if self.typewidth == 8:
-            packarg = "B"
-        elif self.typewidth == 16:
-            packarg = "H"
-        elif self.typewidth == 32:
-            packarg = "I"
-        # Now put the data into the packet after the length
-        bytearray.append(struct.pack(packarg, self.type))
-        if self.lengthwidth == 8:
-            packarg = "B"
-        elif self.lengthwidth == 16:
-            packarg = "H"
-        elif self.lengthwidth == 32:
-            packarg = "I"
-        # Now put the data into the packet after the length
-        length = value[1]
-        bytearray.append(struct.pack(packarg, length))
-        if self.valuetype == "s":
-            packarg = "%d%s" % (length, self.valuetype)
+        """Encode a LengthValue field."""
+        if isinstance(self.value, Field):
+            self.length.value = self.value.width
         else:
-            packarg = "!%s" % self.valuetype
-        bytearray.append(struct.pack(packarg, value[2]))
+            self.length.value = len(self.value)
+        [byte, byteBR] = self.type.encode(bytearray, self.type.value, byte, byteBR)
+        [byte, byteBR] = self.length.encode(bytearray, self.length.value, byte, byteBR)
+        [byte, byteBR] = self.value.encode(bytearray, self.value.value, byte, byteBR)
         return [byte, byteBR]
 
     def reset(self):
@@ -417,7 +456,7 @@ class TypeLengthValueField(Field):
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
-_fieldlist = (Field, StringField, TypeLengthValueField)
+_fieldlist = (Field, StringField, LengthValueField, TypeValueField, TypeLengthValueField)
 
 class OptionListError(Exception):
     """When a programmer tries to append to an option list and causes
@@ -432,7 +471,7 @@ class OptionListField(list):
     """A option list is a list of fields. Option lists inhabit many
     protocols including TCP"""
 
-    def __init__(self, name, width = 0, options = []):
+    def __init__(self, name, width = 0, option_list = []):
         """initialize a  object
 
         packets - an optionl array of packets to add to the new Chain
@@ -440,17 +479,16 @@ class OptionListField(list):
         list.__init__(self)
         self.name = name
         self.width = width
-        if options != []:
-            for pair in options:
-                self.append(pair)
-        else:
-            self.options = options
-            self.values = []
+        self._options = []
+        if option_list != []:
+            for option in option_list:
+                self._options.append(option)
         
         self.default = self
+        self.value = self
         
     def __len__(self):
-        return len(self.options)
+        return len(self._options)
     
     def __iter__(self):
         self.index = 0
@@ -458,11 +496,11 @@ class OptionListField(list):
 
     def next(self):
         """Option lists return a pair of (value, option) when iterated"""
-        if len(self.values) <= 0:
+        if len(self._options) <= 0:
             raise StopIteration
-        if self.index > len(self.values):
+        if self.index > len(self._options):
             raise StopIteration
-        retval =  (self.values[self.index], self.options[self.index])
+        retval =  (self._options[self.index].value)
         self.index += 1
         return retval
     
@@ -472,33 +510,35 @@ class OptionListField(list):
         Two option lists are equal iff they have the samem options and values"""
         if (other == None):
             return False
-        if len(self.options) != len(other.options):
+        if len(self._options) != len(other._options):
             return False
-        for i in range(len(self.options)):
-            if self.options[i] != other.options[i]:
+        for i in range(len(self._options)):
+            if self._options[i].value != other._options[i].value:
                 return False
         return True
             
     def __ne__(self, other):
-        """test two Chain objects for inequality"""
+        """test two option lists for inequality"""
         return not self.__eq__(other)
             
     def __repr__(self):
-        return "<pcs.OptionListField>"
+        return self.__str__()
 
     def __str__(self):
         """return a pretty printed option list"""
         retval = "["
-        for index in range(0, len(self.options)):
-            retval += "[%s, %s]" % (self.values[index], self.options[index].name)
-            if (index == (len(self.options) - 1)):
+        index = 0
+        for option in self._options:
+            retval += "[Field: %s, Value: %s]" % (option.name, option.value)
+            if (index == (len(self._options) - 1)):
                 break
             retval += ", "
+            index += 1
         retval += "]"
         return retval
     
     def __setitem__(self, index, value):
-        if (index < 0 or index > len(self.options)):
+        if (index < 0 or index > len(self._options)):
             raise IndexError, "index %d out of range" % index
         else:
             # Three part harmony
@@ -508,33 +548,29 @@ class OptionListField(list):
                     raise OptionListError, "Option must be a pair (value, PCS Field)"
                 if not isinstance(value[1], _fieldlist):
                     raise OptionListError, "Option must be a valid PCS Field."
-                self.values[index] = value[0]
-                self.options[index] = value[1]
+                self._options[index] = value[1]
+                self._options[index].value = value[0]
                 return
             # or the caller can pass a field, but we have to check the
             # underlying value
             if isinstance(value, _fieldlist):
-                value.bounds(self.values[index])
-                self.options[index] = value
+                value.bounds(self._options[index].value)
+                self._options[index] = value
                 return
             # of the caller can pass a value but we have to check the bounds
-            self.options[index].bounds(value)
-            self.values[index] = value
+            self._options[index].bounds(value)
+            self._options[index].value = value
 
     def __getitem__(self, index):
-        if (index < 0 or index > len(self.options)):
+        """Return the value of a field in the list."""
+        if (index < 0 or index > len(self._options)):
             raise IndexError, "index %d out of range" % index
         else:
-            return (self.values[index], self.options[index])
-
-    def get(self):
-        pass
+            return self._options[index].value
 
     def __add__(self, other):
         if isinstance(other, _fieldlist):
-            self.options += other
-        else:
-            self.values += other
+            self._options += other
 
     def append(self, option):
         """Append an option, an option/value pair, or a value to an
@@ -542,38 +578,29 @@ class OptionListField(list):
 
         Vaue,Option pairs are given as a list (value, option)
         """
-        if isinstance(option, list):
-            if len(option) != 2:
-                raise OptionListError, "Option must be a pair (value, PCS Field)"
-            if not isinstance(option[1], _fieldlist):
-                raise OptionListError, "Option must be a valid PCS Field."
-            self.values.append(option[0])
-            self.options.append(option[1])
-        else: 
-            raise OptionListError, "Option must be a pair (value, PCS Field)"
-
-        
+        if not isinstance(option, _fieldlist):
+            raise OptionListError, "Option must be a valid PCS Field."
+        if not hasattr(self, '_options'):
+            self._options = []
+        self._options.append(option)
+            
     def encode(self, bytearray, value, byte, byteBR):
         """Encode all the options in a list into a set of bytes"""
-        if self.options != None:
-            for index in range(0, len(self.options)):
-                value = self.values[index]
-                option = self.options[index]
-                option.encode(bytearray, value, byte, byteBR)
+        if hasattr(self, '_options'):
+            for option in self._options:
+                option.encode(bytearray, option.value, byte, byteBR)
         return [byte, byteBR]
 
     def decode(self, bytes, curr, byteBR):
         """Decode all the options in the list"""
-        if self.options != None:
-            index = 0
-            for option in self.options:
+        if hasattr(self, '_options'):
+            for option in self._options:
                 [value, curr, byteBR] = option.decode(bytes, curr, byteBR)
-                self.values[index] = value
-                index += 1 
+                option.value = value
         return [None, curr, byteBR]
 
     def reset(self):
-        print self.options
+        print self._options
 
 
 class LayoutDiscriminatorError(Exception):
@@ -612,7 +639,7 @@ class Layout(list):
             # This is a special case, we don't want to recurse back
             # through the encapsulating class's __setattr__ routine.
             # We want to set this directly in the class's dictionary
-            if field.default == None:
+            if not hasattr(field, 'default') or field.default == None:
                 obj.__dict__[field.name] = field.reset()
             else:
                 obj.__dict__[field.name] = field.default
@@ -666,8 +693,6 @@ class Packet(object):
             if curr > len(bytes):
                 break
             [value, curr, byteBR]  = field.decode(bytes, curr, byteBR)
-            if value != None:
-                object.__setattr__(self, field.name, value)
 
     bytes = property(getbytes, decode)
 
@@ -689,7 +714,7 @@ class Packet(object):
         byte = 0
         bytearray = []
         for field in self._layout:
-            value = object.__getattribute__(self, field.name)
+            value = self._fieldnames[field.name].value
             [byte, byteBR] = field.encode(bytearray, value, byte, byteBR)
 
         self._bytes = ''.join(bytearray) # Install the new value
@@ -700,8 +725,10 @@ class Packet(object):
         layout - the layout of the packet, a list of Field objects
         bytes - if the packet is being set up now the bytes to set in it
         """
-        self._fieldnames = {}
         self._layout = layout
+        self._fieldnames = {}
+        for field in layout:
+            self._fieldnames[field.name] = field
         self._needencode = True
         if bytes != None:
             self.decode(bytes)
@@ -709,6 +736,7 @@ class Packet(object):
         self._discriminator = None
         # The layout of the Packet, a list of Field objects.
         for field in layout:
+            field.packet = self
             if (not hasattr(field, 'discriminator')):
                 continue
             if ((field.discriminator == True) and
@@ -732,35 +760,36 @@ class Packet(object):
         in the layout may be set, no other attributes may be added"""
 
         # Handle special fields first.
-        if (name == '_fieldnames'):
+        if name == '_fieldnames':
             object.__setattr__(self, name, value)
-            return
-
-        if (name not in reserved_names):
-            if name in self._fieldnames:
-                self._fieldnames[name].bounds(value)
-
-        object.__setattr__(self, name, value)
-
-        # See if we're modifying a value that is controlled by the
-        # layout.  If we are we need to update the bytes in the packet
-        # so call update after we set the field.
-        if (name not in reserved_names):
-            if (name in self._fieldnames):
-                self._needencode = True
-                return
-        else:
-            self._fieldnames = {}
             self._bitlength = 0
             for field in self._layout:
-                self._fieldnames[field.name] = field
                 self._bitlength += field.width
+            return
+
+        if (hasattr(self, '_fieldnames') and (name in self._fieldnames)):
+            self._fieldnames[name].bounds(value)
+            self._fieldnames[name].set_value(value)
+            self._needencode = True
+        else:
+            object.__setattr__(self, name, value)
 
     def __getattribute__(self, name):
         """Getting an attribute means we may have extended an option.
 
-        If we append to an options we have to reencode the bytes."""
+        If we append to an options list we have to reencode the bytes."""
         object.__setattr__(self, '_needencode', True)
+
+        try: 
+            fieldnames = object.__getattribute__(self, '_fieldnames')
+        except:
+            return {}
+        if name in fieldnames:
+            if isinstance(fieldnames[name], Field) and not \
+                   isinstance(fieldnames[name], (LengthValueField, TypeValueField, TypeLengthValueField)):
+                return fieldnames[name].get_value()
+            else:
+                return fieldnames[name]
 
         return object.__getattribute__(self, name)
 
@@ -771,7 +800,7 @@ class Packet(object):
         if (self.bytes != other.bytes):
             return False
         for field in self._layout:
-            if self.__dict__[field.name] != other.__dict__[field.name]:
+            if self._fieldnames[field.name].value != other._fieldnames[field.name].value:
                 return False
         return True
 
@@ -797,7 +826,8 @@ class Packet(object):
         if hasattr(self, 'description'):
             retval += "%s\n" % self.description
         for field in self._layout:
-            retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+            retval += "%s %s\n" % (field.name,
+                                   self._fieldnames[field.name].value)
         return retval
 
     def __len__(self):
@@ -830,11 +860,11 @@ class Packet(object):
 
         if ((discriminator != None) and (self._map != None)):
             if (discriminator in self._map):
-                return self._map[self.__dict__[self._discriminator.name]](bytes, timestamp = timestamp)
+                return self._map[self._fieldnames[discriminator.name].value](bytes, timestamp = timestamp)
             
         if ((self._discriminator != None) and (self._map != None)):
-            if (self.__dict__[self._discriminator.name] in self._map):
-                return self._map[self.__dict__[self._discriminator.name]](bytes, timestamp = timestamp)
+            if (self._fieldnames[self._discriminator.name].value in self._map):
+                return self._map[self._fieldnames[self._discriminator.name].value](bytes, timestamp = timestamp)
         
         return None
 

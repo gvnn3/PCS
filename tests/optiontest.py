@@ -53,15 +53,14 @@ class optionTestCase(unittest.TestCase):
         packet = tcp()
         nop = pcs.Field("nop", 8)
         pad = pcs.Field("pad", 8)
-        print packet.options
-        packet.sport = 5
-        print packet.bytes
-        packet.options.append([1, nop])
-        packet.options.append([0, pad])
+        #mss = pcs.TypeValueField("mss", type = 2, typewidth = 8, valuewidth = 32, default = 266)
+        nop.value = 1
+        pad.value = 0
+        #mss.value = 266
+        packet.options.append(nop)
+        packet.options.append(pad)
+        #packet.options.append(mss)
+        self.assertEqual(packet.bytes,"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x00\x00\x01\n")
         
-        print packet
-        print packet.bytes
-        
-
 if __name__ == '__main__':
     unittest.main()
