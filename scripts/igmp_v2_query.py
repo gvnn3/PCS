@@ -78,8 +78,8 @@ def main():
 
     if options.igmp_group is None:
 	# General query.
-    	ip.dst = inet_atol("224.0.0.1")		# XXX should be a constant
-        igmp.group = 0
+    	ip.dst = INADDR_ALLHOSTS_GROUP
+        igmp.group = INADDR_ANY
     else:
 	# Group-specific query.
     	ip.dst = inet_atol(options.igmp_group)
