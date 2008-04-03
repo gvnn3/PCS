@@ -32,6 +32,10 @@ def main():
                       dest="igmp_group", default=None,
                       help="The IPv4 group to spoof a leave message for.")
 
+    parser.add_option("-A", "--no-router-alert",
+                      action="store_true", dest="no_ra",
+                      help="Disable the use of the IP Router Alert option.")
+
     (options, args) = parser.parse_args()
 
     if options.igmp_group is None or \
@@ -63,32 +67,24 @@ def main():
     igmp.type = IGMP_HOST_LEAVE_MESSAGE
     igmp.code = 0
     igmp.group = inet_atol(options.igmp_group)
-    
+
     igmp_packet = Chain([igmp])
     igmp.checksum = igmp_packet.calc_checksum()
 
-    #######################
+    if options.no_ra is True:
+	ip.length = len(ip.bytes) + len(igmp.bytes)
+	ip.hlen = len(ip.bytes) >> 2
+    else:
+	ra = pcs.TypeLengthValueField("ra",
+				      pcs.Field("", 8, default = 148),
+				      pcs.Field("", 8),
+				      pcs.Field("", 16))
+	ip.options.append(ra)
+	ip.hlen = len(ip.bytes) >> 2
+	ip.length = len(ip.bytes) + len(igmp.bytes)
 
-    # without RA option
-    #ip.length = len(ip.bytes) + len(igmp.bytes)
-    #ip.hlen = len(ip.bytes) >> 2
-    #ip.checksum = ip.cksum()
-    #packet = Chain([ether, ip, igmp])
-
-    #######################
-
-    # with RA option (new option list code)
-    ra = pcs.TypeLengthValueField("ra",
-                                  pcs.Field("t", 8, default = 148),
-                                  pcs.Field("l", 8),
-                                  pcs.Field("v", 16))
-    ip.options.append(ra)
-    ip.hlen = len(ip.bytes) >> 2
-    ip.length = len(ip.bytes) + len(igmp.bytes)
     ip.checksum = ip.cksum()
     packet = Chain([ether, ip, igmp])
-
-    #######################
 
     output = PcapConnector(options.ether_iface)
 
