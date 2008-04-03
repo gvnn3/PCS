@@ -72,11 +72,11 @@ IGMP_BLOCK_OLD_SOURCES = 6
 class igmpv3_query(pcs.Packet):
     """IGMPv3 query message.
     v3 of the protocol (RFC 2236) has a broadly extended query format.
-    General IGMPv3 queries are always multicast to link scope group 224.0.0.22.
-    It needs careful handling to differentiate it from older protocol versions in its
-    group specific flavour.
-    The optional payload, if provided, is a list of sources (IPv4, network-endian,
-    as 32-bit-wide long integers) to be queried.
+    General IGMPv3 queries are always multicast to link scope group
+    224.0.0.22. It needs careful handling to differentiate it from
+    older protocol versions in its group specific flavour.
+    The optional payload, if provided, is a list of sources
+    (IPv4, network-endian, as 32-bit-wide long integers) to be queried.
     """
 
     layout = pcs.Layout()
@@ -84,21 +84,24 @@ class igmpv3_query(pcs.Packet):
     def __init__(self, bytes = None, timestamp = None):
         """initialize an IGMPv3 query"""
         type = pcs.Field("type", 8)
-        maxresp = pcs.Field("maxresp", 8)  # 3-bit exp/4 bit mantissa packed fixed point
+        # 3-bit exp/4 bit mantissa packed fixed point.
+        maxresp = pcs.Field("maxresp", 8)
         cksum = pcs.Field("checksum", 16)
 	group = pcs.Field("group", 32)
 	reserved00 = pcs.Field("reserved00", 4)
 	sbit = pcs.Field("sbit", 1)
 	qrv = pcs.Field("qrv", 3)
 	qqic = pcs.Field("qqic", 8)
+	# XXX User needs to count and stash source count.
 	nsrc = pcs.Field("nsrc", 16)
+	sources = pcs.OptionListField("sources")
 
-	# TODO: handle source list payloads.
-	#  TODO: Write a ListField class.
-        pcs.Packet.__init__(self, [type, maxresp, cksum, group, reserved00, sbit, qrv, qqic, nsrc], None)
+        pcs.Packet.__init__(self, [type, maxresp, cksum, group,
+			           reserved00, sbit, qrv, qqic,
+				   nsrc, sources], bytes = bytes)
 
         self.description = "IGMPv3"
-	self.type = IGMP_MEMBERSHIP_QUERY
+	self.type = IGMP_HOST_MEMBERSHIP_QUERY
 	self.reserved00 = 0
 
         if timestamp == None:
@@ -106,12 +109,30 @@ class igmpv3_query(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (sources != None):
-	    raise "unfinished symphony"
-            offset = type.width + maxresp.width + cksum.width + group.width + \
-	             reserved00.width + sbit.width + qrv.width + qqic.width + nsrc.width
-	    self.nsrc = len(sources)
-            self.data = payload.payload(bytes[offset:len(bytes)])
+        # Decode source list if provided.
+	if bytes != None:
+	    sources_len = self.nsrc * 4
+            query_len = self.sizeof() + sources_len
+
+            if query_len > len(bytes):
+                raise FieldBoundsError, \
+                      "IGMPv3 query is larger than input (%d > %d)" % \
+                      (query_len, len(bytes))
+
+            rem = sources_len
+            while rem > 4:
+                src = struct.unpack('I', bytes[curr])[0]
+                sources.append(pcs.Field("", 32, default = src))
+                rem -= 4
+            if rem > 0:
+                print "WARNING: %d unaligned bytes in payload." % rem
+
+            self.nsrc = len(sources)
+
+            # IGMPv3 queries SHOULD NOT contain ancillary data. If we
+            # do find any, we'll append it to the data member.
+            self.data = payload.payload(bytes[querylen:len(bytes)])
+
         else:
 	    self.nsrc = 0
             self.data = None
