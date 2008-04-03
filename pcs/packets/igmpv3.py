@@ -136,7 +136,7 @@ class igmpv3_query(pcs.Packet):
 	    self.nsrc = 0
             self.data = None
 
-class GroupRecordField(object):
+class GroupRecordField(pcs.CompoundField):
     """An IGMPv3 group record contains report information about
        a single IGMPv3 group."""
 
@@ -152,8 +152,9 @@ class GroupRecordField(object):
         self.auxdata = pcs.OptionListField("auxdata")
 
         # XXX I actually have variable width when I am being encoded.
-        self.width = type.width + auxdatalen.width + nsources.width + \
-                     group.width + sources.width + auxdata.width
+        self.width = self.type.width + self.auxdatalen.width + \
+		     self.nsources.width + self.group.width + \
+		     self.sources.width + self.auxdata.width
 
     def __repr__(self):
         return "<igmpv3.GroupRecordField type %s, auxdatalen %s, " \
@@ -166,7 +167,13 @@ class GroupRecordField(object):
         if self.packet != None:
             self.packet.__needencode = True
 
+    # XXX OptionList decode is funny. If you don't have the packet
+    # contents reflected in the PCS representation already, then it will
+    # not produce anything -- the OptionLists are empty.
+    # This is why the TCP and IP option list decoders have to act on
+    # the backing store provided. Similarly we have to do the same here.
     def decode(self, bytes, curr, byteBR):
+	start = curr
         [self.type.value, curr, byteBR] = self.type.decode(bytes,
                                                            curr, byteBR)
         [self.auxdatalen.value, curr, byteBR] = self.auxdatalen.decode(bytes,
@@ -176,26 +183,22 @@ class GroupRecordField(object):
         [self.group.value, curr, byteBR] = self.group.decode(bytes,
                                                            curr, byteBR)
 
-        # XXX OptionList decode is funny. If you don't have the packet
-        # contents reflected in Python objects already, then it will
-        # not produce anything -- the OptionLists are empty.
-        # This is why the TCP and IP option list
-        # decoders have to act on the backing store provided. Similarly
-        # we have to do the same here.
+	# The sources[] array is a variable length field. We need to
+	# parse it ourselves.
+	srcendp = curr + (self.nsources.value * 4)
+	while curr < srcendp:
+	    src = pcs.Field("", 32)
+	    [src.value, curr, byteBR] = src.decode(bytes, curr, byteBR)
+	    self.sources.append(src)
 
-        print "total %d, curr %d, remaining %d" % \
-              (len(bytes), curr, len(bytes) - curr)
-        [self.sources.value, curr, byteBR] = self.sources.decode(bytes,
-                                                           curr, byteBR)
+	# Attempt to consume any auxiliary data. TODO: Reflect it.
+	curr += (self.auxdatalen.value * 4)
 
-        print "total %d, curr %d, remaining %d" % \
-              (len(bytes), curr, len(bytes) - curr)
-        [self.auxdata.value, curr, byteBR] = self.auxdata.decode(bytes,
-                                                           curr, byteBR)
+	delta = curr - start
+	self.width = 8 * delta
+	#print "consumed %d bytes" % delta
 
-        # XXX Update my width, or other stuff won't work.
-
-        return [value, curr, byteBR]
+        return [None, curr, byteBR]
 
     def encode(self, bytearray, value, byte, byteBR):
         """Encode an IGMPv3 group record."""
@@ -203,10 +206,12 @@ class GroupRecordField(object):
 	# Just encode what we're told, don't try to bounds check the payload,
 	# but do print warnings if protocol invariants were violated.
 	#
-	if self.nsources.value != (len(self.nsources.value) >> 2):
-	    print "WARNING: nsources field is %d, should be %d.",
-	if self.auxdatalen.value != len(self.auxdata.value):
-	    print "WARNING: auxdatalen field is %d, should be %d.",
+	#if self.nsources.value != (len(self.sources) >> 2):
+	#    print "WARNING: nsources field is %d, should be %d." % \
+        #          (self.nsources.value, len(self.sources) >> 2)
+	#if self.auxdatalen.value != (len(self.auxdata) >> 2):
+	#    print "WARNING: auxdatalen field is %d, should be %d." % \
+        #          (self.auxdata.value, len(self.auxdata) >> 2)
 
         [byte, byteBR] = self.type.encode(bytearray, self.type.value,
                                           byte, byteBR)
@@ -217,9 +222,9 @@ class GroupRecordField(object):
                                               byte, byteBR)
         [byte, byteBR] = self.group.encode(bytearray, self.group.value,
                                            byte, byteBR)
-        [byte, byteBR] = self.sources.encode(bytearray, self.sources.value,
+        [byte, byteBR] = self.sources.encode(bytearray, None,
                                              byte, byteBR)
-        [byte, byteBR] = self.auxdata.encode(bytearray, self.auxdata.value,
+        [byte, byteBR] = self.auxdata.encode(bytearray, None,
                                              byte, byteBR)
 
         return [byte, byteBR]
@@ -228,14 +233,16 @@ class GroupRecordField(object):
         """Return a resonable value to use in resetting a field of this type."""
         return ""
 
-    # PCS codes field widths for bits, IGMPv3 codes auxdata for bytes,
-    # and nsources for 32 bit IPv4 addresses.
+    # PCS codes field widths for bits.
+    # Both length fields in an individual IGMPv3 group record code for
+    # 32 bit words. Calculate if the field's overall width lies within
+    # the bounds of a valid GroupRecordField.
     def bounds(self, value):
         """Check the bounds of this field."""
 	minwidth = self.type.width + self.auxdatalen.width + \
                    self.nsources.width + self.group.width
-	maxwidth = minwidth + ((2 ** auxdatalen.width) * 8) + \
-                              ((2 ** nsources.width << 2) * 8)
+	maxwidth = minwidth + (((2 ** auxdatalen.width) << 2) * 8) + \
+                              (((2 ** nsources.width) << 2) * 8)
 	if self.width < minwidth or self.width > maxwidth:
             raise FieldBoundsError, "GroupRecordField must be between %d " \
                                     "and %d bytes wide" % (minwidth, maxwidth)
@@ -260,7 +267,7 @@ class igmpv3_report(pcs.Packet):
 	nrecords = pcs.Field("nrecords", 16)
 	records = pcs.OptionListField("records")
 
-        pcs.Packet.__init__(self, [type, reserved00, cksum, reserved00,
+        pcs.Packet.__init__(self, [type, reserved00, cksum, reserved01,
                                    nrecords, records], bytes)
         self.description = "IGMPv3_Report"
 
@@ -273,30 +280,15 @@ class igmpv3_report(pcs.Packet):
 
         # Decode additional bytes into group records, if provided.
         # Group records are variable length structures, so we
-        # have no way of bounds checking upfront, we have to
-        # attempt to parse the payload.
-        # This is where things get interesting, OptionListField
-        # is a variable length Field... and we need a list of those.
+        # have no way of bounds checking upfront -- we have to
+        # attempt to parse the entire payload. This gets interesting.
 	if bytes != None:
             curr = self.sizeof()
-
-            #remaining = len(bytes) - self.sizeof()
-            #rem = sources_len
-            #while rem > 4:
-            #    src = struct.unpack('I', bytes[curr])[0]
-            #    sources.append(pcs.Field("", 32, default = src))
-            #    rem -= 4
-            #if rem > 0:
-            #    print "WARNING: %d trailing bytes in query." % rem
-
-            #records = []
-            #self.nrecords = len(records)
-
-            # IGMPv3 reports SHOULD NOT contain ancillary data beyond
-            # the last group report. If we do find any, we'll append it
-            # it to the 'data' member as a Payload.
-            self.data = payload.payload(bytes[curr:len(bytes)])
-
+            byteBR = 8
+            while curr < len(bytes):
+		rec = GroupRecordField("")
+                [dummy, curr, byteBR] = rec.decode(bytes, curr, byteBR)
+		self.records.append(rec)
         else:
 	    self.nrecords = 0
             self.data = None

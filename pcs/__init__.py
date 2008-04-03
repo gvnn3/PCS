@@ -312,8 +312,6 @@ class LengthValueField(object):
     def __len__(self):
         return self.length.width + self.value.width
     
-    # XXX is this valid? surely if I'm setting the value of a LengthValueField,
-    # I mean to set all of its fields?
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
         if self.packet != None:
@@ -463,7 +461,8 @@ class TypeLengthValueField(object):
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
-_fieldlist = (Field, StringField, LengthValueField, TypeValueField, TypeLengthValueField)
+class CompoundField(object):
+    """A compound field may contain other fields."""
 
 class OptionListError(Exception):
     """When a programmer tries to append to an option list and causes
@@ -474,15 +473,12 @@ class OptionListError(Exception):
     def __str__(self):
         return repr(self.message)
 
-class OptionListField(list):
-    """A option list is a list of fields. Option lists inhabit many
-    protocols including TCP"""
+class OptionListField(CompoundField, list):
+    """A option list is a list of Fields.
+       Option lists inhabit many protocols, including IP and TCP."""
 
     def __init__(self, name, width = 0, option_list = []):
-        """initialize a  object
-
-        packets - an optionl array of packets to add to the new Chain
-        """
+        """Iniitialize an OptionListField."""
         list.__init__(self)
         self.name = name
         self.width = width
@@ -512,9 +508,9 @@ class OptionListField(list):
         return retval
     
     def __eq__(self, other):
-        """test two option lists for equality
-
-        Two option lists are equal iff they have the samem options and values"""
+        """Test two option lists for equality.
+           Two option lists are equal if and only if they have the
+           same options and values."""
         if (other == None):
             return False
         if len(self._options) != len(other._options):
@@ -536,7 +532,10 @@ class OptionListField(list):
         retval = "["
         index = 0
         for option in self._options:
-            retval += "[Field: %s, Value: %s]" % (option.name, option.value)
+            if isinstance(option, CompoundField):
+                retval += "[Field: %s, Value: %s]" % (option.name, option)
+            else:
+                retval += "[Field: %s, Value: %s]" % (option.name, option.value)
             if (index == (len(self._options) - 1)):
                 break
             retval += ", "
@@ -595,20 +594,29 @@ class OptionListField(list):
         """Encode all the options in a list into a set of bytes"""
         if hasattr(self, '_options'):
             for option in self._options:
-                option.encode(bytearray, option.value, byte, byteBR)
+                if isinstance(option, CompoundField):
+                    option.encode(bytearray, None, byte, byteBR)
+                else:
+                    option.encode(bytearray, option.value, byte, byteBR)
         return [byte, byteBR]
 
     def decode(self, bytes, curr, byteBR):
         """Decode all the options in the list"""
         if hasattr(self, '_options'):
             for option in self._options:
-                [value, curr, byteBR] = option.decode(bytes, curr, byteBR)
-                option.value = value
+                if isinstance(option, CompoundField):
+                    raise OptionListError, "Can't encode embedded lists yet"
+                else:
+                    [value, curr, byteBR] = option.decode(bytes, curr, byteBR)
+                    option.value = value
         return [None, curr, byteBR]
 
     def reset(self):
         print self._options
 
+# Types which implement Field's interface, even if not directly
+# inherited from Field. User types may inherit from these types.
+_fieldlist = (Field, StringField, LengthValueField, TypeValueField, TypeLengthValueField, CompoundField)
 
 class LayoutDiscriminatorError(Exception):
     """When a programmer tries to set more than one field in a Layout as a 
