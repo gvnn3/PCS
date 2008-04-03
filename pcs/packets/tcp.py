@@ -37,7 +37,7 @@
 import sys
 
 import pcs
-from pcs import FieldBoundsError
+from pcs import UnpackError
 from pcs.packets import payload
 import tcp_map
 
@@ -92,7 +92,7 @@ class tcp(pcs.Packet):
             # option area. We will perform this check during encoding later.
 
             if data_offset > len(bytes):
-                raise FieldBoundsError, \
+                raise UnpackError, \
                       "TCP segment is larger than input (%d > %d)" % \
                       (data_offset, len(bytes))
 
@@ -117,7 +117,7 @@ class tcp(pcs.Packet):
 
                     optlen = struct.unpack('!B', bytes[curr+1])[0]
                     if (optlen < 1 or optlen > (data_offset - curr)):
-                        raise FieldBoundsError, \
+                        raise UnpackError, \
                               "Bad length %d for TCP option %d" % \
                               (optlen, option)
 
@@ -133,7 +133,7 @@ class tcp(pcs.Packet):
 			# XXX this is being thrown dont know hwy
                         #if optlen != 4:
 			#    print options
-                        #    raise FieldBoundsError, \
+                        #    raise UnpackError, \
                         #          "Bad length %d for TCP option %d, should be %d" % \
                         #          (optlen, option, 4)
                         value = struct.unpack("!H", bytes[curr+2:curr+4])[0]
@@ -146,7 +146,7 @@ class tcp(pcs.Packet):
                         curr += optlen
                     elif option == 3:        # wscale
                         if optlen != 3:
-                            raise FieldBoundsError, \
+                            raise UnpackError, \
                                   "Bad length %d for TCP option %d, should be %d" % \
                                   (optlen, option, 3)
                         value = struct.unpack("B", bytes[curr+2:curr+3])[0]
@@ -157,7 +157,7 @@ class tcp(pcs.Packet):
                         curr += optlen
                     elif option == 4:        # sackok
                         if optlen != 2:
-                            raise FieldBoundsError, \
+                            raise UnpackError, \
                                   "Bad length %d for TCP option %d, should be %d" % \
                                   (optlen, option, 2)
 		    	options.append(pcs.TypeLengthValueField("sackok", \
@@ -179,7 +179,7 @@ class tcp(pcs.Packet):
                         curr += optlen
                     elif option == 8:        # tstamp
                         if optlen != 10:
-                            raise FieldBoundsError, \
+                            raise UnpackError, \
                                   "Bad length %d for TCP option %d, should be %d" % \
                                   (optlen, option, 10)
                         value = struct.unpack("!2I", bytes[curr+2:curr+10])[0]
@@ -190,7 +190,7 @@ class tcp(pcs.Packet):
                         curr += optlen
                     #elif option == 19:        # md5
                     #    if optlen != 18:
-                    #        raise FieldBoundsError, \
+                    #        raise UnpackError, \
                     #              "Bad length %d for TCP option %d, should be %d" % \
                     #              (optlen, option, 18)
                     #    value = struct.unpack("16B", bytes[curr+2:curr+16])[0]

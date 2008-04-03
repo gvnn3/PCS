@@ -113,7 +113,7 @@ class igmpv3_query(pcs.Packet):
             query_len = self.sizeof() + sources_len
 
             if query_len > len(bytes):
-                raise FieldBoundsError, \
+                raise UnpackError, \
                       "IGMPv3 query is larger than input (%d > %d)" % \
                       (query_len, len(bytes))
 

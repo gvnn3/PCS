@@ -35,7 +35,7 @@
 # Description: A class which implements an IPv4 packet
 
 import pcs
-from pcs import FieldBoundsError
+from pcs import UnpackError
 from socket import AF_INET, inet_ntop
 import ipv4_map
 
@@ -125,7 +125,7 @@ class ipv4(pcs.Packet):
             options_len = hlen_bytes - self.sizeof()
 
             if hlen_bytes > len(bytes):
-                raise FieldBoundsError, \
+                raise UnpackError, \
                       "IP header is larger than input (%d > %d)" % \
                       (hlen_bytes, len(bytes))
 
@@ -150,7 +150,7 @@ class ipv4(pcs.Packet):
                         # that a router must examine the packet. It is
                         # 32 bits wide including option code and length.
                         if optlen != 4:
-                            raise FieldBoundsError, \
+                            raise UnpackError, \
                                   "Bad length %d for IP option %d, " \
                                   "should be %d" % (optlen, option, 4)
                         value = struct.unpack("!H", bytes[curr+2:curr+4])[0]
