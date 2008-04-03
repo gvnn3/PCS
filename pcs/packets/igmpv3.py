@@ -38,6 +38,7 @@
 # TODO teach IP decoder further down in stack to grok how IGMPv3 differs
 # and use the correct IGMP decoder.
 
+import inspect
 import pcs
 import struct
 import time
@@ -151,13 +152,13 @@ class GroupRecordField(object):
         self.auxdata = pcs.OptionListField("auxdata")
 
         # XXX I actually have variable width when I am being encoded.
-        self.width = type.width + auxdatalen.width + nsources.width +
+        self.width = type.width + auxdatalen.width + nsources.width + \
                      group.width + sources.width + auxdata.width
 
     def __repr__(self):
         return "<igmpv3.GroupRecordField type %s, auxdatalen %s, " \
                "nsources %s, group %s, sources %s, auxdata %s>" \
-                % (self.type, self.auxdatalen, self.nsources,
+                % (self.type, self.auxdatalen, self.nsources, \
                    self.group, self.sources, self.auxdata)
 
     def __setattr__(self, name, value):
@@ -231,12 +232,12 @@ class GroupRecordField(object):
     # and nsources for 32 bit IPv4 addresses.
     def bounds(self, value):
         """Check the bounds of this field."""
-	minwidth = self.type.width + self.auxdatalen.width +
+	minwidth = self.type.width + self.auxdatalen.width + \
                    self.nsources.width + self.group.width
-	maxwidth = minwidth + ((2 ** auxdatalen.width) * 8) +
+	maxwidth = minwidth + ((2 ** auxdatalen.width) * 8) + \
                               ((2 ** nsources.width << 2) * 8)
-	if self.width < minwidth or self.width > maxwidth
-            raise FieldBoundsError, "GroupRecordField must be between %d "
+	if self.width < minwidth or self.width > maxwidth:
+            raise FieldBoundsError, "GroupRecordField must be between %d " \
                                     "and %d bytes wide" % (minwidth, maxwidth)
 
 class igmpv3_report(pcs.Packet):
