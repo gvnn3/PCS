@@ -219,6 +219,24 @@ class ipTestCase(unittest.TestCase):
 	nonlocalgroup = inet_atol("239.0.12.34")
 	self.assert_(IN_LOCAL_GROUP(nonlocalgroup) == False)
 
+    def test_IN_EXPERIMENTAL(self):
+	classe = inet_atol("240.1.2.3")
+	self.assert_(IN_EXPERIMENTAL(classe) == True)
+	non_classe = inet_atol("30.40.50.60")
+	self.assert_(IN_EXPERIMENTAL(non_classe) == False)
+
+    def test_IN_PRIVATE(self):
+	tens = inet_atol("10.20.30.40")
+	self.assert_(IN_PRIVATE(tens) == True)
+	seventeens = inet_atol("172.16.254.3")
+	self.assert_(IN_PRIVATE(seventeens) == True)
+	nineteens = inet_atol("192.168.123.45")
+	self.assert_(IN_PRIVATE(nineteens) == True)
+	umpteens = inet_atol("192.0.2.1")
+	self.assert_(IN_PRIVATE(umpteens) == False)
+	loopback = inet_atol("127.0.0.1")
+	self.assert_(IN_PRIVATE(loopback) == False)
+
 if __name__ == '__main__':
     unittest.main()
 

@@ -74,6 +74,17 @@ def IN_LOCAL_GROUP(i):
     """Return True if the given address is in the 224.0.0.0/24 range."""
     return (((i) & 0xffffff00) == 0xe0000000)
 
+def IN_EXPERIMENTAL(i):
+    """Return True if the given address is in the 240.0.0.0/24 range."""
+    return (((i) & 0xf0000000) == 0xf0000000)
+
+def IN_PRIVATE(i):
+    """Return True if the given address is in any of the 10.0.0.0/8,
+       172.16.0.0/16, or 192.168.0.0/24 ranges from RFC 1918."""
+    return ((((i) & 0xff000000) == 0x0a000000) or \
+            (((i) & 0xfff00000) == 0xac100000) or \
+            (((i) & 0xffff0000) == 0xc0a80000))
+
 class ipv4(pcs.Packet):
     """IPv4"""
 
