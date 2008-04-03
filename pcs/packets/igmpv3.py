@@ -99,9 +99,8 @@ class igmpv3_query(pcs.Packet):
 			           reserved00, sbit, qrv, qqic,
 				   nsrc, sources], bytes = bytes)
 
-        self.description = "IGMPv3"
-	self.type = IGMP_HOST_MEMBERSHIP_QUERY
-	self.reserved00 = 0
+	self.description = inspect.getdoc(self)
+	self.type = IGMP_HOST_MEMBERSHIP_QUERY	# XXX
 
         if timestamp == None:
             self.timestamp = time.time()
@@ -136,44 +135,69 @@ class igmpv3_query(pcs.Packet):
 	    self.nsrc = 0
             self.data = None
 
-# XXX not yet debugged
-# TODO: __str__ method, assignment sugar, etc.
 class igmpv3_report(pcs.Packet):
     """IGMPv3 report message.
-    v3 of the protocol (RFC 2236) has a broadly extended query format.
-    General IGMPv3 queries are always multicast to link scope group 224.0.0.22.
-    It needs careful handling to differentiate it from older protocol versions in its
-    group specific flavour.
-    The optional payload, if provided, is a list of group reports.
+    IGMPv3 report messages are always multicast to link scope group
+    224.0.0.22 (INADDR_ALLRPTS_GROUP), with IGMP type 0x22
+    (IGMP_v3_HOST_MEMBERSHIP_REPORT), making them easy to identify.
+    At least one group record SHOULD exist in the variable-length
+    section at the end of each datagram.
     """
 
     layout = pcs.Layout()
 
-    def __init__(self, records = None):
+    def __init__(self, bytes = None, timestamp = None):
         """initialize an IGMPv3 report header"""
         type = pcs.Field("type", 8)
 	reserved00 = pcs.Field("reserved00", 8)
         cksum = pcs.Field("checksum", 16)
 	reserved01 = pcs.Field("reserved01", 16)
-	nrec = pcs.Field("nrec", 16)
+	nrecords = pcs.Field("nrecords", 16)
+	records = pcs.OptionListField("records")
 
-        pcs.Packet.__init__(self, [type, reserved00, cksum, reserved01, nrec], bytes)
-        self.description = "IGMPv3_Query"
+        pcs.Packet.__init__(self, [type, reserved00, cksum, reserved00,
+                                   nrecords, records], bytes)
+        self.description = "IGMPv3_Report"
 
-	self.reserved01 = self.reserved00 = 0
-	#self.records = records
+	self.type = IGMP_v3_HOST_MEMBERSHIP_REPORT	# XXX
 
-	# If a payload is specified, treat it as a list of sources.
-        if (records != None):
-            offset = type.width + reserved00.width + cksum.width + \
-		     reserved01.width + nrec.width
-            self.data = payload.payload(bytes[offset:len(bytes)])
-	    # TODO: No sugar for you, set nrec correctly yourself, user!
+        if timestamp == None:
+            self.timestamp = time.time()
         else:
-	    self.nrec = 0
+            self.timestamp = timestamp
+
+        # Decode additional bytes into group records, if provided.
+        # Group records are variable length structures, so we
+        # have no way of bounds checking upfront, we have to
+        # attempt to parse the payload.
+        # This is where things get interesting, OptionListField
+        # is a variable length Field... and we need a list of those.
+	if bytes != None:
+            curr = self.sizeof()
+
+            #remaining = len(bytes) - self.sizeof()
+            #rem = sources_len
+            #while rem > 4:
+            #    src = struct.unpack('I', bytes[curr])[0]
+            #    sources.append(pcs.Field("", 32, default = src))
+            #    rem -= 4
+            #if rem > 0:
+            #    print "WARNING: %d trailing bytes in query." % rem
+
+            #records = []
+            #self.nrecords = len(records)
+
+            # IGMPv3 reports SHOULD NOT contain ancillary data beyond
+            # the last group report. If we do find any, we'll append it
+            # it to the 'data' member as a Payload.
+            self.data = payload.payload(bytes[curr:len(bytes)])
+
+        else:
+	    self.nrecords = 0
             self.data = None
 
-
+class igmpv3_report(pcs.Packet):
+    """IGMPv3 report message.
 
 # XXX not yet debugged
 # TODO: __str__ method, assignment sugar, etc.
