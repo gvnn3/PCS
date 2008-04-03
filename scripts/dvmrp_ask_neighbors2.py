@@ -3,6 +3,7 @@
 from pcs.packets.localhost import *
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *
+from pcs.packets.igmpv2 import *
 from pcs.packets.dvmrp import *
 from pcs.packets.payload import *
 from pcs import *
@@ -43,7 +44,15 @@ def main():
                       help="Stop after receiving at least count responses.")
 
     (options, args) = parser.parse_args()
-    
+
+    if options.ether_iface is None or \
+       options.ether_source is None or \
+       options.ether_dest is None or \
+       options.ip_source is None or \
+       options.count is None:
+        print "Non-optional argument missing."
+        return
+
     # Set up the vanilla packet
     ether = ethernet()
     ether.type = 0x0800
@@ -60,35 +69,43 @@ def main():
     ip.ttl = 1
     ip.protocol = IPPROTO_IGMP
     ip.src = inet_atol(options.ip_source)
-    ip.dst = inet_atol(options.ip_dest)
 
-    dvmrp = dvmrp()
-    dvmrp.version = 1
-    dvmrp.subtype = DVMRP_ASK_NEIGHBORS2
+    if options.ip_dest is None:
+        ip.dst = INADDR_DVMRP_GROUP
+    else:
+        ip.dst = inet_atol(options.ip_dest)
 
-    # Surprisingly, DVMRP "ask neighbors" normally doesn't contain
-    # the IP Router Alert option, which is inconsistent with how IGMP
-    # normally works for endstation-to-router messages.
+
     #
-    # Also mrinfo is slack about its treatment of the reserved field.
-    # The Ask_neighbors2 payload is: reserved, minor, major:
-    # 0x000E, 0xFF, 0x03 is how mrinfo fills this out (DVMRPv3 compliant).
+    # DVMRP "ask neighbors" does not contain the Router Alert option,
+    # because DVMRP traffic is usually tunneled, and we don't need to
+    # wake up every router on the path.
+    #
+    # The Ask_neighbors2 payload is: reserved, caps, minor, major:
+    # 0x00, 0E, 0xFF, 0x03 is how mrinfo fills this out (DVMRPv3 compliant).
     #
     # PIM itself knows nothing about these messages, however, a DVMRP router
     # which handles these messages MAY tell you if it's peering with other
-    # PIM routers (I believe only Ciscos do this). 
+    # PIM routers (I believe only Ciscos do this).
     #
+    # TODO: Hook dvmrp up to the base igmp header somehow.
 
-    # TODO: add the payload...
-    payload = ...
-    
-    dvmrp_packet = Chain([dvmrp, payload])
-    dvmrp.checksum = dvmrp_packet.calc_checksum()
+    d = dvmrp()
+    d.version = 1
+    d.type = 3
+    d.subtype = DVMRP_ASK_NEIGHBORS2
 
-    ip.length = len(ip.bytes) + len(dvmrp.bytes)
-    ip.checksum = ip.calc_checksum()
+    d.capabilities = DVMRP_CAP_DEFAULT
+    d.minor = 0xFF
+    d.major = 3
 
-    packet = Chain([ether, ip, dvmrp])
+    d_p = Chain([d])
+    d.checksum = d_p.calc_checksum()
+
+    ip.length = len(ip.bytes) + len(d.bytes)
+    ip.checksum = ip.cksum()
+
+    packet = Chain([ether, ip, d])
     packet.encode()
     
     input = PcapConnector(options.ether_iface)

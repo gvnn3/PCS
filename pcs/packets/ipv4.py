@@ -52,6 +52,7 @@ INADDR_LOOPBACK		= 0x7f000001	# 127.0.0.1
 INADDR_UNSPEC_GROUP	= 0xe0000000	# 224.0.0.0
 INADDR_ALLHOSTS_GROUP	= 0xe0000001	# 224.0.0.1
 INADDR_ALLRTRS_GROUP	= 0xe0000002	# 224.0.0.2
+INADDR_DVMRP_GROUP	= 0xe0000004	# 224.0.0.4
 INADDR_ALLPIM_ROUTERS_GROUP = 0xe000000d	# 224.0.0.13
 INADDR_ALLRPTS_GROUP	= 0xe0000016	# 224.0.0.22, IGMPv3
 INADDR_MAX_LOCAL_GROUP	= 0xe00000ff	# 224.0.0.255
@@ -93,8 +94,7 @@ class ipv4(pcs.Packet):
     _map = ipv4_map.map
 
     def __init__(self, bytes = None, timestamp = None):
-        """ define the fields of an IPv4 packet, from RFC 791
-        This version does not include options."""
+        """ define the fields of an IPv4 packet, from RFC 791."""
         version = pcs.Field("version", 4, default = 4)
         hlen = pcs.Field("hlen", 4)
         tos = pcs.Field("tos", 8)

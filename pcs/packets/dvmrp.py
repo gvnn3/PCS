@@ -36,12 +36,13 @@
 # inside the payload of an IGMP type 0x13 message.
 #
 
+import inspect
 import pcs
 import struct
 import time
 
 from pcs.packets import payload
-from pcs.igmpv2 import *
+from pcs.packets.igmpv2 import *
 from socket import AF_INET, inet_ntop, inet_ntoa
 
 #
@@ -68,9 +69,19 @@ DVMRP_GRAFT_ACK = 9
 DVMRP_INFO_REQUEST = 10
 DVMRP_INFO_REPLY = 11
 
+DVMRP_CAP_LEAF		= 0x01	# This DVMRP peer is a leaf.
+DVMRP_CAP_PRUNE		= 0x02	# This DVMRP peer understands pruning.
+DVMRP_CAP_GENID		= 0x04	# This DVMRP peer sends Generation IDs.
+DVMRP_CAP_MTRACE	= 0x08	# This DVMRP peer understands MTRACE.
+DVMRP_CAP_SNMP		= 0x10	# This DVMRP peer supports the DVMRP MIB.
+
+# Default mask advertised by the Xerox PARC mrouted code.
+DVMRP_CAP_DEFAULT	= (DVMRP_CAP_PRUNE | \
+			   DVMRP_CAP_GENID | \
+			   DVMRP_CAP_MTRACE )
+
 class dvmrp(pcs.Packet):
-    """DVMRP message, as defined in RFC 1075.
-    """
+    """DVMRP message, as defined in RFC 1075."""
 
     layout = pcs.Layout()
 
@@ -80,13 +91,25 @@ class dvmrp(pcs.Packet):
         type = pcs.Field("type", 4)
         subtype = pcs.Field("subtype", 8)
         cksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [version, type, subtype, cksum], bytes)
+	reserved00 = pcs.Field("reserved00", 8)
+	capabilities = pcs.Field("capabilities", 8)
+	minor = pcs.Field("minor", 8)
+	major = pcs.Field("major", 8)
+	options = pcs.OptionListField("options")
+        pcs.Packet.__init__(self, [version, type, subtype, cksum,
+			           reserved00, capabilities,
+				   minor, major, options], bytes)
 
-        self.description = "DVMRP"
-	self.type = IGMP_DVMRP
+        self.description = inspect.getdoc(self)
 
-        if (bytes != None):
-            offset = type.width + code.width + cksum.width
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+	# XXX optional bytes not processed yet.
+        if bytes != None:
+            offset = self.sizeof()
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:
             self.data = None
