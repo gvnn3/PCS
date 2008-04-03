@@ -35,7 +35,6 @@
 # Description: Classes which describe IGMPv3 messages.
 #
 
-# TODO sync constant names with the BSD C ABI variants
 # TODO teach IP decoder further down in stack to grok how IGMPv3 differs
 # and use the correct IGMP decoder.
 
@@ -44,7 +43,6 @@ import struct
 import time
 
 from pcs.packets import payload
-#from pcs.packets import igmpv2
 from pcs.packets.igmpv2 import *
 from socket import AF_INET, inet_ntop, inet_ntoa
 
