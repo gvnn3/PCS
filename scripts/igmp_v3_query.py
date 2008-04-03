@@ -47,6 +47,10 @@ def main():
                       dest="count", default=None,
                       help="Stop after receiving at least count responses.")
 
+    parser.add_option("-2", "--igmp_v2_listen",
+                      action="store_true", dest="igmp_v2_listen",
+                      help="Listen for responses from IGMPv2 end-stations.")
+
     (options, args) = parser.parse_args()
 
     if options.ether_iface is None or \
@@ -121,25 +125,40 @@ def main():
 
     packet = Chain([ether, ip, igmp])
     packet.encode()
-    
+
     input = PcapConnector(options.ether_iface)
-    input.setfilter("igmp and ip dst 224.0.0.22")
+    #  We could use the pcap expression:
+    #  "igmp[0] == 0x16 or igmp[0] == 0x22"
+    #  but we manually filter below.
+    # TODO: Teach bpf, pcap to request allmulti... promiscuous mode may
+    # be expensive on a busy network or slow machine.
+    input.setfilter("igmp")
 
     output = PcapConnector(options.ether_iface)
     out = output.write(packet.bytes, len(packet.bytes))
 
     #
     # Wait for up to 'count' responses to the query to arrive and print them.
+    # If options.igmp_v2_listen is True, also count responses from
+    # end-stations which respond with IGMPv2.
+    #
+    # TODO: Hook up IGMPv3 stuff to the IP decode chain.
+    # TODO: Pretty-print IGMPv3 reports.
     #
     count = int(options.count)
     while count > 0:
         packet = input.readpkt()
         chain = packet.chain()
-	if chain.packets[2].type == IGMP_V3_MEMBERSHIP_REPORT:
-	    print chain.packets[2].println()
-	    #print "%s is in %s" % \
-	    #    (inet_ntop(AF_INET, struct.pack('!L', chain.packets[1].src)), \
-	    #     inet_ntop(AF_INET, struct.pack('!L', chain.packets[2].group)))
+	if ((chain.packets[2].type == IGMP_v3_HOST_MEMBERSHIP_REPORT) or
+            ((chain.packets[2].type == IGMP_v2_HOST_MEMBERSHIP_REPORT) and \
+             (options.igmp_v2_listen is True))):
+            version = 3
+            if chain.packets[2].type == IGMP_v2_HOST_MEMBERSHIP_REPORT:
+                version = 2
+	    #print chain.packets[2].println()
+	    print "%s responded to query with IGMPv%d." % \
+	        ((inet_ntop(AF_INET, struct.pack('!L', chain.packets[1].src))),
+                 version)
 	    count -= 1
 
 main()
