@@ -76,7 +76,7 @@ def main():
 	ip.hlen = len(ip.bytes) >> 2
     else:
 	ra = pcs.TypeLengthValueField("ra",
-				      pcs.Field("", 8, default = 148),
+				      pcs.Field("", 8, default = IPOPT_RA),
 				      pcs.Field("", 8),
 				      pcs.Field("", 16))
 	ip.options.append(ra)
