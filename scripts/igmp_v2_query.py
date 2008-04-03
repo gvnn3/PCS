@@ -16,10 +16,6 @@ def main():
 
     parser = OptionParser()
 
-    parser.add_option("-s", "--ip_source",
-                      dest="ip_source", default=None,
-                      help="The IP source address.")
-
     parser.add_option("-I", "--ether_iface",
                       dest="ether_iface", default=None,
                       help="The name of the source interface.")
@@ -28,20 +24,37 @@ def main():
                       dest="ether_source", default=None,
                       help="The host Ethernet source address.")
 
+    parser.add_option("-s", "--ip_source",
+                      dest="ip_source", default=None,
+                      help="The IP source address.")
+
     parser.add_option("-G", "--igmp_group",
                       dest="igmp_group", default=None,
-                      help="The IPv4 group for a group-specific query. If omitted, send a general query.")
+                      help="The IPv4 group for a group-specific query. "
+			   "If omitted, send a general query.")
 
     parser.add_option("-M", "--maxresp",
-                      dest="maxresp", default=None,
-                      help="The maximum time for end-stations to respond (in seconds).")
+                      dest="igmp_maxresp", default=None,
+                      help="The maximum time for end-stations to respond "
+			   "(in seconds).")
 
     parser.add_option("-c", "--count",
                       dest="count", default=None,
                       help="Stop after receiving at least count responses.")
 
     (options, args) = parser.parse_args()
-    
+
+    if options.ether_iface is None or \
+       options.ether_source is None or \
+       options.ip_source is None or \
+       options.count is None:
+        print "Non-optional argument missing."
+        return
+
+    maxresp = 3 * 10
+    if options.igmp_maxresp is not None:
+        maxresp = int(options.igmp_maxresp) * 10    # in units of deciseconds
+
     # Set up the vanilla packet
     ether = ethernet()
     ether.type = 0x0800
@@ -61,7 +74,7 @@ def main():
 
     igmp = igmpv2()
     igmp.type = IGMP_HOST_MEMBERSHIP_QUERY
-    igmp.code = int(options.maxresp) * 10	# in units of deciseconds
+    igmp.code = maxresp
 
     if options.igmp_group is None:
 	# General query.
