@@ -65,9 +65,8 @@ IGMP_BLOCK_OLD_SOURCES = 6
 # IGMPv3 protocol defaults.
 #
 
-# XXX not yet debugged
-# TODO: __str__ method, assignment sugar, etc.
-# TODO: support the fixed point for maxresp and qqic in assignment.
+# TODO: Support the 8-bit fixed point format for maxresp and qqic
+# when assigning.
 
 class igmpv3_query(pcs.Packet):
     """IGMPv3 query message.
@@ -125,7 +124,7 @@ class igmpv3_query(pcs.Packet):
                 sources.append(pcs.Field("", 32, default = src))
                 rem -= 4
             if rem > 0:
-                print "WARNING: %d unaligned bytes in payload." % rem
+                print "WARNING: %d trailing bytes in query." % rem
 
             self.nsrc = len(sources)
 
