@@ -8,8 +8,6 @@ TODO for PCS
 
 *) Fix the pretty-printing for TCP options.
 
-*) Add support for encoding IP options. IGMP in particular needs this.
-
 *) Fix the lack of variable-width bounds in the PCS meta-language.
 
    At the moment, LengthValueFields and TypeLengthValueFields have
