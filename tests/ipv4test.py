@@ -209,6 +209,17 @@ class ipTestCase(unittest.TestCase):
 	non_linklocal = inet_atol("127.0.0.0")
 	self.assert_(IN_LINKLOCAL(non_linklocal) == False)
 
+    def test_IN_MULTICAST(self):
+
+	mcast = inet_atol("239.0.12.34")
+	self.assert_(IN_MULTICAST(mcast) == True)
+
+	non_mcast = inet_atol("10.3.4.5")
+	self.assert_(IN_MULTICAST(non_mcast) == False)
+
+if __name__ == '__main__':
+    unittest.main()
+
 if __name__ == '__main__':
     unittest.main()
 

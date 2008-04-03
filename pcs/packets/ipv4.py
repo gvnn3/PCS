@@ -66,6 +66,10 @@ def IN_LINKLOCAL(i):
     """Return True if the given address is in the 169.254.0.0/16 range."""
     return (((i) & 0xffff0000) == 0xa9fe0000)
 
+def IN_MULTICAST(i):
+    """Return True if the given address is in the 224.0.0.0/4 range."""
+    return (((i) & 0xf0000000) == 0xe0000000)
+
 class ipv4(pcs.Packet):
     """IPv4"""
 
