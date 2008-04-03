@@ -201,6 +201,14 @@ class ipTestCase(unittest.TestCase):
 
 	self.assertEqual(expected, gotttted, "packet bytes not expected")
 
+    def test_IN_LINKLOCAL(self):
+
+	linklocal = inet_atol("169.254.12.34")
+	self.assert_(IN_LINKLOCAL(linklocal) == True)
+
+	non_linklocal = inet_atol("127.0.0.0")
+	self.assert_(IN_LINKLOCAL(non_linklocal) == False)
+
 if __name__ == '__main__':
     unittest.main()
 

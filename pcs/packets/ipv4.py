@@ -43,9 +43,28 @@ import struct
 import inspect
 import time
 
+#
+# IPv4 address constants.
+#
+INADDR_ANY		= 0x00000000	# 0.0.0.0
+INADDR_BROADCAST	= 0xffffffff	# 255.255.255.255
+INADDR_LOOPBACK		= 0x7f000001	# 127.0.0.1
+INADDR_UNSPEC_GROUP	= 0xe0000000	# 224.0.0.0
+INADDR_ALLHOSTS_GROUP	= 0xe0000001	# 224.0.0.1
+INADDR_ALLRTRS_GROUP	= 0xe0000002	# 224.0.0.2
+INADDR_ALLRPTS_GROUP	= 0xe0000016	# 224.0.0.22, IGMPv3
+INADDR_MAX_LOCAL_GROUP	= 0xe00000ff	# 224.0.0.255
+
+#
+# IPv4 options.
+#
 IPOPT_EOL = 0
 IPOPT_NOP = 1
 IPOPT_RA = 148
+
+def IN_LINKLOCAL(i):
+    """Return True if the given address is in the 169.254.0.0/16 range."""
+    return (((i) & 0xffff0000) == 0xa9fe0000)
 
 class ipv4(pcs.Packet):
     """IPv4"""
