@@ -202,20 +202,22 @@ class ipTestCase(unittest.TestCase):
 	self.assertEqual(expected, gotttted, "packet bytes not expected")
 
     def test_IN_LINKLOCAL(self):
-
 	linklocal = inet_atol("169.254.12.34")
 	self.assert_(IN_LINKLOCAL(linklocal) == True)
-
 	non_linklocal = inet_atol("127.0.0.0")
 	self.assert_(IN_LINKLOCAL(non_linklocal) == False)
 
     def test_IN_MULTICAST(self):
-
 	mcast = inet_atol("239.0.12.34")
 	self.assert_(IN_MULTICAST(mcast) == True)
-
 	non_mcast = inet_atol("10.3.4.5")
 	self.assert_(IN_MULTICAST(non_mcast) == False)
+
+    def test_IN_LOCAL_GROUP(self):
+	localgroup = inet_atol("224.0.0.251")
+	self.assert_(IN_LOCAL_GROUP(localgroup) == True)
+	nonlocalgroup = inet_atol("239.0.12.34")
+	self.assert_(IN_LOCAL_GROUP(nonlocalgroup) == False)
 
 if __name__ == '__main__':
     unittest.main()

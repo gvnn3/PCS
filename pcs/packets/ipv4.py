@@ -70,6 +70,10 @@ def IN_MULTICAST(i):
     """Return True if the given address is in the 224.0.0.0/4 range."""
     return (((i) & 0xf0000000) == 0xe0000000)
 
+def IN_LOCAL_GROUP(i):
+    """Return True if the given address is in the 224.0.0.0/24 range."""
+    return (((i) & 0xffffff00) == 0xe0000000)
+
 class ipv4(pcs.Packet):
     """IPv4"""
 
