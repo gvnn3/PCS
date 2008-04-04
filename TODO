@@ -33,3 +33,5 @@ TODO for PCS
    fix upstream.
 
 *) Add many many more packets
+
+*) Teach BPF and pcap how to request allmulti.
