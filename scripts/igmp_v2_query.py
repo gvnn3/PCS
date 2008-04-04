@@ -3,6 +3,7 @@
 from pcs.packets.localhost import *
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *
+from pcs.packets.igmp import *
 from pcs.packets.igmpv2 import *
 from pcs.packets.payload import *
 from pcs import *
@@ -72,31 +73,32 @@ def main():
     ip.protocol = IPPROTO_IGMP
     ip.src = inet_atol(options.ip_source)
 
-    igmp = igmpv2()
-    igmp.type = IGMP_HOST_MEMBERSHIP_QUERY
-    igmp.code = maxresp
+    ig = igmp()
+    ig.type = IGMP_HOST_MEMBERSHIP_QUERY
+    ig.code = maxresp
 
+    query = igmpv2()
     if options.igmp_group is None:
 	# General query.
     	ip.dst = INADDR_ALLHOSTS_GROUP
-        igmp.group = INADDR_ANY
+        query.group = INADDR_ANY
     else:
 	# Group-specific query.
     	ip.dst = inet_atol(options.igmp_group)
-        igmp.group = ip.dst
+        query.group = ip.dst
     
-    igmp_packet = Chain([igmp])
-    igmp.checksum = igmp_packet.calc_checksum()
+    igmp_packet = Chain([ig, query])
+    ig.checksum = igmp_packet.calc_checksum()
 
     # Queries don't contain the Router Alert option as they are
     # destined for end stations, not routers.
 
-    ip.length = len(ip.bytes) + len(igmp.bytes)
+    ip.length = len(ip.bytes) + len(igmp_packet.bytes)
     ip.checksum = ip.cksum()
 
-    packet = Chain([ether, ip, igmp])
+    packet = Chain([ether, ip, ig, query])
     packet.encode()
-    
+ 
     input = PcapConnector(options.ether_iface)
     input.setfilter("igmp")
 
@@ -114,7 +116,7 @@ def main():
 	    #print chain.packets[2].println()
 	    print "%s is in %s" % \
 	        (inet_ntop(AF_INET, struct.pack('!L', chain.packets[1].src)), \
-	         inet_ntop(AF_INET, struct.pack('!L', chain.packets[2].group)))
+	         inet_ntop(AF_INET, struct.pack('!L', chain.packets[3].group)))
 	    count -= 1
 
 main()

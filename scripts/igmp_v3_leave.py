@@ -3,6 +3,7 @@
 from pcs.packets.localhost import *
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *
+from pcs.packets.igmp import *
 from pcs.packets.igmpv3 import *
 from pcs.packets.payload import *
 from pcs import *
@@ -81,18 +82,20 @@ def main():
 
     # Create an IGMPv3 change-to-include report for the given group
     # with no sources, which means we're leaving the group.
-    igmp = igmpv3_report()
-    igmp.type = IGMP_v3_HOST_MEMBERSHIP_REPORT
+    ig = igmp()
+    ig.type = IGMP_v3_HOST_MEMBERSHIP_REPORT
+
+    rep = igmpv3.report()
 
     rec0 = GroupRecordField("rec0")
     rec0.type.value = IGMP_CHANGE_TO_INCLUDE
     rec0.group.value = inet_atol(options.igmp_group)
 
-    igmp.records.append(rec0)
-    igmp.nrecords = len(igmp.records)
+    rep.records.append(rec0)
+    rep.nrecords = len(rep.records)
 
-    igmp_packet = Chain([igmp])
-    igmp.checksum = igmp_packet.calc_checksum()
+    igmp_packet = Chain([ig, rep])
+    ig.checksum = igmp_packet.calc_checksum()
 
     # Prepend IP Router Alert option to IP header.
     ra = pcs.TypeLengthValueField("ra",
@@ -103,11 +106,11 @@ def main():
 
     # Compute outer IP header length and checksum.
     ip.hlen = len(ip.bytes) >> 2
-    ip.length = len(ip.bytes) + len(igmp.bytes)
+    ip.length = len(ip.bytes) + len(igmp_packet.bytes)
     ip.checksum = ip.cksum()
 
     # Send it.
-    packet = Chain([ether, ip, igmp])
+    packet = Chain([ether, ip, ig, rep])
     packet.encode()
     output = PcapConnector(options.ether_iface)
     out = output.write(packet.bytes, len(packet.bytes))

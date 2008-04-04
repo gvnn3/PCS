@@ -3,6 +3,7 @@
 from pcs.packets.localhost import *
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *
+from pcs.packets.igmp import *
 from pcs.packets.igmpv2 import *
 from pcs.packets.payload import *
 from pcs import *
@@ -63,16 +64,18 @@ def main():
     ip.src = inet_atol(options.ip_source)
     ip.dst = inet_atol("224.0.0.2")		# XXX should be a constant
 
-    igmp = igmpv2()
-    igmp.type = IGMP_HOST_LEAVE_MESSAGE
-    igmp.code = 0
-    igmp.group = inet_atol(options.igmp_group)
+    ig = igmp()
+    ig.type = IGMP_HOST_LEAVE_MESSAGE
+    ig.code = 0
 
-    igmp_packet = Chain([igmp])
-    igmp.checksum = igmp_packet.calc_checksum()
+    leave = igmpv2()
+    leave.group = inet_atol(options.igmp_group)
+
+    igmp_packet = Chain([ig, leave])
+    ig.checksum = igmp_packet.calc_checksum()
 
     if options.no_ra is True:
-	ip.length = len(ip.bytes) + len(igmp.bytes)
+	ip.length = len(ip.bytes) + len(igmp_packet.bytes)
 	ip.hlen = len(ip.bytes) >> 2
     else:
 	ra = pcs.TypeLengthValueField("ra",
@@ -81,10 +84,10 @@ def main():
 				      pcs.Field("", 16))
 	ip.options.append(ra)
 	ip.hlen = len(ip.bytes) >> 2
-	ip.length = len(ip.bytes) + len(igmp.bytes)
+	ip.length = len(ip.bytes) + len(ig.bytes) + len(leave.bytes)
 
     ip.checksum = ip.cksum()
-    packet = Chain([ether, ip, igmp])
+    packet = Chain([ether, ip, ig, leave])
 
     output = PcapConnector(options.ether_iface)
 

@@ -3,10 +3,28 @@
 from pcs.packets.localhost import *
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *
+from pcs.packets.igmp import *
 from pcs.packets.igmpv3 import *
 from pcs.packets.payload import *
 from pcs import *
 from time import sleep
+
+# This hack by: Raymond Hettinger
+class hexdumper:
+    """Given a byte array, turn it into a string. hex bytes to stdout."""
+    def __init__(self):
+	self.FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' \
+						    for x in range(256)])
+
+    def dump(self, src, length=8):
+	result=[]
+	for i in xrange(0, len(src), length):
+	    s = src[i:i+length]
+	    hexa = ' '.join(["%02X"%ord(x) for x in s])
+	    printable = s.translate(self.FILTER)
+	    result.append("%04X   %-*s   %s\n" % \
+			  (i, length*3, hexa, printable))
+	return ''.join(result)
 
 # Send an IGMPv3 query. General, group-specific, or
 # group-and-source-specific queries are supported.
@@ -25,9 +43,17 @@ def main():
                       dest="ether_source", default=None,
                       help="The host Ethernet source address.")
 
+    parser.add_option("-g", "--ether_dest",
+                      dest="ether_dest", default=None,
+                      help="The host Ethernet destination address.")
+
     parser.add_option("-s", "--ip_source",
                       dest="ip_source", default=None,
                       help="The IP source address.")
+
+    parser.add_option("-D", "--ip_dest",
+                      dest="ip_dest", default=None,
+                      help="The IP destination address.")
 
     parser.add_option("-G", "--igmp_group",
                       dest="igmp_group", default=None,
@@ -51,6 +77,14 @@ def main():
                       action="store_true", dest="igmp_v2_listen",
                       help="Listen for responses from IGMPv2 end-stations.")
 
+    parser.add_option("-R", "--igmp_robustness",
+                      dest="igmp_robustness", default=None,
+                      help="Querier Robustness (default 2)")
+
+    parser.add_option("-Q", "--igmp_qqic",
+                      dest="igmp_qqic", default=None,
+                      help="Querier's Query Interval (default 10s)")
+
     (options, args) = parser.parse_args()
 
     if options.ether_iface is None or \
@@ -60,31 +94,41 @@ def main():
 	print "Non-optional argument missing."
 	return
 
-    maxresp = 3 * 10
+    #if options.ip_dest is not None and options.ether_dest is None:
+    #	print "Non-optional argument missing."
+    #	return
+
+    maxresp = 10 * 10
     if options.igmp_maxresp is not None:
         maxresp = int(options.igmp_maxresp) * 10    # in units of deciseconds
 
     #
     # Parse source list for a GSR query.
     #
-    igmp_sources = []
+    sources = []
     if options.igmp_sources is not None:
 	if options.igmp_group is None:
 	    raise "A group must be specified for a GSR query."
 	else:
 	    for source in options.igmp_sources.split(','):
-		igmp_sources.append(inet_atol(source))
-	    if len(igmp_sources) == 0:
+		sources.append(inet_atol(source))
+	    if len(sources) == 0:
 	 	raise "Error parsing source list."
 
     # Set up the vanilla packet
     ether = ethernet()
     ether.type = 0x0800
     ether.src = ether_atob(options.ether_source)
-    ether.dst = "\x01\x00\x5e\x00\x00\x01"
+    if options.ether_dest is not None:
+        ether.dst = ether_atob(options.ether_dest)
+    else:
+        ether.dst = "\x01\x00\x5e\x00\x00\x01"
 
     # IGMPv3 General Queries are always sent to ALL-SYSTEMS.MCAST.NET.
-    # We expect replies however on 224.0.0.22.
+    # However we allow this to be overidden for protocol testing -- Windows,
+    # in particular, doesn't seem to respond.
+    #
+    # We expect reports on 224.0.0.22.
     # Queries don't contain the Router Alert option as they are
     # destined for end stations, not routers.
 
@@ -99,39 +143,54 @@ def main():
     ip.protocol = IPPROTO_IGMP
     ip.src = inet_atol(options.ip_source)
 
-    igmp = igmpv3_query()
-    igmp.maxresp = maxresp
-    igmp.qrv = 2		    # SHOULD NOT be 1, MUST NOT be 0
-    igmp.qqic = 10		    # I query every 10 seconds
+    ig = igmp()
+    ig.type = IGMP_HOST_MEMBERSHIP_QUERY
+    ig.code = maxresp
+
+    q = igmpv3.query()
+    if options.igmp_robustness is not None:
+        q.qrv = int(options.igmp_robustness)
+    else:
+        q.qrv = 2		    # SHOULD NOT be 1, MUST NOT be 0
+
+    if options.igmp_qqic is not None:
+        q.qqic = int(options.igmp_qqic)
+    else:
+        q.qqic = 10		    # I query every 10 seconds
 
     if options.igmp_group is None:
         # General query.
-        ip.dst = INADDR_ALLHOSTS_GROUP
-        igmp.group = 0
+        if options.ip_dest is not None:
+            ip.dst = inet_atol(options.ip_dest)
+        else:
+            ip.dst = INADDR_ALLHOSTS_GROUP
+        q.group = INADDR_ANY
     else:
         # Group-specific query, possibly with sources.
-        ip.dst = inet_atol(options.igmp_group)
-        igmp.group = ip.dst
+        if options.ip_dest is not None:
+            ip.dst = inet_atol(options.ip_dest)
+        else:
+            ip.dst = inet_atol(options.igmp_group)
+        q.group = ip.dst
 
-    for src in igmp_sources:
-        igmp.sources.append(pcs.Field("", 32, default = src))
-    igmp.nsrc = len(igmp_sources)
+    if IN_MULTICAST(ip.dst) is True and \
+       options.ether_dest is None:
+        ether.dst = ETHER_MAP_IP_MULTICAST(ip.dst)
 
-    igmp_packet = Chain([igmp])
-    igmp.checksum = igmp_packet.calc_checksum()
+    for src in sources:
+        q.sources.append(pcs.Field("", 32, default = src))
+    q.nsrc = len(sources)
 
-    ip.length = len(ip.bytes) + len(igmp.bytes)
+    igmp_packet = Chain([ig, q])
+    ig.checksum = igmp_packet.calc_checksum()
+
+    ip.length = len(ip.bytes) + len(igmp_packet.bytes)
     ip.checksum = ip.cksum()
 
-    packet = Chain([ether, ip, igmp])
+    packet = Chain([ether, ip, ig, q])
     packet.encode()
 
     input = PcapConnector(options.ether_iface)
-    #  We could use the pcap expression:
-    #  "igmp[0] == 0x16 or igmp[0] == 0x22"
-    #  but we manually filter below.
-    # TODO: Teach bpf, pcap to request allmulti... promiscuous mode may
-    # be expensive on a busy network or slow machine.
     input.setfilter("igmp")
 
     output = PcapConnector(options.ether_iface)
@@ -142,13 +201,12 @@ def main():
     # If options.igmp_v2_listen is True, also count responses from
     # end-stations which respond with IGMPv2.
     #
-    # TODO: Hook up IGMPv3 stuff to the IP decode chain.
     # TODO: Pretty-print IGMPv3 reports.
     #
     count = int(options.count)
     while count > 0:
         packet = input.readpkt()
-        chain = packet.chain()
+	chain = packet.chain()
 	if ((chain.packets[2].type == IGMP_v3_HOST_MEMBERSHIP_REPORT) or
             ((chain.packets[2].type == IGMP_v2_HOST_MEMBERSHIP_REPORT) and \
              (options.igmp_v2_listen is True))):
