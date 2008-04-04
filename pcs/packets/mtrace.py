@@ -45,32 +45,20 @@
 # 12 Nov 2007 and not yet widely implemented). SSMPING is a similar
 # tool in intent and use.
 #
-# TODO: Add response description which requires a list field.
-# Responses MUST Contain the mtrace header, and 0..N response tuples.
-#
 
+import inspect
 import pcs
 import struct
 import time
 
 from pcs.packets import payload
-from pcs.igmpv2 import *
 from socket import AF_INET, inet_ntop, inet_ntoa
 
-#
-# IGMP message types which are used by MTRACE (pre-v2).
-#
-IGMP_MTRACE_REPLY = 0x1e
-IGMP_MTRACE_QUERY = 0x1f
-
-class mtrace_query(pcs.Packet):
+class query(pcs.Packet):
     layout = pcs.Layout()
 
     def __init__(self, bytes = None, timestamp = None):
-        """initialize the MTRACE query/response header."""
-	type = pcs.Field("type", 8)
-        hops = pcs.Field("hops", 8)
-        cksum = pcs.Field("checksum", 16)
+        """initialize the MTRACE query header."""
 	# (G,S) tuple to query.
 	group = pcs.Field("group", 32)
 	source = pcs.Field("source", 32)
@@ -82,13 +70,11 @@ class mtrace_query(pcs.Packet):
 	# The ID of this query.
 	query_id = pcs.Field("query_id", 24)
 
-	# TODO: Add List of 0 (if QUERY) or 1..N (if RESPONSE) tuples here.
-
-        pcs.Packet.__init__(self, [type, hops, cksum, group, source, \
+        pcs.Packet.__init__(self, [group, source, \
 				   receiver, response_addr, \
 				   response_hoplimit, query_id], bytes)
 
-        self.description = "MTRACE"
+        self.description = inspect.getdoc(self)
 
         if timestamp == None:
             self.timestamp = time.time()
@@ -96,9 +82,42 @@ class mtrace_query(pcs.Packet):
             self.timestamp = timestamp
 
         if (bytes != None):
-            offset = type.width + hops.width + cksum.width + group.width + \
-		     source.width + receiver.width + response_addr.width + \
-		     response_hoplimit.width + query_id.width
+            offset = self.sizeof()
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+
+class reply(pcs.Packet):
+    layout = pcs.Layout()
+
+    def __init__(self, bytes = None, timestamp = None):
+        """initialize the MTRACE response header."""
+	# (G,S) tuple to query.
+	group = pcs.Field("group", 32)
+	source = pcs.Field("source", 32)
+	# Who's asking.
+	receiver = pcs.Field("receiver", 32)
+	# Where to send the answer.
+	response_addr = pcs.Field("response_addr", 32)
+	response_hoplimit = pcs.Field("response_hoplimit", 8)
+	# The ID of this query.
+	query_id = pcs.Field("query_id", 24)
+
+	#...hops?
+
+        pcs.Packet.__init__(self, [group, source, \
+				   receiver, response_addr, \
+				   response_hoplimit, query_id], bytes)
+
+        self.description = inspect.getdoc(self)
+
+        if timestamp == None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if (bytes != None):
+            offset = self.sizeof()
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:
             self.data = None

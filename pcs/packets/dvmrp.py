@@ -46,11 +46,6 @@ from pcs.packets.igmpv2 import *
 from socket import AF_INET, inet_ntop, inet_ntoa
 
 #
-# IGMP message types which are used by DVMRP.
-#
-IGMP_DVMRP = 0x13
-
-#
 # DVMRP message types.
 #
 # The original DVMRP is specified in RFC 1075. The additional message
@@ -87,17 +82,12 @@ class dvmrp(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None):
         """initialize a header very similar to that of IGMPv1/v2"""
-	version = pcs.Field("version", 4)
-        type = pcs.Field("type", 4)
-        subtype = pcs.Field("subtype", 8)
-        cksum = pcs.Field("checksum", 16)
 	reserved00 = pcs.Field("reserved00", 8)
 	capabilities = pcs.Field("capabilities", 8)
 	minor = pcs.Field("minor", 8)
 	major = pcs.Field("major", 8)
 	options = pcs.OptionListField("options")
-        pcs.Packet.__init__(self, [version, type, subtype, cksum,
-			           reserved00, capabilities,
+        pcs.Packet.__init__(self, [reserved00, capabilities,
 				   minor, major, options], bytes)
 
         self.description = inspect.getdoc(self)
@@ -108,6 +98,7 @@ class dvmrp(pcs.Packet):
             self.timestamp = timestamp
 
 	# XXX optional bytes not processed yet.
+
         if bytes != None:
             offset = self.sizeof()
             self.data = payload.payload(bytes[offset:len(bytes)])

@@ -35,9 +35,6 @@
 # Description: Classes which describe IGMPv3 messages.
 #
 
-# TODO teach IP decoder further down in stack to grok how IGMPv3 differs
-# and use the correct IGMP decoder.
-
 import inspect
 import pcs
 import struct
@@ -46,11 +43,6 @@ import time
 from pcs.packets import payload
 from pcs.packets.igmpv2 import *
 from socket import AF_INET, inet_ntop, inet_ntoa
-
-#
-# IGMP message types which are part of IGMPv3 itself.
-#
-IGMP_v3_HOST_MEMBERSHIP_REPORT = 0x22
 
 #
 # IGMPv3 group record types.
@@ -63,45 +55,29 @@ IGMP_ALLOW_NEW_SOURCES = 5
 IGMP_BLOCK_OLD_SOURCES = 6
 
 #
-# IGMPv3 protocol defaults.
+# Minimum length of an IGMPv3 query.
 #
+IGMP_V3_QUERY_MINLEN = 12
 
-# TODO: Support the 8-bit fixed point format for maxresp and qqic
-# when assigning.
-
-class igmpv3_query(pcs.Packet):
-    """IGMPv3 query message.
-    v3 of the protocol (RFC 2236) has a broadly extended query format.
-    General IGMPv3 queries are always multicast to link scope group
-    224.0.0.22. It needs careful handling to differentiate it from
-    older protocol versions in its group specific flavour.
-    The optional payload, if provided, is a list of sources
-    (IPv4, network-endian, as 32-bit-wide long integers) to be queried.
-    """
+class query(pcs.Packet):
+    """IGMPv3 query message."""
 
     layout = pcs.Layout()
 
     def __init__(self, bytes = None, timestamp = None):
         """initialize an IGMPv3 query"""
-        type = pcs.Field("type", 8)
-        # 3-bit exp/4 bit mantissa packed fixed point.
-        maxresp = pcs.Field("maxresp", 8)
-        cksum = pcs.Field("checksum", 16)
 	group = pcs.Field("group", 32)
 	reserved00 = pcs.Field("reserved00", 4)
 	sbit = pcs.Field("sbit", 1)
 	qrv = pcs.Field("qrv", 3)
 	qqic = pcs.Field("qqic", 8)
-	# XXX User needs to count and stash source count.
 	nsrc = pcs.Field("nsrc", 16)
 	sources = pcs.OptionListField("sources")
 
-        pcs.Packet.__init__(self, [type, maxresp, cksum, group,
-			           reserved00, sbit, qrv, qqic,
+        pcs.Packet.__init__(self, [group, reserved00, sbit, qrv, qqic,
 				   nsrc, sources], bytes = bytes)
 
 	self.description = inspect.getdoc(self)
-	self.type = IGMP_HOST_MEMBERSHIP_QUERY	# XXX
 
         if timestamp == None:
             self.timestamp = time.time()
@@ -126,14 +102,10 @@ class igmpv3_query(pcs.Packet):
             if rem > 0:
                 print "WARNING: %d trailing bytes in query." % rem
 
-            self.nsrc = len(sources)
-
             # IGMPv3 queries SHOULD NOT contain ancillary data. If we
             # do find any, we'll append it to the data member.
-            self.data = payload.payload(bytes[querylen:len(bytes)])
-
+            self.data = payload.payload(bytes[query_len:len(bytes)])
         else:
-	    self.nsrc = 0
             self.data = None
 
 class GroupRecordField(pcs.CompoundField):
@@ -247,31 +219,24 @@ class GroupRecordField(pcs.CompoundField):
             raise FieldBoundsError, "GroupRecordField must be between %d " \
                                     "and %d bytes wide" % (minwidth, maxwidth)
 
-class igmpv3_report(pcs.Packet):
-    """IGMPv3 report message.
-    IGMPv3 report messages are always multicast to link scope group
-    224.0.0.22 (INADDR_ALLRPTS_GROUP), with IGMP type 0x22
-    (IGMP_v3_HOST_MEMBERSHIP_REPORT), making them easy to identify.
-    At least one group record SHOULD exist in the variable-length
-    section at the end of each datagram.
-    """
+class report(pcs.Packet):
+    """IGMPv3 Report"""
+    #IGMPv3 report messages are always multicast to link scope group
+    #224.0.0.22 (INADDR_ALLRPTS_GROUP), with IGMP type 0x22
+    #(IGMP_v3_HOST_MEMBERSHIP_REPORT), making them easy to identify.
+    #At least one group record SHOULD exist in the variable-length
+    #section at the end of each datagram.
 
     layout = pcs.Layout()
 
     def __init__(self, bytes = None, timestamp = None):
         """initialize an IGMPv3 report header"""
-        type = pcs.Field("type", 8)
-	reserved00 = pcs.Field("reserved00", 8)
-        cksum = pcs.Field("checksum", 16)
-	reserved01 = pcs.Field("reserved01", 16)
+	reserved00 = pcs.Field("reserved00", 16)
 	nrecords = pcs.Field("nrecords", 16)
 	records = pcs.OptionListField("records")
 
-        pcs.Packet.__init__(self, [type, reserved00, cksum, reserved01,
-                                   nrecords, records], bytes)
-        self.description = "IGMPv3_Report"
-
-	self.type = IGMP_v3_HOST_MEMBERSHIP_REPORT	# XXX
+        pcs.Packet.__init__(self, [reserved00, nrecords, records], bytes)
+        self.description = inspect.getdoc(self)
 
         if timestamp == None:
             self.timestamp = time.time()
@@ -289,6 +254,6 @@ class igmpv3_report(pcs.Packet):
 		rec = GroupRecordField("")
                 [dummy, curr, byteBR] = rec.decode(bytes, curr, byteBR)
 		self.records.append(rec)
+	    self.data = payload.payload(bytes[curr:len(bytes)])
         else:
-	    self.nrecords = 0
             self.data = None

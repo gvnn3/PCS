@@ -38,20 +38,10 @@
 import pcs
 import struct
 import time
+import inspect
 
 from pcs.packets import payload
 from socket import AF_INET, inet_ntop, inet_ntoa
-
-#
-# IGMP message types which are part of IGMP itself.
-#
-# These should stay synced with the *BSD kernel names
-# for these constants.
-#
-IGMP_HOST_MEMBERSHIP_QUERY = 0x11
-IGMP_v1_HOST_MEMBERSHIP_REPORT = 0x12
-IGMP_v2_HOST_MEMBERSHIP_REPORT = 0x16
-IGMP_HOST_LEAVE_MESSAGE = 0x17
 
 #
 # IGMP protocol defaults.
@@ -59,45 +49,27 @@ IGMP_HOST_LEAVE_MESSAGE = 0x17
 IGMP_MAX_HOST_REPORT_DELAY = 10
 
 class igmpv2(pcs.Packet):
-    """IGMPv1/v2 message.
-    v1 and v2 of the protocol (RFC 2236) contain only this small header;
-    groups are addressed individually.
-    """
+    """IGMPv1/v2 message."""
 
     layout = pcs.Layout()
 
     def __init__(self, bytes = None, timestamp = None):
         """initialize an IGMPv1/v2 header"""
-        type = pcs.Field("type", 8)
-        code = pcs.Field("code", 8)
-        cksum = pcs.Field("checksum", 16)
 	group = pcs.Field("group", 32)
-        pcs.Packet.__init__(self, [type, code, cksum, group], bytes)
-        self.description = "IGMP"
+        pcs.Packet.__init__(self, [group], bytes)
+        self.description = inspect.getdoc(self)
 
         if timestamp == None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-	# TODO: Put the demux logic into a separate igmp shim class,
-	# so that we can capture all the IGMP derived subprotocols somehow.
-	# For now, don't propagate the timestamp.
-
-        if (bytes != None):
-            offset = type.width + code.width + cksum.width + group.width
+        if bytes != None:
+            offset = self.sizeof()
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:
             self.data = None
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""
-        retval = "IGMP\n"
-        for field in self.layout:
-            if (field.name == "group"):
-                value = inet_ntop(AF_INET,
-                                  struct.pack('!L', self.__dict__[field.name]))
-                retval += "%s %s\n" % (field.name, value)
-            else:
-                retval += "%s %s\n" % (field.name, self.__dict__[field.name])
-        return retval
+        return "group %s\n" % inet_ntop(AF_INET, struct.pack('!L', self.group))
