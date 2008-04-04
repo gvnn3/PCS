@@ -14,6 +14,7 @@ if __name__ == '__main__':
     from hexdumper import hexdumper
     from pcs.packets.ethernet import *
     from pcs.packets.ipv4 import *
+    from pcs.packets.igmp import *
     from pcs.packets.igmpv3 import *
     from pcs import *
 
@@ -21,15 +22,18 @@ class igmpv3TestCase(unittest.TestCase):
 
     def test_igmpv3_encode(self):
         # create one packet, copy its bytes, then compare their fields.
-        igmp = igmpv3_report()
-        assert (igmp != None)
-        igmp.type = IGMP_v3_HOST_MEMBERSHIP_REPORT
+        igh = igmp()
+        assert (igh != None)
+        igh.type = IGMP_v3_HOST_MEMBERSHIP_REPORT
+
+        rep = igmpv3.report()
+        assert (rep != None)
 
         # An ASM/SSM leave.
         rec0 = GroupRecordField("rec0")
         rec0.type.value = IGMP_CHANGE_TO_INCLUDE
         rec0.group.value = inet_atol("239.0.1.2")
-        igmp.records.append(rec0)
+        rep.records.append(rec0)
 
         # An SSM join.
         rec1 = GroupRecordField("rec1")
@@ -38,13 +42,13 @@ class igmpv3TestCase(unittest.TestCase):
         rec1.sources.append(pcs.Field("", 32,
                                       default = inet_atol("192.0.2.1")))
         rec1.nsources.value = len(rec1.sources)
-        igmp.records.append(rec1)
+        rep.records.append(rec1)
 
         # An ASM join.
         rec2 = GroupRecordField("rec2")
         rec2.type.value = IGMP_CHANGE_TO_EXCLUDE
         rec2.group.value = inet_atol("224.111.222.111")
-        igmp.records.append(rec2)
+        rep.records.append(rec2)
 
         # An ASM filter change.
         # XXX I can't get auxiliary data embedding to work reliably,
@@ -56,21 +60,26 @@ class igmpv3TestCase(unittest.TestCase):
         rec3.sources.append(pcs.Field("", 32,
                                       default = inet_atol("192.0.2.99")))
         rec3.nsources.value = len(rec3.sources)
-        igmp.records.append(rec3)
+        rep.records.append(rec3)
 
-        igmp.nrecords = len(igmp.records)
-        igmp_packet = Chain([igmp])
-        igmp.checksum = igmp_packet.calc_checksum()
+        rep.nrecords = len(rep.records)
+        igmp_packet = Chain([igh, rep])
+        igh.checksum = igmp_packet.calc_checksum()
+
+        # make sure checksum is reflected in byte array representation.
+        igmp_packet.encode()
 
 	#hd = hexdumper()
-	#print hd.dump2(igmp.bytes)
+	#print hd.dump2(igmp_packet.bytes)
 	expected = "\x22\x00\xC5\xA5\x00\x00\x00\x04" \
 		   "\x03\x00\x00\x00\xEF\x00\x01\x02" \
 		   "\x03\x00\x00\x01\xEF\x03\x02\x01" \
 		   "\xC0\x00\x02\x01\x04\x00\x00\x00" \
 		   "\xE0\x6F\xDE\x6F\x06\x00\x00\x01" \
 		   "\xE1\x04\x03\x02\xC0\x00\x02\x63"
-	gotttted = igmp.bytes
+ 
+	#print hd.dump2(expected)
+	gotttted = igmp_packet.bytes
 	self.assertEqual(expected, gotttted, "test encoding")
 
     def test_igmpv3_decode(self):
@@ -82,8 +91,8 @@ class igmpv3TestCase(unittest.TestCase):
 		   "\xE0\x6F\xDE\x6F\x06\x00\x00\x01" \
 		   "\xE1\x04\x03\x02\xC0\x00\x02\x63"
 
-	igmp = igmpv3_report(input)
-	self.assertEqual(input, igmp.bytes, "test decoding")
+	igh = igmp(input)
+	self.assertEqual(input, igh.chain().bytes, "test decoding")
 
 if __name__ == '__main__':
     unittest.main()
