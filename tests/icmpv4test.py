@@ -117,7 +117,15 @@ class icmpTestCase(unittest.TestCase):
                          (test_string, string))
 
     def test_icmpv4_ping(self):
-	test_iface = "edsc0"
+	import os
+	uname = os.uname()[0]
+	if uname == "FreeBSD":
+	    devname = "edsc0"
+	elif uname == "Linux":
+	    devname = "lo"
+	else:
+	    print "unknown host os %d" % uname
+	    return
 
 	e = ethernet()
 	e.type = 0x0800
@@ -157,14 +165,15 @@ class icmpTestCase(unittest.TestCase):
 
         packet.encode()
 
-        input = PcapConnector(test_iface)
+        input = PcapConnector(devname)
         input.setfilter("icmp")
 
-        output = PcapConnector(test_iface)
+        output = PcapConnector(devname)
         assert (ip != None)
 
-	# XXX triggers bpf header format bug if used with loopback device
-	# on FreeBSD.
+	# XXX The use of IP triggers a bpf header format bug if used
+	# with loopback device on FreeBSD, so we use edsc(4) there.
+
         n_out = output.write(packet.bytes, 42)
         assert (n_out == 42)
 

@@ -123,8 +123,18 @@ class pcapTestCase(unittest.TestCase):
         packet = Chain([e, ip, icmp, echo])
 	packet.encode()
 
-        wfile = PcapConnector("edsc0")
-        rfile = PcapConnector("edsc0")
+	import os
+	uname = os.uname()[0]
+	if uname == "FreeBSD":
+	    devname = "edsc0"
+	elif uname == "Linux":
+	    devname = "lo"
+	else:
+	    print "unknown host os %d" % uname
+	    return
+
+        wfile = PcapConnector(devname)
+        rfile = PcapConnector(devname)
 	rfile.setfilter("icmp")
 
         count = wfile.write(packet.bytes, 42)
