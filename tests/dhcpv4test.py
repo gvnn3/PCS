@@ -47,8 +47,11 @@ if __name__ == '__main__':
                               # with extra arguments.
 
     from pcs import inet_atol
+    from pcs import PcapConnector
+
     from pcs.packets.ethernet import ether_atob
-    from pcs.packets.ipv4 import INADDR_ANY
+    from pcs.packets.ethernet import ether_btoa
+    from pcs.packets.ipv4 import *
     from pcs.packets.udp import *
 
     from pcs.packets import dhcpv4
@@ -79,7 +82,9 @@ class bootpTestCase(unittest.TestCase):
 	p.sname = "fubar"
 	p.file  = "barfu"
 
-	# Append DHCP options.
+	# Append DHCP options, which MUST include the cookie.
+
+	p.options.append(dhcpv4_options.cookie().field())
 
 	# Maximum DHCP message size.
 	msz = dhcpv4_options.dhcp_max_message_size()
@@ -105,11 +110,10 @@ class bootpTestCase(unittest.TestCase):
 	pad = dhcpv4_options.pad(padlen)
 	p.options.append(pad.field())
 
-        #p.encode()
+        p.encode()
 	#hd = hexdumper()
 	#print p
 	#print hd.dump2(p.bytes)
-
 	gotttted = p.bytes
 	expected = \
 		"\x01\x01\x06\x63\xAB\xAD\xCA\xFE" \
@@ -141,13 +145,55 @@ class bootpTestCase(unittest.TestCase):
 		"\x00\x00\x00\x00\x00\x00\x00\x00" \
 		"\x00\x00\x00\x00\x00\x00\x00\x00" \
 		"\x00\x00\x00\x00\x00\x00\x00\x00" \
-		"\x00\x00\x00\x00\x39\x02\x05\xB4" \
-		"\x35\x01\x01\x3C\x17\x46\x72\x65" \
-		"\x65\x42\x53\x44\x3A\x61\x6D\x64" \
-		"\x36\x34\x3A\x37\x2D\x43\x55\x52" \
-		"\x52\x45\x4E\x54\xFF\x00\x00\x00"
+		"\x00\x00\x00\x00\x63\x82\x53\x63" \
+		"\x39\x02\x05\xB4\x35\x01\x01\x3C" \
+		"\x17\x46\x72\x65\x65\x42\x53\x44" \
+		"\x3A\x61\x6D\x64\x36\x34\x3A\x37" \
+		"\x2D\x43\x55\x52\x52\x45\x4E\x54" \
+		"\xFF\x00\x00\x00"
 
 	self.assertEqual(expected, gotttted, "test encoding")
+
+    def test_dhcpv4_decode(self):
+        """This test reads from a pre-stored pcap file."""
+        file = PcapConnector("dhcp_minimal.pcap")
+        packet = file.readpkt()
+
+	chain = packet.chain()
+	#print chain
+
+	ether = chain.packets[0]
+	assert (ether != None)
+
+	ip = chain.packets[1]
+	assert (ip != None)
+
+	udp = chain.packets[2]
+	assert (udp != None)
+
+	dhcp = chain.packets[3]
+	assert (dhcp != None)
+
+        self.assertEqual(dhcp.op, 1, "op not equal")
+        self.assertEqual(dhcp.xid, 0xffff0001, "xid not equal")
+        self.assertEqual(dhcp.secs, 42848, "secs not equal")
+        self.assertEqual(dhcp.flags, 0x8000, "flags not equal")
+	mac = ether_atob("52:54:00:12:34:56")
+	#print ether_btoa(dhcp.chaddr)
+        self.assertEqual(dhcp.chaddr[:dhcp.hlen], mac, "mac not equal")
+
+        self.assertEqual(len(dhcp.options), 6, "wrong option field count %d should be %d"  % (len(dhcp.options), 6))
+	# Not a tlv field
+        self.assertEqual(dhcp.options[0], pcs.packets.dhcpv4_options.DHCP_OPTIONS_COOKIE, "invalid cookie value")
+
+	# TLV fields
+        self.assertEqual(dhcp.options[1].value, 1460, "invalid maximum message size value")
+        self.assertEqual(dhcp.options[2].value, "FreeBSD:i386:6.3-RELEASE", \
+						"invalid vendor class")
+        self.assertEqual(dhcp.options[3].value, pcs.packets.dhcpv4_options.DHCPDISCOVER, "invalud dhcp message type")
+
+	# Not a tlv field
+        self.assertEqual(dhcp.options[4], pcs.packets.dhcpv4_options.DHO_END, "invalid end value")
 
 if __name__ == '__main__':
     unittest.main()
