@@ -1174,6 +1174,67 @@ class PcapDumpConnector(Connector):
         """close the dumpfile"""
         self.file.dump_close()
 
+class TapConnector(Connector):
+    """A connector for capture and injection using the character
+       device slave node of a TAP interface.
+       Like PcapConnector, reads are always blocking, however writes
+       may always be non-blocking.
+       No filtering is currently performed, it would be useful to
+       extend pcap itself to work with tap devices.
+    """
+
+    def __init__(self, name):
+        """initialize a TapConnector object
+        name - the name of a file or network interface to open
+        """
+        try:
+            # XXX This is a hack. Reads from a tap should really be
+            # done in non-blocking mode as it uses an atomic I/O scheme,
+            # 1 read 1 packet, so we set the buffer to the size of a
+            # standard Ethernet frame and hope for the best.
+            self.file = file.file(name, "rw", 1536)
+        except:
+            raise
+
+    def read(self):
+        """read a packet from a tap interface
+        returns the packet as a bytearray
+        """
+        return self.file.read()
+
+    def recv(self):
+        """recv a packet from a tap interface"""
+        return self.file.read()
+    
+    def recvfrom(self):
+        """recvfrom a packet from a tap interface"""
+        return self.file.read()
+
+    def readpkt(self):
+        """read a packet from a pcap file or interfaces returning an
+        appropriate packet object """
+        bytes = self.file.read()
+        return packets.ethernet.ethernet(bytes)
+
+    def write(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+        bytes - the bytes of the packet, and not the packet object
+        """
+        return self.file.write(bytes)
+
+    def send(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+        bytes - the bytes of the packet, and not the packet object"""
+        return self.file.write(bytes)
+
+    def sendto(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+        bytes - the bytes of the packet, and not the packet object"""
+        return self.file.write(bytes)
+
+    def close(self):
+        self.file.close()
+
 class IP4Connector(Connector):
     """Base class for all IPv4 connectors.
 
@@ -1260,6 +1321,32 @@ class TCP4Connector(IP4Connector):
                 self.file.connect((addr, port))
             except:
                 raise
+
+class UmlMcast4Connector(UDP4Connector):
+    """A connector for hooking up to a User Mode Linux virtual LAN,
+       implemented by Ethernet frames over UDP sockets in a multicast group.
+       No additional encapsulation of the frames is performed, nor is
+       any filtering performed.
+       Typically used for interworking with QEMU. See:
+          http://user-mode-linux.sourceforge.net/old/text/mcast.txt
+    """
+
+    def __init__(self, group, port, ifaddr = None):
+        """initialize a UML Mcast v4 connector
+
+        address - an optional address to connect to
+        port - an optional port to connect to
+        """
+        if ifaddr is None:
+            ifaddr = "127.0.0.1"
+        try:
+            self.file = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+            mreq = struct.pack('!LL', socket.inet_aton(group), \
+                                      socket.inet_aton(ifaddr))
+            self.file.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
+            self.file.connect((group, port))
+        except:
+            raise
 
 class SCTP4Connector(IP4Connector):
     """A connector for IPv4 SCTP sockets
