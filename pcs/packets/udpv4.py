@@ -38,6 +38,7 @@ import sys
 sys.path.append("../src")
 
 import pcs
+import socket
 
 class udpv4(pcs.Packet):
 
@@ -50,3 +51,21 @@ class udpv4(pcs.Packet):
         length = pcs.Field("length", 16)
         checksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [sport, dport, length, checksum], bytes)
+
+    def cksum(self, ip, data = ""):
+        """return tcpv4 checksum"""
+        from pcs.packets.ipv4 import pseudoipv4
+        import struct
+        total = 0
+        tmpip = pseudoipv4(None, None, socket.IPPROTO_UDP)
+        tmpip.src = ip.src
+        tmpip.dst = ip.dst
+        tmpip.length = len(self.getbytes()) + len(data)
+        pkt = tmpip.getbytes() + self.getbytes() + data
+        if len(pkt) % 2 == 1:
+            pkt += "\0"
+        for i in range(len(pkt)/2):
+            total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
+        total = (total >> 16) + (total & 0xffff)
+        total += total >> 16
+        return  ~total & 0xffff
