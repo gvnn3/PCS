@@ -41,10 +41,12 @@ sys.path.append("../src")
 
 import inspect
 import pcs
+import struct
 import time
 
 from socket import inet_ntop
-from pcs.packets.ethernet import ether_btoa
+#from pcs.packets.ethernet import ether_btoa
+from pcs.packets import payload
 
 import dhcpv4_options
 
@@ -108,10 +110,11 @@ class dhcpv4(pcs.Packet):
 	# Always point beyond the static payload so that we take the
 	# correct slice as a vanilla payload iff no options are parsed.
 	curr = self.sizeof()
+	#print "self.sizeof() %d\n" % curr
 	if bytes != None:
 	    opts_off = curr
-	    remaining = len(bytes) - curr
-	    if remaining > 4:
+	    end = len(bytes)
+	    if (end - curr) > 4:
 		# If the DHCP cookie is present, we append it to the
 		# options list so it will be reflected if we re-encode.
 		# If it is not present, we set the remaining counter to 0
@@ -121,26 +124,38 @@ class dhcpv4(pcs.Packet):
 		    options.append(pcs.Field("cookie", 32, default = cval))
 		    curr += 4
 		else:
-		    remaining = 0
+		    end = 0
 
-		while curr < remaining:
+		while curr < end:
 		    option = struct.unpack('!B', bytes[curr])[0]
-		    curr += 1
 
 		    # Special-case options which have only a type field
 		    # and no data or length field.
 		    if option == DHO_PAD:		# pad
-			options.append(pcs.Field("pad", 8, default = option))
+			# Chew adjacent bytes into a single field.
+			ps = curr
+			pc = ps
+			while pc < end:
+			    pb = struct.unpack('!B', bytes[pc])[0]
+			    if pb != 0:
+				break
+			    pc += 1
+			padlen = pc - ps
+			#print "got %d pad bytes\n" % (padlen)
+			options.append(pcs.Field("pad", padlen * 8))
+			curr += padlen
 			continue
 		    elif option == DHO_END:		# end
 			options.append(pcs.Field("end", 8, default = option))
+			curr += 1
 			continue
 
 		    # All DHCP options have a type byte, a length byte,
-		    # and a payload.
-                    optlen = struct.unpack('!B', bytes[curr+1])[0]
+		    # and a payload. The length byte does NOT include
+		    # the length of the other fields.
 		    curr += 1
-                    if (optlen < 1 or ((curr + optlen) > remaining)):
+                    optlen = struct.unpack('!B', bytes[curr:curr+1])[0]
+                    if (optlen < 1 or ((curr + optlen) > end)):
                         raise UnpackError, \
                               "Bad length %d for DHCPv4 option %d" % \
                               (optlen, option)
@@ -155,6 +170,7 @@ class dhcpv4(pcs.Packet):
 		    # are derived from a base class containing the generic
 		    # option parsing logic.
 		    # TODO: Use this technique for IGMP, IP and TCP options.
+		    curr += 1
 		    optinst = None
 		    if option in dhcpv4_options.map:
 			optinst = \
@@ -162,13 +178,13 @@ class dhcpv4(pcs.Packet):
 						       bytes[curr:curr+optlen])
 		    else:
 			optinst = \
-			    dhcpv4_options.dhcpv4_option(option, \
-						        bytes[curr:curr+optlen])
+			    dhcpv4_options.tlv_option(option, \
+						      bytes[curr:curr+optlen])
 
-		    options.append(optinst.field)
+		    options.append(optinst.field())
 		    curr += optlen
 
-	if bytes != None:
+	if bytes != None and curr < len(bytes):
 	    self.data = payload.payload(bytes[curr:len(bytes)])
 	else:
 	    self.data = None
@@ -186,5 +202,5 @@ class dhcpv4(pcs.Packet):
            attr == "siaddr" or attr == "giaddr":
                 return inet_ntop(AF_INET,
                                  struct.pack('!L', getattr(self,attr)))
-	elif attr == "chaddr" and self.htype == HTYPE_ETHER:
-            return ether_btoa(getattr(self, attr))
+	#elif attr == "chaddr" and self.htype == HTYPE_ETHER:
+        #    return ether_btoa(getattr(self, attr))
