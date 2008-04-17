@@ -218,8 +218,9 @@ class tlv_option(dhcp_option):
 	return "%d" % self.optno
 
     def datafield(self):
-	return pcs.Field("v", len(self.bytes) * 8, \
-	                 default = struct.unpack("!B", self.bytes)[0])
+	#return pcs.Field("v", len(self.bytes) * 8, \
+	#                 default = struct.unpack("!B", self.bytes)[0])
+	return pcs.StringField("v", len(self.bytes) * 8, default = self.bytes)
 
     def field(self):
         """ Return the complete field value as it should be appended to
@@ -261,6 +262,7 @@ class routers(tlv_option):
 	tlv_option.__init__(self, optno, bytes)
 
     def __setattr__(self, name, value):
+	# XXX Currently only a single gateway is accepted.
         if name == "value":
            self.bytes = struct.pack("!L", value)
         else:
@@ -273,14 +275,16 @@ class routers(tlv_option):
 	return "DG"
 
     def datafield(self):
-	gwlist = []
-	curr = 0
-	while curr < len(self.bytes):
-	    gwlist.append(pcs.Field("", 32, \
-		          default = struct.unpack("!L", \
-						  self.bytes[curr:curr+4])[0]))
-	    curr += 4
-	return gwlist
+	return pcs.Field("", 32, \
+			 default = struct.unpack("!L", self.bytes[:4])[0])
+	#gwlist = []
+	#curr = 0
+	#while curr < len(self.bytes):
+	#    gwlist.append(pcs.Field("", 32, \
+	#	          default = struct.unpack("!L", \
+	#					  self.bytes[curr:curr+4])[0]))
+	#    curr += 4
+	#return gwlist
 
 
 # The DHCP message type option MUST appear before any other
@@ -354,11 +358,70 @@ class dhcp_class_identifier(tlv_option):
 	return pcs.StringField("", 8 * len(self.bytes), default = self.bytes)
 
 
+# XXX Can't cleanly capture this (yet);
+# TypeLengthValueField gets upset if it contains anything other
+# than Field or StringField.
+class dhcp_client_identifier(tlv_option):
+
+    def __init__(self, optno = DHO_DHCP_CLIENT_IDENTIFIER, bytes = None):
+	tlv_option.__init__(self, optno, bytes)
+
+    def __setattr__(self, name, value):
+	if name == "type":
+	    self.bytes[0] = value
+	elif name == "value":
+	    self.bytes[1:] = value
+	else:
+            object.__setattr__(self, name, value)
+
+    def fieldname(self):
+	return "dhcp-client-identifier"
+
+    def shortname(self):
+	return "CID"
+
+    def datafield(self):
+	return pcs.TypeValueField("", \
+				  pcs.Field("", 8, \
+				    default = \
+				      struct.unpack("!B", self.bytes[0])[0]), \
+				  pcs.StringField("", 8 * len(self.bytes[1:]), \
+						      default = self.bytes[1:]))
+
+
+class dhcp_parameter_req_list(tlv_option):
+
+    def __init__(self, optno = DHO_DHCP_PARAMETER_REQUEST_LIST, bytes = None):
+	tlv_option.__init__(self, optno, bytes)
+
+    def __setattr__(self, name, value):
+        if name == "value":
+           self.bytes = value
+        else:
+           object.__setattr__(self, name, value)
+
+    def fieldname(self):
+	return "dhcp-parameter-req-list"
+
+    def shortname(self):
+	return "PR"
+
+    def datafield(self):
+	return pcs.StringField("", 8 * len(self.bytes), default = self.bytes)
+
+
+# FreeBSD's kernel BOOTP client sends only MSZ, VC, DHCP options.
+# Busybox udhcp sends CID, PR, VC, DHCP.
+# 
+
 map = {
-   DHO_SUBNET_MASK:		subnet_mask,
-   DHO_ROUTERS:			routers,
-   DHO_DHCP_MESSAGE_TYPE:	dhcp_message_type,
-   DHO_DHCP_MAX_MESSAGE_SIZE:	dhcp_max_message_size,
-   DHO_DHCP_CLASS_IDENTIFIER:	dhcp_class_identifier
+   # option ID			class name		tcpdump mnemonic
+   DHO_SUBNET_MASK:		subnet_mask,		# SM
+   DHO_ROUTERS:			routers,		# DG
+   DHO_DHCP_MESSAGE_TYPE:	dhcp_message_type,	# DHCP
+   DHO_DHCP_MAX_MESSAGE_SIZE:	dhcp_max_message_size,	# MSZ
+   DHO_DHCP_PARAMETER_REQUEST_LIST: dhcp_parameter_req_list, # PR
+   DHO_DHCP_CLASS_IDENTIFIER:	dhcp_class_identifier,	# VC
+   #DHO_DHCP_CLIENT_IDENTIFIER:	dhcp_client_identifier	# CID
 }
 
