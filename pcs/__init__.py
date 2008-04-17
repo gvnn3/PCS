@@ -402,7 +402,7 @@ class TypeLengthValueField(object):
     is encoded before a length and value.  """
 
     def __init__(self, name, type, length, value,
-                 inclusive = False):
+                 inclusive = True, bytewise = True):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
@@ -417,6 +417,7 @@ class TypeLengthValueField(object):
             raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
         self.width = type.width + length.width + value.width
         self.inclusive = inclusive
+        self.bytewise = bytewise
 
     def __repr__(self):
         return "<pcs.TypeLengthValueField type %s, length %s, value %s>" \
@@ -435,17 +436,22 @@ class TypeLengthValueField(object):
         
     def encode(self, bytearray, value, byte, byteBR):
         """Encode a TypeLengthValue field."""
-	# XXX Break existing assumptions and assume the TLV encodes
-	# the length in bytes, not bits, and that this length INCLUDES
-	# the type and length fields.
-	#  In PCS all field widths are currently defined in bits.
-	# This, uh, fixes the TCP option stuff...
+
         if isinstance(self.value, Field):
-            self.length.value = (self.type.width +
-				 self.length.width +
-				 self.value.width) / 8
+	    # Value is a field. Take its width in bits.
+            self.length.value = self.value.width
         else:
-            self.length.value = len(self.value)
+	    # Value is any other Python type. Take its actual length in bits. 
+            self.length.value = len(self.value) * 8
+
+	if self.inclusive is True:
+	    # Length field includes the size of the type and length fields.
+            self.length.value += (self.type.width + self.length.width)
+
+	if self.bytewise is True:
+	    # Length should be encoded as a measure of bytes, not bits.
+            self.length.value /= 8
+
         [byte, byteBR] = self.type.encode(bytearray, self.type.value, byte, byteBR)
         [byte, byteBR] = self.length.encode(bytearray, self.length.value, byte, byteBR)
         [byte, byteBR] = self.value.encode(bytearray, self.value.value, byte, byteBR)
