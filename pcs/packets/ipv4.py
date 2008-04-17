@@ -47,6 +47,7 @@ import time
 # IPv4 address constants.
 #
 INADDR_ANY		= 0x00000000	# 0.0.0.0
+INADDR_NONE		= 0x00000000	# 0.0.0.0
 INADDR_BROADCAST	= 0xffffffff	# 255.255.255.255
 INADDR_LOOPBACK		= 0x7f000001	# 127.0.0.1
 INADDR_UNSPEC_GROUP	= 0xe0000000	# 224.0.0.0
@@ -220,13 +221,14 @@ class pseudoipv4(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
 
-    def __init__(self, bytes = None, timestamp = None):
+    from socket import IPPROTO_TCP
+
+    def __init__(self, bytes = None, timestamp = None, proto = IPPROTO_TCP):
         """For a pseudo header we only need the source and destination ddresses."""
-        from socket import IPPROTO_TCP
         src = pcs.Field("src", 32)
         dst = pcs.Field("dst", 32)
         reserved = pcs.Field("reserved", 8, default = 0)
-        protocol = pcs.Field("protocol", 8, default = IPPROTO_TCP)
+        protocol = pcs.Field("protocol", 8, default = proto)
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [src, dst, reserved, protocol, length],
                             bytes = bytes)
