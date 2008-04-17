@@ -1180,11 +1180,14 @@ class PcapDumpConnector(Connector):
         """close the dumpfile"""
         self.file.dump_close()
 
+
 class TapConnector(Connector):
     """A connector for capture and injection using the character
        device slave node of a TAP interface.
        Like PcapConnector, reads are always blocking, however writes
-       may always be non-blocking.
+       may always be non-blocking. The underlying I/O is non-blocking;
+       it is hard to make it work with Python's buffering strategy
+       for file(), so os-specific reads/writes are used.
        No filtering is currently performed, it would be useful to
        extend pcap itself to work with tap devices.
     """
@@ -1193,12 +1196,10 @@ class TapConnector(Connector):
         """initialize a TapConnector object
         name - the name of a file or network interface to open
         """
+        import os
+        from os import O_NONBLOCK, O_RDWR
         try:
-            # XXX This is a hack. Reads from a tap should really be
-            # done in non-blocking mode as it uses an atomic I/O scheme,
-            # 1 read 1 packet, so we set the buffer to the size of a
-            # standard Ethernet frame and hope for the best.
-            self.file = file.file(name, "rw", 1536)
+            self.fileno = os.open(name, O_RDWR + O_NONBLOCK)
         except:
             raise
 
@@ -1206,40 +1207,62 @@ class TapConnector(Connector):
         """read a packet from a tap interface
         returns the packet as a bytearray
         """
-        return self.file.read()
+        return self.blocking_read()
 
     def recv(self):
         """recv a packet from a tap interface"""
-        return self.file.read()
+        return self.blocking_read()
     
     def recvfrom(self):
         """recvfrom a packet from a tap interface"""
-        return self.file.read()
+        return self.blocking_read()
 
     def readpkt(self):
         """read a packet from a pcap file or interfaces returning an
         appropriate packet object """
-        bytes = self.file.read()
+        bytes = self.blocking_read()
         return packets.ethernet.ethernet(bytes)
 
     def write(self, packet, bytes):
         """Write a packet to a pcap file or network interface.
         bytes - the bytes of the packet, and not the packet object
         """
-        return self.file.write(bytes)
+        return self.blocking_write(packet)
 
     def send(self, packet, bytes):
         """Write a packet to a pcap file or network interface.
         bytes - the bytes of the packet, and not the packet object"""
-        return self.file.write(bytes)
+        return self.blocking_write(packet)
 
     def sendto(self, packet, bytes):
         """Write a packet to a pcap file or network interface.
         bytes - the bytes of the packet, and not the packet object"""
-        return self.file.write(bytes)
+        return self.blocking_write(packet)
+
+    def blocking_read(self):
+        import array
+        import fcntl
+        import os
+        from select import select
+        from termios import FIONREAD
+
+        # Block until data is ready to be read.
+        select([self.fileno],[],[])
+
+        # Ask the kernel how many bytes are in the queued Ethernet frame.
+        buf = array.array('i', [0])
+        s = fcntl.ioctl(self.fileno, FIONREAD, buf)
+        nbytes = buf.pop()
+
+        return os.read(self.fileno, nbytes)
+
+    def blocking_write(self, bytes):
+        import os
+        return os.write(self.fileno, bytes)
 
     def close(self):
-        self.file.close()
+        import os
+        os.close(self.fileno)
 
 class IP4Connector(Connector):
     """Base class for all IPv4 connectors.
