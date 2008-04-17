@@ -35,6 +35,8 @@
 # Description: 
 
 DNS = 53
+BOOTPS = 67
+BOOTPC = 68
 
 import dns
 
