@@ -37,6 +37,8 @@
 import pcs
 import struct
 
+DHCP_OPTIONS_COOKIE = 0x63825363
+
 DHO_PAD = 0
 DHO_END = 255
 
@@ -129,6 +131,25 @@ class dhcp_option(object):
 
     def field(self):
 	raise foo, "Abstract base class"
+
+
+class cookie(dhcp_option):
+    def __init__(self, optno = 0x63, bytes = None):
+	self.optno = optno
+
+    def fieldname(self):
+	return "cookie"
+
+    def shortname(self):
+	return "CK"
+
+    def datafield(self):
+	return pcs.Field("v", 32, default = DHCP_OPTIONS_COOKIE)
+
+    def field(self):
+        """ Return the complete field value as it should be appended to
+            the DHCPv4 options payload. """
+	return self.datafield()
 
 
 class end(dhcp_option):
