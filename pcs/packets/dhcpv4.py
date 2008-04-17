@@ -39,36 +39,33 @@
 import sys
 sys.path.append("../src")
 
+import inspect
 import pcs
+import time
+
 from socket import inet_ntop
 from pcs.packets.ethernet import ether_btoa
 
 import dhcpv4_options
 
+# BOOTP opcodes.
 BOOTREQUEST = 1
 BOOTREPLY = 2
 
-__all__ = [ "BOOTREQUEST" ]
+# BOOTP flags.
+BOOTP_BROADCAST = 0x8000
 
+# Hardware address types.
 HTYPE_ETHER = 1
 HTYPE_IEEE802 = 2
 HTYPE_FDDI = 8
 
+# MUST be present if BOOTP vendor options or DHCP is in use.
 DHCP_OPTIONS_COOKIE = 0x63825363
 
 # DHCP 'special' options, used to pad or mark end of options.
 DHO_PAD = 0
 DHO_END = 255
-
-# DHCP message types..
-DHCPDISCOVER = 1
-DHCPOFFER = 2
-DHCPREQUEST = 3
-DHCPDECLINE = 4
-DHCPACK = 5
-DHCPNAK = 6
-DHCPRELEASE = 7
-DHCPINFORM = 8
 
 class dhcpv4(pcs.Packet):
 

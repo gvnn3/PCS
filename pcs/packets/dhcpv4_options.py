@@ -35,6 +35,10 @@
 # Description: A dictionary driven DHCPv4 option parser.
 
 import pcs
+import struct
+
+DHO_PAD = 0
+DHO_END = 255
 
 DHO_SUBNET_MASK = 1
 DHO_TIME_OFFSET = 2
@@ -106,45 +110,146 @@ DHO_IRC_SERVER = 74
 DHO_DHCP_USER_CLASS_ID = 77
 DHO_CLASSLESS_ROUTES = 121
 
-class dhcpv4_option(object):
 
-    def __init__(self, option, bytes):
-	self.option = option
-	self.bytes = bytes
+# TODO: Rototile these so they can inherit from Field, that way
+# the syntax for users can become simpler.
+
+class dhcp_option(object):
+    def __init__(self, optno, bytes):
+	raise foo, "Abstract base class"
 
     def fieldname(self):
-	return "opt-%d" % option
+	raise foo, "Abstract base class"
+
+    def shortname(self):
+	raise foo, "Abstract base class"
+
+    def datafield(self):
+	raise foo, "Abstract base class"
+
+    def field(self):
+	raise foo, "Abstract base class"
+
+
+class end(dhcp_option):
+    """ Return a DHCP end marker as a field. There is no TLV. """
+
+    def __init__(self, optno = DHO_END, bytes = None):
+	self.optno = optno
+
+    def fieldname(self):
+	return "end"
+
+    def shortname(self):
+	return "END"
+
+    def datafield(self):
+	return pcs.Field("v", 8, default = DHO_END)
+
+    def field(self):
+        """ Return the complete field value as it should be appended to
+            the DHCPv4 options payload. """
+	return self.datafield()
+
+
+class pad(dhcp_option):
+    """ Return a variable length DHCP pad field, which is zero-filled.
+        Zero itself is the code. There is no TLV. """
+
+    def __init__(self, len = 1):
+	self.len = len
+
+    def fieldname(self):
+	return "pad"
+
+    def shortname(self):
+	return "PAD"
+
+    def datafield(self):
+	return pcs.Field("v", (self.len * 8))
+
+    def field(self):
+        """ Return the complete field value as it should be appended to
+            the DHCPv4 options payload. """
+	return self.datafield()
+
+
+class tlv_option(dhcp_option):
+    """ Base class for a DHCP option in a TLV field. """
+
+    def __init__(self, optno, bytes = None):
+	self.optno = optno
+	if bytes is not None:
+	    self.bytes = bytes
+	else:
+	    self.bytes = "\0"
+
+    def __setattr__(self, name, value):
+        if name == "value":
+           self.bytes = struct.pack("!B", value)
+        else:
+           object.__setattr__(self, name, value)
+
+    def fieldname(self):
+	return "opt-%d" % self.optno
+
+    def shortname(self):
+	return "%d" % self.optno
 
     def datafield(self):
 	return pcs.Field("v", len(self.bytes) * 8, \
-			 default = struct.unpack("!B", self.bytes)[0])
+	                 default = struct.unpack("!B", self.bytes)[0])
 
-    def tlvfield(self):
+    def field(self):
+        """ Return the complete field value as it should be appended to
+            the DHCPv4 options payload. """
 	return pcs.TypeLengthValueField( \
-	    self.fieldname,
-	    pcs.Field("t", 8, default = option), \
+	    self.fieldname(), \
+	    pcs.Field("t", 8, default = self.optno), \
 	    pcs.Field("l", 8, default = len(self.bytes)), \
-	    self.datafield)
+	    self.datafield(), \
+	    inclusive = False, \
+	    bytewise = True)
 
-class subnet_mask(dhcpv4_option):
 
-    def __init__(self, option, bytes):
-	dhcp_option.__init__(self, option, bytes)
+class subnet_mask(tlv_option):
+
+    def __init__(self, optno = DHO_SUBNET_MASK, bytes = None):
+	tlv_option.__init__(self, optno, bytes)
+
+    def __setattr__(self, name, value):
+        if name == "value":
+           self.bytes = struct.pack("!L", value)
+        else:
+           object.__setattr__(self, name, value)
 
     def fieldname(self):
 	return "netmask"
+
+    def shortname(self):
+	return "SM"
 
     def datafield(self):
 	return pcs.Field("", 32, \
 		         default = struct.unpack("!L", self.bytes[:4])[0])
 
-class routers(dhcpv4_option):
 
-    def __init__(self, option, bytes):
-	dhcp_option.__init__(self, option, bytes)
+class routers(tlv_option):
+
+    def __init__(self, optno = DHO_ROUTERS, bytes = None):
+	tlv_option.__init__(self, optno, bytes)
+
+    def __setattr__(self, name, value):
+        if name == "value":
+           self.bytes = struct.pack("!L", value)
+        else:
+           object.__setattr__(self, name, value)
 
     def fieldname(self):
-	return "gw"
+	return "routers"
+
+    def shortname(self):
+	return "DG"
 
     def datafield(self):
 	gwlist = []
@@ -156,8 +261,83 @@ class routers(dhcpv4_option):
 	    curr += 4
 	return gwlist
 
+
+# The DHCP message type option MUST appear before any other
+# options in a BOOTP encapsulated DHCP message.
+
+DHCPDISCOVER = 1
+DHCPOFFER = 2
+DHCPREQUEST = 3
+DHCPDECLINE = 4
+DHCPACK = 5
+DHCPNAK = 6
+DHCPRELEASE = 7
+DHCPINFORM = 8
+
+class dhcp_message_type(tlv_option):
+
+    def __init__(self, optno = DHO_DHCP_MESSAGE_TYPE, bytes = None):
+	tlv_option.__init__(self, optno, bytes)
+
+    def fieldname(self):
+	return "dhcp-message-type"
+
+    def shortname(self):
+	return "DHCP"
+
+    def datafield(self):
+	return pcs.Field("", 8, \
+		         default = struct.unpack("!B", self.bytes[0])[0])
+
+
+class dhcp_max_message_size(tlv_option):
+
+    def __init__(self, optno = DHO_DHCP_MAX_MESSAGE_SIZE, bytes = None):
+	tlv_option.__init__(self, optno, bytes)
+
+    def __setattr__(self, name, value):
+        if name == "value":
+           self.bytes = struct.pack("!H", value)
+        else:
+           object.__setattr__(self, name, value)
+
+    def fieldname(self):
+	return "dhcp-max-message-size"
+
+    def shortname(self):
+	return "MSZ"
+
+    def datafield(self):
+	return pcs.Field("", 16, \
+		         default = struct.unpack("!H", self.bytes[:2])[0])
+
+
+class dhcp_class_identifier(tlv_option):
+
+    def __init__(self, optno = DHO_DHCP_CLASS_IDENTIFIER, bytes = None):
+	tlv_option.__init__(self, optno, bytes)
+
+    def __setattr__(self, name, value):
+        if name == "value":
+           self.bytes = value
+        else:
+           object.__setattr__(self, name, value)
+
+    def fieldname(self):
+	return "dhcp-class-identifier"
+
+    def shortname(self):
+	return "VC"
+
+    def datafield(self):
+	return pcs.StringField("", 8 * len(self.bytes), default = self.bytes)
+
+
 map = {
    DHO_SUBNET_MASK:		subnet_mask,
-   DHO_ROUTERS:			routers
+   DHO_ROUTERS:			routers,
+   DHO_DHCP_MESSAGE_TYPE:	dhcp_message_type,
+   DHO_DHCP_MAX_MESSAGE_SIZE:	dhcp_max_message_size,
+   DHO_DHCP_CLASS_IDENTIFIER:	dhcp_class_identifier
 }
 
