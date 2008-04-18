@@ -1245,16 +1245,17 @@ class TapConnector(Connector):
         import os
         from select import select
         from termios import FIONREAD
-
-        # Block until data is ready to be read.
-        select([self.fileno],[],[])
-
-        # Ask the kernel how many bytes are in the queued Ethernet frame.
-        buf = array.array('i', [0])
-        s = fcntl.ioctl(self.fileno, FIONREAD, buf)
-        nbytes = buf.pop()
-
-        return os.read(self.fileno, nbytes)
+        try:
+            # Block until data is ready to be read.
+            select([self.fileno],[],[])
+            # Ask the kernel how many bytes are in the queued Ethernet frame.
+            buf = array.array('i', [0])
+            s = fcntl.ioctl(self.fileno, FIONREAD, buf)
+            qbytes = buf.pop()
+            return os.read(self.fileno, qbytes)
+        except:
+            raise
+        return -1
 
     def blocking_write(self, bytes):
         import os
@@ -1354,28 +1355,71 @@ class TCP4Connector(IP4Connector):
 class UmlMcast4Connector(UDP4Connector):
     """A connector for hooking up to a User Mode Linux virtual LAN,
        implemented by Ethernet frames over UDP sockets in a multicast group.
-       No additional encapsulation of the frames is performed, nor is
-       any filtering performed.
        Typically used for interworking with QEMU. See:
           http://user-mode-linux.sourceforge.net/old/text/mcast.txt
+
+       No additional encapsulation of the frames is performed, nor is
+       any filtering performed.
+       Be aware that this encapsulation may fragment traffic if sent
+       across a real LAN. The multicast API is being somewhat abused here
+       to send and receive the session on the same socket; generally apps
+       shouldn't bind to group addresses, and it's not guaranteed to work
+       with all host IP stacks.
     """
 
     def __init__(self, group, port, ifaddr = None):
         """initialize a UML Mcast v4 connector
-
-        address - an optional address to connect to
-        port - an optional port to connect to
+        group - the multicast group to join
+        port - the UDP source/destination port for the session
+        ifaddr - optionally, the interface upon which to join the group.
         """
+        import os
+        import fcntl
+        from os import O_NONBLOCK
+        from fcntl import F_GETFL, F_SETFL
         if ifaddr is None:
             ifaddr = "127.0.0.1"
         try:
+	    self.group = group
+	    self.port = int(port)
+
             self.file = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
-            mreq = struct.pack('!LL', socket.inet_aton(group), \
-                                      socket.inet_aton(ifaddr))
+
+            flags = fcntl.fcntl(self.file, F_GETFL)
+            flags |= O_NONBLOCK
+            fcntl.fcntl(self.file, F_SETFL, flags)
+
+            self.file.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+            self.file.setsockopt(IPPROTO_IP, IP_MULTICAST_LOOP, 1)
+
+            gaddr = inet_atol(self.group)
+            mreq = struct.pack('!LL', gaddr, inet_atol(ifaddr))
             self.file.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
-            self.file.connect((group, port))
+
+            self.file.bind((self.group, self.port))
         except:
             raise
+
+    def readpkt(self):
+        """read a packet from a pcap file or interfaces returning an
+        appropriate packet object """
+        bytes = self.blocking_read()
+        return packets.ethernet.ethernet(bytes)
+
+    def blocking_read(self):
+        import os
+        from select import select
+	#print "going to sleep"
+        select([self.file],[],[])
+	#print "woken up"
+	# XXX Should use recvfrom.
+	# XXX Shouldn't have to guess buffer size.
+        return os.read(self.file.fileno(), 1502)
+
+    def write(self, packet, flags = 0):
+        """write data to an IPv4 socket"""
+        return self.file.sendto(packet, flags, (self.group, self.port))
+
 
 class SCTP4Connector(IP4Connector):
     """A connector for IPv4 SCTP sockets
