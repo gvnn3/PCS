@@ -410,7 +410,30 @@ class dhcp_parameter_req_list(tlv_option):
 	return pcs.StringField("", 8 * len(self.bytes), default = self.bytes)
 
 
+class dhcp_server_identifier(tlv_option):
+
+    def __init__(self, optno = DHO_DHCP_SERVER_IDENTIFIER, bytes = None):
+	tlv_option.__init__(self, optno, bytes)
+
+    def __setattr__(self, name, value):
+        if name == "value":
+           self.bytes = struct.pack("!L", value)
+        else:
+           object.__setattr__(self, name, value)
+
+    def fieldname(self):
+	return "dhcp-server-identifier"
+
+    def shortname(self):
+	return "SID"
+
+    def datafield(self):
+	return pcs.Field("", 32, \
+		         default = struct.unpack("!L", self.bytes[:4])[0])
+
+
 # FreeBSD's kernel BOOTP client sends only MSZ, VC, DHCP options.
+#  ...but it always expects a SID.
 # Busybox udhcp sends CID, PR, VC, DHCP.
 # 
 
@@ -420,6 +443,7 @@ map = {
    DHO_ROUTERS:			routers,		# DG
    DHO_DHCP_MESSAGE_TYPE:	dhcp_message_type,	# DHCP
    DHO_DHCP_MAX_MESSAGE_SIZE:	dhcp_max_message_size,	# MSZ
+   DHO_DHCP_SERVER_IDENTIFIER:	dhcp_server_identifier,	# SID
    DHO_DHCP_PARAMETER_REQUEST_LIST: dhcp_parameter_req_list, # PR
    DHO_DHCP_CLASS_IDENTIFIER:	dhcp_class_identifier,	# VC
    #DHO_DHCP_CLIENT_IDENTIFIER:	dhcp_client_identifier	# CID
