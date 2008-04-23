@@ -84,6 +84,13 @@ class pcapTestCase(unittest.TestCase):
 
         This test requires threads and must be run as root to succeed."""
         import threading
+
+        e = ethernet()
+        assert (e != None)
+        e.src = "\x00\xbd\x03\x07\xfa\x00"
+        e.dst = "\x00\xbd\x03\x07\xfa\x00"
+        e.type = 0x0800
+
         # Create a vanilla ping packet
         ip = ipv4()
 
@@ -96,31 +103,37 @@ class pcapTestCase(unittest.TestCase):
         ip.offset = 0
         ip.ttl = 64
         ip.protocol = IPPROTO_ICMP
-        ip.src = inet_atol("127.0.0.1")
-        ip.dst = inet_atol("127.0.0.1")
+        ip.src = inet_atol("192.0.2.1")
+        ip.dst = inet_atol("192.0.2.1")
         
         icmp = icmpv4()
         icmp.type = 8
         icmp.code = 0
         
         echo = icmpv4echo()
-        echo.id = 32767
-        echo.seq = 1
-        
-        lo = localhost()
-        lo.type = 2
+        echo.id = 54321
+        echo.seq = 12345
 
-        packet = Chain([lo, ip, icmp, echo])
+	icmp_packet = Chain([icmp, echo])
+        icmp.checksum = icmp_packet.calc_checksum()
 
-        wfile = PcapConnector("lo0")
-        rfile = PcapConnector("lo0")
+        ip.length = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
+        ip.checksum = ip.cksum()
 
-        wfile.write(packet.bytes, 84)
+        packet = Chain([e, ip, icmp, echo])
+	packet.encode()
 
-        got = localhost(rfile.read())
+        wfile = PcapConnector("edsc0")
+        rfile = PcapConnector("edsc0")
+	rfile.setfilter("icmp")
+
+        count = wfile.write(packet.bytes, 42)
+	assert (count == 42)
+
+        got = ethernet(rfile.read())
         ip = got.data
-        self.failIfEqual(ip, None)
         ping = ip.data
+
         self.assertEqual(ping, icmp)
 
     def test_pcap_write(self):

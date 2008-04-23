@@ -66,7 +66,7 @@ class http(pcs.Packet):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
         retval = "HTTP\n"
         for field in self._layout:
-            retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+            retval += "%s %s\n" % (field.name, field.value)
         return retval
 
     def pretty(self, attr):

@@ -107,6 +107,17 @@ class dnsquery(pcs.Packet):
         
         self.description = inspect.getdoc(self)
 
+#
+# XXX 'name' should actually be a label-or-pointer-sequence.
+# Of course there is no way of knowing unless we a) type DNS
+# entities to use a different string field, and b) perform
+# the compression when we come to encode.
+# 'rdata' can contain arbitrary data depending on qclass,
+# however, the valid total length of a UDP dns packet is 512 bytes.
+#
+# Below for now both field contents are limited to 32 bytes ( 2 ** 4 * 8),
+# the length fields remain the same as per RFC 1035.
+#
 class dnsrr(pcs.Packet):
     """DNS Resource Record"""
 
@@ -114,11 +125,17 @@ class dnsrr(pcs.Packet):
 
     def __init__(self, bytes = None):
         """initialize a DNS resource record, which encodes data returned from a query"""
-        name = pcs.LengthValueField("name", 8)
+        #name = pcs.LengthValueField("name", pcs.Field("", 8),
+        #                             pcs.StringField("", (2 ** 8) * 8))
+        name = pcs.LengthValueField("name", pcs.Field("", 8),
+                                     pcs.StringField("", 2 ** 4 * 8)) # XXX
         type = pcs.Field("type", 16)
         qclass = pcs.Field("query_class", 16)
-        ttl = pcs.Field("ttl", 16)
-        rdata = pcs.LengthValueField("rdata", 16)
+        ttl = pcs.Field("ttl", 32)
+        #rdata = pcs.LengthValueField("rdata", pcs.Field("", 16),
+        #                             pcs.StringField("", (2 ** 16) * 8))
+        rdata = pcs.LengthValueField("rdata", pcs.Field("", 16),
+                                     pcs.StringField("", 2 ** 4 * 8)) # XXX
 
         pcs.Packet.__init__(self,
                             [name, type, qclass, ttl, rdata],

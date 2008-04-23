@@ -92,10 +92,10 @@ class ipv6(pcs.Packet):
         retval = ""
         for field in self._layout:
             if (field.name == "src" or field.name == "dst"):
-                value = inet_ntop(AF_INET6, self.__dict__[field.name])
+                value = inet_ntop(AF_INET6, field.value)
                 retval += "%s %s\n" % (field.name, value)
             else:
-                retval += "%s %d\n" % (field.name, self.__dict__[field.name])
+                retval += "%s %d\n" % (field.name, field.value)
         return retval
 
     def getipv6(self, iface):

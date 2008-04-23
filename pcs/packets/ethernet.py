@@ -43,6 +43,13 @@ from pcs.packets.arp import arp
 import inspect
 import time
 
+def ETHER_MAP_IP_MULTICAST(i):
+    import struct
+    return '\x01\x00\x5e' + struct.pack("!I", i)[1:4]
+
+def ETHER_MAP_IPV6_MULTICAST(i):
+    return '\x33\x33' + i[12:16]
+
 class ethernet(pcs.Packet):
     """Ethernet"""
     _layout = pcs.Layout()

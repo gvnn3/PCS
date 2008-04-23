@@ -35,8 +35,9 @@
 # Description: A test of the option fields in PCS.
 
 import unittest
-
 import sys
+
+from hexdumper import hexdumper
 
 if __name__ == '__main__':
 
@@ -47,21 +48,71 @@ if __name__ == '__main__':
 
     import pcs
     from pcs.packets.tcp import *
-    
+
+
+#
+# TODO: Rototile interface so that consumers do not need to
+# have knowledge of option structure, currently the option
+# code needs to be explicitly specified.
+#
+# Also this doesn't forcibly pad to 32 bits, nor does it check
+# that the length of all options wouldn't exceed 40.
+#
 class optionTestCase(unittest.TestCase):
-    def test_option_create(self):
+    def test_tcp_with_options(self):
+	"""Assert that a TCP with options is correctly encoded."""
         packet = tcp()
+
         nop = pcs.Field("nop", 8)
-        pad = pcs.Field("pad", 8)
-        print packet.options
-        packet.sport = 5
-        print packet.bytes
-        packet.options.append([1, nop])
-        packet.options.append([0, pad])
-        
-        print packet
-        print packet.bytes
-        
+	mss = pcs.TypeLengthValueField("mss",
+	                               pcs.Field("t", 8, default = 0x02),
+				       pcs.Field("l", 8),
+				       pcs.Field("v", 16))
+        end = pcs.Field("end", 8)
+
+        nop.value = 1
+        mss.value.value = 1460		# Most common Internet MSS value.
+
+	# Build a TCP option list which will be 32-bits aligned.
+        packet.options.append(nop)
+        packet.options.append(nop)
+        packet.options.append(mss)
+        packet.options.append(nop)
+        packet.options.append(end)
+
+	expected = "\x00\x00\x00\x00\x00\x00\x00\x00" \
+		   "\x00\x00\x00\x00\x00\x00\x00\x00" \
+		   "\x00\x00\x00\x00\x01\x01\x02\x04" \
+		   "\x05\xb4\x01\x00"
+	got = packet.bytes
+
+	#packet.encode()
+	#hd = hexdumper()
+	#print hd.dump(expected)
+	#print hd.dump(got)
+
+	# XXX: Note well: just because you added an option list,
+	# doesn't mean the TCP option length is correct.
+
+        self.assertEqual(expected, got)
+
+    def test_tcp_without_options(self):
+	"""Assert that a TCP without options does not get any additional
+	   fields appended to it on the wire."""
+        packet = tcp()
+
+	expected = "\x00\x00\x00\x00\x00\x00\x00\x00" \
+		   "\x00\x00\x00\x00\x00\x00\x00\x00" \
+		   "\x00\x00\x00\x00"
+	got = packet.bytes
+
+	#packet.encode()
+	#hd = hexdumper()
+	#print hd.dump(expected)
+	#print hd.dump(got)
+
+	self.assertEqual(len(packet.options), 0)
+        self.assertEqual(expected, got)
 
 if __name__ == '__main__':
     unittest.main()

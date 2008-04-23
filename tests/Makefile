@@ -7,17 +7,17 @@
 # Makefile for running PCS regression tests.
 
 PYTHON	= python
-
+PYTHONPATH = /opt/local/bin
 PYVERSIONS = python2.3 python2.4 python2.5
 
-.PHONY: test
+.PHONY: test test-local
 
 TESTS:= $(wildcard *test.py)
 
 test: 
 	for file in $(TESTS); do\
 		echo Running test $$file; \
-		sudo $(PYTHON) $$file; \
+		sudo PYTHONPATH=${PYTHONPATH} $(PYTHON) $$file; \
 	done
 
 test-local: 
@@ -31,6 +31,6 @@ test-versions:
 		echo testing version $$version; \
 		for file in $(TESTS); do\
 			echo Running test $$file; \
-			sudo $$version $$file -l; \
+			sudo PYTHONPATH=${PYTHONPATH} $$version $$file -l; \
 		done \
 	done

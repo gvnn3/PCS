@@ -38,16 +38,17 @@
 # The map is a dictionary who's key is the protocol type and who's
 # value is the class constructor for that type.
 
-from socket import IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_ICMP
+from socket import IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_ICMP, IPPROTO_IGMP
 
 IPPROTO_SCTP = 132
 
-import udp, tcp, ipsec, icmpv4 #sctp
+import udp, tcp, ipsec, icmpv4, igmp, sctp
 
 map = {IPPROTO_UDP: udp.udp,
        IPPROTO_TCP: tcp.tcp,
        IPPROTO_AH: ipsec.ah,
        IPPROTO_ESP: ipsec.esp,
-       IPPROTO_ICMP: icmpv4.icmpv4}
-#       IPPROTO_SCTP: sctp.common}
+       IPPROTO_ICMP: icmpv4.icmpv4,
+       IPPROTO_IGMP: igmp.igmp,
+       IPPROTO_SCTP: sctp.common}
 

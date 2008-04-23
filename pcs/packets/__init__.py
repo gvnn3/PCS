@@ -5,6 +5,8 @@ all = ['ethernet',
        'ipv4',
        'ipv6',
        'icmpv4',
+       'igmpv2',
+       'igmpv3',
        'tcp',
        'udp',
        'data']

@@ -1,3 +1,37 @@
 TODO for PCS
 
+*) Eliminate the assumption that a TLV or LV always encodes its length
+   in bytes. This is inconsistent with the definition of Field.
+
+  *) Eliminate the assumption that a TLV always contains itself or
+     indeed counts itself in its length, see below.
+
+*) In IGMP, add a pointer to the type numbers:
+    http://www.iana.org/assignments/igmp-type-numbers
+
+   Think carefully about how to deal with the fact that at least
+   6 different protocols use "igmp" as their encapsulation.
+   Probably an IGMP "map" is best, as the header fields are often
+   never referred to outside of their own context.
+
+*) Fix the pretty-printing for TCP options.
+
+*) Fix the lack of variable-width bounds in the PCS meta-language.
+
+   At the moment, LengthValueFields and TypeLengthValueFields have
+   no notion of a variable width, so they always encode and decode
+   as fixed length fields. This makes it very difficult to capture
+   most packet structures correctly in PCS.
+
+*) Fix the IP4Connector so that it will work and can be reliably used
+   instead of the PcapConnector. Without an ARP module, going straight
+   to Ethernet is tedious, and doesn't even work for other link layers.
+
+  *) Reimplement the IP-layer diagnostic tools to use the IP4Connector.
+
+*) Come up with a fix for BPF loopback injection on FreeBSD and push the
+   fix upstream.
+
 *) Add many many more packets
+
+*) Teach BPF and pcap how to request allmulti.

@@ -47,7 +47,7 @@ if __name__ == '__main__':
         sys.path.insert(0, "../") # Look locally first
         sys.argv.remove("-l") # Needed because unittest has issues
 
-    from pcs.packets.localhost import *
+    from pcs.packets.ethernet import ethernet
     from pcs.packets.ipv4 import *
     from pcs.packets.icmpv4 import *
     from pcs import *
@@ -117,11 +117,19 @@ class icmpTestCase(unittest.TestCase):
                          (test_string, string))
 
     def test_icmpv4_ping(self):
+	test_iface = "edsc0"
+
+	e = ethernet()
+	e.type = 0x0800
+        e.src = "\x00\x00\x00\x00\x00\x00"
+        e.dst = "\xff\xff\xff\xff\xff\xff"
+        e.type = 0x0800
+
         ip = ipv4()
         ip.version = 4
         ip.hlen = 5
         ip.tos = 0
-        ip.length = 84
+        ip.length = 28
         ip.id = 1234
         ip.flags = 0
         ip.offset = 0
@@ -139,25 +147,29 @@ class icmpTestCase(unittest.TestCase):
         echo.id = 37123
         echo.sequence = 0
 
-        lo = localhost()
-        lo.type = 2
-        packet = Chain([lo, ip, icmp, echo])
-        
-        ip.checksum = 0
+        packet = Chain([e, ip, icmp, echo])
 
         icmp_packet = Chain([icmp, echo])
-        icmp.checksum = ip.cksum()
+        icmp.checksum = icmp_packet.calc_checksum()
+
+	ip.len = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
+        ip.checksum = ip.cksum()
 
         packet.encode()
 
-        input = PcapConnector("lo0")
+        input = PcapConnector(test_iface)
         input.setfilter("icmp")
 
-        output = PcapConnector("lo0")
+        output = PcapConnector(test_iface)
         assert (ip != None)
 
-        out = output.write(packet.bytes, 88)
-        assert (out == 88)
+	# XXX triggers bpf header format bug if used with loopback device
+	# on FreeBSD.
+        n_out = output.write(packet.bytes, 42)
+        assert (n_out == 42)
+
+	packet_in = input.read()
+	assert (n_out == len(packet_in))
 
 if __name__ == '__main__':
     unittest.main()

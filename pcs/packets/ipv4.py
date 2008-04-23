@@ -35,12 +35,57 @@
 # Description: A class which implements an IPv4 packet
 
 import pcs
+from pcs import UnpackError
 from socket import AF_INET, inet_ntop
 import ipv4_map
 
 import struct
 import inspect
 import time
+
+#
+# IPv4 address constants.
+#
+INADDR_ANY		= 0x00000000	# 0.0.0.0
+INADDR_BROADCAST	= 0xffffffff	# 255.255.255.255
+INADDR_LOOPBACK		= 0x7f000001	# 127.0.0.1
+INADDR_UNSPEC_GROUP	= 0xe0000000	# 224.0.0.0
+INADDR_ALLHOSTS_GROUP	= 0xe0000001	# 224.0.0.1
+INADDR_ALLRTRS_GROUP	= 0xe0000002	# 224.0.0.2
+INADDR_DVMRP_GROUP	= 0xe0000004	# 224.0.0.4
+INADDR_ALLPIM_ROUTERS_GROUP = 0xe000000d	# 224.0.0.13
+INADDR_ALLRPTS_GROUP	= 0xe0000016	# 224.0.0.22, IGMPv3
+INADDR_MAX_LOCAL_GROUP	= 0xe00000ff	# 224.0.0.255
+
+#
+# IPv4 options.
+#
+IPOPT_EOL = 0
+IPOPT_NOP = 1
+IPOPT_RA = 148
+
+def IN_LINKLOCAL(i):
+    """Return True if the given address is in the 169.254.0.0/16 range."""
+    return (((i) & 0xffff0000) == 0xa9fe0000)
+
+def IN_MULTICAST(i):
+    """Return True if the given address is in the 224.0.0.0/4 range."""
+    return (((i) & 0xf0000000) == 0xe0000000)
+
+def IN_LOCAL_GROUP(i):
+    """Return True if the given address is in the 224.0.0.0/24 range."""
+    return (((i) & 0xffffff00) == 0xe0000000)
+
+def IN_EXPERIMENTAL(i):
+    """Return True if the given address is in the 240.0.0.0/24 range."""
+    return (((i) & 0xf0000000) == 0xf0000000)
+
+def IN_PRIVATE(i):
+    """Return True if the given address is in any of the 10.0.0.0/8,
+       172.16.0.0/16, or 192.168.0.0/24 ranges from RFC 1918."""
+    return ((((i) & 0xff000000) == 0x0a000000) or \
+            (((i) & 0xfff00000) == 0xac100000) or \
+            (((i) & 0xffff0000) == 0xc0a80000))
 
 class ipv4(pcs.Packet):
     """IPv4"""
@@ -49,8 +94,7 @@ class ipv4(pcs.Packet):
     _map = ipv4_map.map
 
     def __init__(self, bytes = None, timestamp = None):
-        """ define the fields of an IPv4 packet, from RFC 791
-        This version does not include options."""
+        """ define the fields of an IPv4 packet, from RFC 791."""
         version = pcs.Field("version", 4, default = 4)
         hlen = pcs.Field("hlen", 4)
         tos = pcs.Field("tos", 8)
@@ -63,16 +107,67 @@ class ipv4(pcs.Packet):
         checksum = pcs.Field("checksum", 16)
         src = pcs.Field("src", 32)
         dst = pcs.Field("dst", 32)
+        options = pcs.OptionListField("options")
         pcs.Packet.__init__(self,
                             [version, hlen, tos, length, id, flags, offset,
-                             ttl, protocol, checksum, src, dst],
+                             ttl, protocol, checksum, src, dst, options],
                             bytes = bytes)
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
+
         if timestamp == None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
+
+        if bytes != None:
+            hlen_bytes = self.hlen * 4
+            options_len = hlen_bytes - self.sizeof()
+
+            if hlen_bytes > len(bytes):
+                raise UnpackError, \
+                      "IP header is larger than input (%d > %d)" % \
+                      (hlen_bytes, len(bytes))
+
+            if options_len > 0:
+                curr = self.sizeof()
+                while curr < hlen_bytes:
+                    option = struct.unpack('!B', bytes[curr])[0]
+
+                    if option == IPOPT_EOL:
+                        options.append(pcs.Field("end", 8, default = IPOPT_EOL))
+                        curr += 1
+                        continue
+                    elif option == IPOPT_NOP:
+                        options.append(pcs.Field("nop", 8, default = IPOPT_NOP))
+                        curr += 1
+                        continue
+
+                    optlen = struct.unpack('!B', bytes[curr+1])[0]
+                    if option == IPOPT_RA:
+                        # The IPv4 Router Alert option (RFC 2113) is a
+                        # single 16 bit value. Its existence indicates
+                        # that a router must examine the packet. It is
+                        # 32 bits wide including option code and length.
+                        if optlen != 4:
+                            raise UnpackError, \
+                                  "Bad length %d for IP option %d, " \
+                                  "should be %d" % (optlen, option, 4)
+                        value = struct.unpack("!H", bytes[curr+2:curr+4])[0]
+                        options.append(pcs.TypeLengthValueField("ra",
+                                       pcs.Field("t", 8, default = option),
+                                       pcs.Field("l", 8, default = optlen),
+                                       pcs.Field("v", 16, default = value)))
+                        curr += optlen
+                    else:
+                        print "warning: unknown IP option %d" % option
+                        optdatalen = optlen - 2
+                        options.append(pcs.TypeLengthValueField("unknown",
+                                       pcs.Field("t", 8, default = option),
+                                       pcs.Field("l", 8, default = optlen),
+                                       pcs.Field("v", optdatalen * 8,
+                                                 default = value)))
+                        curr += optlen
 
         if (bytes != None):
             offset = self.hlen << 2
@@ -87,10 +182,10 @@ class ipv4(pcs.Packet):
         for field in self._layout:
             if (field.name == "src" or field.name == "dst"):
                 value = inet_ntop(AF_INET,
-                                  struct.pack('!L', self.__dict__[field.name]))
+                                  struct.pack('!L', field.value))
                 retval += "%s %s\n" % (field.name, value)
             else:
-                retval += "%s %s\n" % (field.name, self.__dict__[field.name])
+                retval += "%s %s\n" % (field.name, field.value)
         return retval
 
     def pretty(self, attr):
