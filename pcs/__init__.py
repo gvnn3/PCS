@@ -855,6 +855,7 @@ class Packet(object):
         for field in self._layout:
             wild = self._fieldnames[field.name].is_wildcard
             if not wild:
+                #print "%s is not wild" % field.name
                 if self._fieldnames[field.name].value != \
                    other._fieldnames[field.name].value:
                     return False
@@ -1096,10 +1097,12 @@ class Chain(list):
     def matches(self, chain):
         """Return True if this chain matches the chain provided.
 
-           It is assumed that this chain contains any wildcard patterns.
+           It is assumed that *this* chain contains any wildcard patterns.
+           A strict size comparison is not performed.
            A bitwise comparison is not performed; a structural match
            using the match() function is used instead."""
-        if len(self.packets) != len(chain.packets):
+        if len(self.packets) > len(chain.packets):
+            #print "lengths don't match"
             return False
         for i in range(len(self.packets)):
             if not self.packets[i].matches(chain.packets[i]):
@@ -1308,9 +1311,6 @@ class Connector(object):
                 delta = now - then
                 then = now
 
-            c = self.read_chain()    # XXX Should check for EOF.
-            count += 1
-
             # Check if the user tried to match exceptional conditions
             # as patterns. We need to check for timer expiry upfront.
             if timeout != None and (now - start) > timeout:
@@ -1324,7 +1324,10 @@ class Connector(object):
                 if delta > 0:
                     continue   # Early wakeup.
 
-            elif isinstance(result, EOF):
+            c = self.read_chain()    # XXX Should check for EOF.
+            count += 1
+
+            if isinstance(result, EOF):
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], EOF):
                         self.match = p
@@ -1344,6 +1347,8 @@ class Connector(object):
             for i in range(len(patterns)):
                 p = patterns[i]
                 if isinstance(p, Chain):
+                    #print "trying to match:" p
+                    #print "with: " c
                     if p.matches(c):
                         self.match = c
                         self.match_index = i
