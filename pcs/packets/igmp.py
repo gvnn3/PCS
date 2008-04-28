@@ -19,7 +19,7 @@ IGMP_v3_HOST_MEMBERSHIP_REPORT = 0x22
 IGMP_MTRACE_REPLY = 0x1e
 IGMP_MTRACE_QUERY = 0x1f
 
-map = {
+igmp_map = {
 	IGMP_HOST_MEMBERSHIP_QUERY:	igmpv2.igmpv2,
 	IGMP_v1_HOST_MEMBERSHIP_REPORT:	igmpv2.igmpv2,
 	#IGMP_DVMRP:			dvmrp.dvmrp,
@@ -45,7 +45,7 @@ class igmp(pcs.Packet):
     """IGMP"""
 
     _layout = pcs.Layout()
-    _map = map
+    _map = igmp_map
     _descr = descr
 
     def __init__(self, bytes = None, timestamp = None):
@@ -73,6 +73,12 @@ class igmp(pcs.Packet):
                                       timestamp = timestamp)
         else:
             self.data = None
+
+    def rdiscriminate(self, packet, discfieldname = None, map = igmp_map):
+        """Reverse-map an encapsulated packet back to a discriminator
+           field value. Like next() only the first match is used."""
+        #print "reverse discriminating %s" % type(packet)
+        return pcs.Packet.rdiscriminate(self, packet, "type", map)
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""
