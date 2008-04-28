@@ -1,0 +1,17 @@
+If you are developing PCS and do not wish to install it, do:
+
+> python setup.py config <return>
+> python setup.py build <return>
+
+After this, the build/ directory should contain a "lib.<platform>"
+subdirectory. Add this to your PYTHONPATH and you can test PCS without
+performing a full installation.
+
+Note: Make sure that you do not try to import PCS whilst you are in the
+top level of this tree, otherwise Python will look for the pcs package
+relative to the current directory. There is a pcs/pcap subdirectory. This
+will cause the interpreter to match the directory first instead of pcap.so.
+
+An ImportError exception will be raised, but it won't tell you that you're
+trying to import a directory. This happens even if PYTHONPATH is set
+correctly.
