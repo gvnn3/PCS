@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2006, Neville-Neil Consulting
+# Copyright (c) 2008, Bruce M. Simpson.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -13,9 +13,9 @@
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 #
-# Neither the name of Neville-Neil Consulting nor the names of its 
-# contributors may be used to endorse or promote products derived from 
-# this software without specific prior written permission.
+# Neither the names of the authors nor the names of contributors may be
+# used to endorse or promote products derived from this software without
+# specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -31,10 +31,9 @@
 #
 # File: $Id: $
 #
-# Author: George V. Neville-Neil
+# Author: Bruce M. Simpson
 #
-# Description: Walk through an entire pcap dump file and give out
-# information along the lines of netstat(1) on FreeBSD.
+# Description: Simple demo of network-level "expect" functionality.
 
 import pcs
 from pcs.packets.udp import *
