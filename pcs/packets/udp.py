@@ -65,8 +65,8 @@ class udp(pcs.Packet):
         else:
             self.data = None
 
-    # XXX UDP MUST have it's own next() function so that it can discrimnate
-    # on either sport or dport.
+    # XXX UDP MUST have its own next() and rdiscriminate() functions,
+    # so that it can discriminate on either sport or dport.
 
     def next(self, bytes, timestamp):
         """Decode higher level services."""
@@ -76,3 +76,12 @@ class udp(pcs.Packet):
             return udp_map.map[self.sport](bytes, timestamp = timestamp)
 
         return None
+
+    def rdiscriminate(self, packet, discfieldname = None, map = udp_map.map):
+        """Reverse-map an encapsulated packet back to a discriminator
+           field value. Like next() only the first match is used."""
+        #print "reverse discriminating %s" % type(packet)
+        result = pcs.Packet.rdiscriminate(self, packet, "dport", map)
+        if result == False:
+            result = pcs.Packet.rdiscriminate(self, packet, "sport", map)
+        return result

@@ -67,6 +67,7 @@ from socket import *
 
 import pcs.pcap as pcap
 
+import exceptions
 import itertools
 
 def attribreprlist(obj, attrs):
@@ -674,7 +675,7 @@ class FieldError(Exception):
         ## the error message passed when this error is raised
         self.message = message
         
-reserved_names = ["_layout", "_discriminator", "_map"]
+reserved_names = ["_layout", "_discriminator", "_map", "_head"]
 
 class Packet(object):
     """A Packet is a base class for building real packets."""
@@ -748,6 +749,7 @@ class Packet(object):
         """
         self._layout = layout
         self._fieldnames = {}
+        self._head = None
         for field in layout:
             self._fieldnames[field.name] = field
         self._needencode = True
@@ -855,6 +857,30 @@ class Packet(object):
         """Return the count of the number of bytes in the packet."""
         return len(self.bytes)
 
+    def __div__(self, packet):
+        """/ operator: Insert a packet after this packet in a chain.
+           If I am not already part of a chain, build one.
+           The default behaviour is to attempt to initialize any
+           discriminator fields based on the type of the packet
+           being appended.
+           The head of the chain is always returned."""
+        if not isinstance(packet, Packet):
+            raise exceptions.TypeError
+        if self._head is None:
+            #print "making a new chain"
+            head = self.chain()
+            self.rdiscriminate(packet)
+            head.append(packet)
+            self._head = head
+        else:
+            #print "appending to an old chain"
+            head = self._head
+            if not isinstance(head, Chain):
+                raise exceptions.TypeError
+            if head.insert_after(self, packet) == False:
+                raise exceptions.IndexError
+        return head
+
     def chain(self):
         """Return the packet and its next packets as a chain."""
         packet_list = []
@@ -888,6 +914,46 @@ class Packet(object):
                 return self._map[self._fieldnames[self._discriminator.name].value](bytes, timestamp = timestamp)
         
         return None
+
+    def rdiscriminate(self, packet, discfieldname = None, map = None):
+        """Reverse-map an encapsulated packet back to a discriminator
+           field value.
+           Given a following packet which is about to be appended or
+           inserted in a chain, look at its type, and fill out the
+           discriminator field.
+           This is 'reverse discrimination', as we are mapping a packet
+           type back to a code field, which means a reverse dict lookup.
+           The mapping may not be 1:1, in which case we simply return
+           the first match; isinstance() is used to match derived classes.
+           Individual packet classes should override this if they
+           need to return a particular flavour of an encapsulated packet,
+           or force a lookup against a map which isn't part of the class.
+           This is provided as syntactic sugar, used only by the / operator.
+           Return True if we made any changes to self."""
+
+        if (not isinstance(packet, Packet)):
+            raise exceptions.TypeError
+
+        # If we were not passed discriminator field name and map, try
+        # to infer it from what's inside the instance.
+        if map == None:
+           map = self._map
+           if map == None:
+               #print "%s has no default map" % type(self)
+               return False
+        if discfieldname == None:
+           if self._discriminator == None:
+                #print "%s has no default discriminator" % type(self)
+                return False
+           discfieldname = self._discriminator.name
+
+        for i in map.iteritems():
+            #print "comparing with %s" % str(i[1])
+            if isinstance(packet, i[1]):
+                self._fieldnames[discfieldname].value = i[0]
+                return True
+
+        return False
 
     def sizeof(self):
         """Return the size, in bytes, of the packet."""
@@ -944,12 +1010,36 @@ class Chain(list):
         for packet in self.packets:
             retval += "%s " % packet.__str__()
         return retval
-    
+
+    def __div__(self, packet, rdiscriminate=True):
+        """/ operator: Append a packet to the end of a chain.
+           The default behaviour is to fill out the discriminator field
+           of the packet in front of the new tail packet."""
+        if not isinstance(packet, Packet):
+            raise exceptions.TypeError
+        if rdiscriminate is True:
+            self.packets[-1].rdiscriminate(packet)
+        self.append(packet)
+        return self
+
     def append(self, packet):
         """Append a packet to a chain.  Appending a packet requires
         that we update the bytes as well."""
         self.packets.append(packet)
         self.encode()
+
+    def insert_after(self, p1, p2, rdiscriminate=True):
+        """Insert a packet into a chain after a given packet instance.
+           Used only by the div operator. The default behaviour is to
+           set discriminator fields in p1 based on p2."""
+        for i in range(len(self.packets)):
+            if self.packets[i] is p1:
+                if rdiscriminate is True:
+                    p1.rdiscriminate(p2)
+                self.packets.insert(i, p2)
+                self.encode()
+                return True
+        return False
 
     def encode(self):
         """Encode all the packets in a chain into a set of bytes for the Chain"""

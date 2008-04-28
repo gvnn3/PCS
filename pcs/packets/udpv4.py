@@ -38,19 +38,17 @@ import sys
 sys.path.append("../src")
 
 import pcs
+import pcs.packets.udp
 import socket
 
-class udpv4(pcs.Packet):
+class udpv4(pcs.packets.udp.udp):
 
     _layout = pcs.Layout()
+    _map = None
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None):
         """Initialize a UDP packet for IPv4"""
-        sport = pcs.Field("sport", 16)
-        dport = pcs.Field("dport", 16)
-        length = pcs.Field("length", 16)
-        checksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [sport, dport, length, checksum], bytes)
+        pcs.packets.udp.udp.__init__(self, bytes, timestamp)
 
     def cksum(self, ip, data = ""):
         """return tcpv4 checksum"""

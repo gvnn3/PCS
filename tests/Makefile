@@ -6,9 +6,9 @@
 #
 # Makefile for running PCS regression tests.
 
-PYTHON	= python
-PYTHONPATH = /opt/local/bin
-PYVERSIONS = python2.3 python2.4 python2.5
+PYTHON		?= python
+PYTHONPATH	?= /opt/local/bin
+PYVERSIONS	 = python2.3 python2.4 python2.5
 
 .PHONY: test test-local
 
