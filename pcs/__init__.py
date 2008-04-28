@@ -89,7 +89,7 @@ demultiplexing .  These classes are used by the packet to define the
 layout of the data and how it is addressed."""
     
     def __init__(self, name = "", width = 1, default = None,
-                 discriminator = False):
+                 discriminator = False, is_wildcard=False):
         """initialize a field
 
         name - a string name
@@ -105,6 +105,8 @@ layout of the data and how it is addressed."""
         self.default = default
         ## Is this field used to demultiplex higher layer packets?
         self.discriminator = discriminator
+        ## Should this field be ignored by the Packet.matches() method?
+        self.is_wildcard = is_wildcard
         ## Fields store the values
         if default == None:
             self.value = 0
@@ -113,8 +115,10 @@ layout of the data and how it is addressed."""
         
     def __repr__(self):
         """return an appropriate representation for the Field object"""
-        return "<pcs.Field  name %s, %d bits, default %s, discriminator %d>" % \
-               (self.name, self.width, self.default, self.discriminator)
+        return "<pcs.Field  name %s, %d bits, default %s, discriminator %d, " \
+               "wildcard %d>" % \
+               (self.name, self.width, self.default, self.discriminator, \
+                self.is_wildcard)
 
     def decode(self, bytes, curr, byteBR):
         """Decode a field and return the value and the updated current
@@ -228,7 +232,8 @@ default value.  The data is to be interpreted as a string, but does
 not encode the length into the packet.  Length encoded values are
 handled by the LengthValueField."""
     
-    def __init__(self, name = "", width = 1, default = None):
+    def __init__(self, name = "", width = 1, default = None, \
+                 is_wildcard = False ):
         """initialtize a StringField"""
         ## the name of the StringField
         self.name = name
@@ -236,6 +241,8 @@ handled by the LengthValueField."""
         self.width = width
         ## the default value, if any, of the StringField
         self.default = default
+        ## if this field is a wildcard field in a filter
+        self.is_wildcard = is_wildcard
         ## Fields store the values
         if default == None:
             self.value = ""
@@ -244,8 +251,9 @@ handled by the LengthValueField."""
         
     def __repr__(self):
         """return a human readable form of a StringFeild object"""
-        return "<pcs.StringField  name %s, %d bits, default %s>" % \
-               (self.name, self.width, self.default) # 
+        return "<pcs.StringField  name %s, %d bits, default %s, " \
+               "wildcard %d>" % \
+               (self.name, self.width, self.default, self.is_wildcard) # 
 
     def decode(self, bytes, curr, byteBR):
         """Decode the field and return the value as well as the new
@@ -293,9 +301,10 @@ class LengthValueField(object):
     packets.
     """
 
-    def __init__(self, name, length, value):
+    def __init__(self, name, length, value, is_wildcard=False):
         self.packet = None
         self.name = name
+        self.is_wildcard = is_wildcard
         if not isinstance(length, Field):
             raise LengthValueFieldError, "Length must be of type Field but is %s" % type(length)
         object.__setattr__(self, 'length', length)
@@ -307,8 +316,9 @@ class LengthValueField(object):
         #self.packed = packed
 
     def __repr__(self):
-        return "<pcs.LengthValueField name %s, length %s, value %s" \
-               % (self.name, self.length, self.value)
+        return "<pcs.LengthValueField name %s, length %s, value %s, " \
+               "wildcard %d" \
+               % (self.name, self.length, self.value, self.is_wildcard)
 
     def __len__(self):
         return self.length.width + self.value.width
@@ -357,7 +367,7 @@ class TypeValueField(object):
     """A type-value field handles parts of packets where a type
     is encoded before a value.  """
 
-    def __init__(self, name, type, value):
+    def __init__(self, name, type, value, is_wildcard=False):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
@@ -370,7 +380,7 @@ class TypeValueField(object):
         self.width = type.width + value.width
 
     def __repr__(self):
-        return "<pcs.TypeValueField name %s, type %s, value %s," % (self.name, self.type, self.value)
+        return "<pcs.TypeValueField name %s, type %s, value %s, wildcard %d" % (self.name, self.type, self.value, self.is_wildcard)
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
@@ -403,7 +413,7 @@ class TypeLengthValueField(object):
     is encoded before a length and value.  """
 
     def __init__(self, name, type, length, value,
-                 inclusive = True, bytewise = True):
+                 inclusive = True, bytewise = True, is_wildcard = False):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
@@ -421,8 +431,9 @@ class TypeLengthValueField(object):
         self.bytewise = bytewise
 
     def __repr__(self):
-        return "<pcs.TypeLengthValueField type %s, length %s, value %s>" \
-                % (self.type, self.length, self.value)
+        return "<pcs.TypeLengthValueField type %s, length %s, value %s, " \
+               "wildcard %d>" \
+                % (self.type, self.length, self.value, self.is_wildcard)
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
@@ -484,7 +495,7 @@ class OptionListField(CompoundField, list):
     """A option list is a list of Fields.
        Option lists inhabit many protocols, including IP and TCP."""
 
-    def __init__(self, name, width = 0, option_list = []):
+    def __init__(self, name, width = 0, option_list = [], is_wildcard = False):
         """Iniitialize an OptionListField."""
         list.__init__(self)
         self.name = name
@@ -494,6 +505,7 @@ class OptionListField(CompoundField, list):
             for option in option_list:
                 self._options.append(option)
         
+        self.is_wildcard = is_wildcard
         self.default = self
         self.value = self
         
@@ -831,6 +843,35 @@ class Packet(object):
         """Do a comparison of the packets data, including fields and bytes."""
         return not self.__eq__(other)
 
+    def matches(self, other):
+        """Return True if the packets match. A wildcard match is performed.
+
+           This packet is assumed to contain fields which have the
+           'is_wildcard' flag set, and they will be ignored for the
+           comparison. Byte-wise comparison is NOT performed. """
+        if (type(self) != type(other)):
+            return False
+        # TODO: Push logic into per-field match for richer filters.
+        for field in self._layout:
+            wild = self._fieldnames[field.name].is_wildcard
+            if not wild:
+                if self._fieldnames[field.name].value != \
+                   other._fieldnames[field.name].value:
+                    return False
+        return True
+
+    def wildcard_mask(self, fieldnames=[], is_wildcard=True):
+        """Mark or unmark a list of fields in this Packet as
+           wildcard for match().
+           If an empty list is passed, apply is_wildcard to all fields."""
+        if fieldnames != []:
+            for i in fieldnames:
+                field = self._fieldnames[i]
+                field.is_wildcard = is_wildcard
+        else:
+            for f in self._fieldnames.iteritems():
+                f[1].is_wildcard = is_wildcard
+
     def __repr__(self):
         """Walk the entire packet and return the values of the fields."""
         if hasattr(self, 'description'):
@@ -867,13 +908,11 @@ class Packet(object):
         if not isinstance(packet, Packet):
             raise exceptions.TypeError
         if self._head is None:
-            #print "making a new chain"
             head = self.chain()
             self.rdiscriminate(packet)
             head.append(packet)
             self._head = head
         else:
-            #print "appending to an old chain"
             head = self._head
             if not isinstance(head, Chain):
                 raise exceptions.TypeError
@@ -939,16 +978,13 @@ class Packet(object):
         if map == None:
            map = self._map
            if map == None:
-               #print "%s has no default map" % type(self)
                return False
         if discfieldname == None:
            if self._discriminator == None:
-                #print "%s has no default discriminator" % type(self)
                 return False
            discfieldname = self._discriminator.name
 
         for i in map.iteritems():
-            #print "comparing with %s" % str(i[1])
             if isinstance(packet, i[1]):
                 self._fieldnames[discfieldname].value = i[0]
                 return True
@@ -1041,6 +1077,41 @@ class Chain(list):
                 return True
         return False
 
+    def contains(self, packet):
+        """If this chain contains a packet which matches the packet provided,
+           return its index. Otherwise, return None.
+
+           It is assumed that 'packet' contains any wildcard patterns;
+           this is the logical reverse of Field.match() and Packet.match().
+           A bitwise comparison is not performed; a structural match
+           using the match() function is used instead."""
+        result = None
+        for i in range(len(self.packets)):
+            if isinstance(self.packets[i], type(packet)):
+                if packet.matches(self.packets[i]):
+                    result = i
+                    break
+        return result
+
+    def matches(self, chain):
+        """Return True if this chain matches the chain provided.
+
+           It is assumed that this chain contains any wildcard patterns.
+           A bitwise comparison is not performed; a structural match
+           using the match() function is used instead."""
+        if len(self.packets) != len(chain.packets):
+            return False
+        for i in range(len(self.packets)):
+            if not self.packets[i].matches(chain.packets[i]):
+                return False
+        return True
+
+    def wildcard_mask(self, is_wildcard=True):
+        """Mark or unmark all of the fields in each Packet in this Chain
+           as a wildcard for match() or contains()."""
+        for i in range(len(self.packets)):
+            self.packets[i].wildcard_mask([], is_wildcard)
+
     def encode(self):
         """Encode all the packets in a chain into a set of bytes for the Chain"""
         self.bytes = ""
@@ -1084,6 +1155,46 @@ class ConnNotImpError(Exception):
     def __init__(self, message):
         self.message = message
 
+class EOFError(Exception):
+    """If the I/O handle was closed, or end of file seen,
+       raise this exception. """
+
+    def __init__(self, message='End of file'):
+        self.message = message
+
+class LimitReachedError(Exception):
+    """If a packet input threshold is reached, raise this exception. """
+
+    def __init__(self, message='Limit reached'):
+        self.message = message
+
+class TimeoutError(Exception):
+    """If a possibly blocking read operation times out, this exception
+       will be raised. """
+
+    def __init__(self, message='Timed out'):
+        self.message = message
+
+class UnpackError(Exception):
+    """Error raised when we fail to unpack a packet."""
+    def __init__(self, message):
+        self.message = message
+
+class EOF(object):
+    """This type allows end-of-file to be matched as a pattern by expect()."""
+    def __init__(self):
+        pass
+
+class TIMEOUT(object):
+    """This type allows timeouts to be matched as a pattern by expect()."""
+    def __init__(self):
+        pass
+
+class LIMIT(object):
+    """This type allows 'limit reached' to be matched by expect()."""
+    def __init__(self):
+        pass
+
 class Connector(object):
     """Connectors are a way of have a very generic socket like
     mechanism over which the packets can be sent.  Unlike the current
@@ -1096,6 +1207,8 @@ class Connector(object):
     real classes are based."""
 
     def __init__(self):
+        self.match = None
+        self.match_index = None
         raise ConnNotImpError, "Cannot use base class"
 
     def accept(self):
@@ -1112,6 +1225,29 @@ class Connector(object):
 
     def read(self):
         raise ConnNotImpError, "Cannot use base class"
+
+    def poll_read(self, timeout):
+        """Poll the underlying I/O layer for a read.
+           Return TIMEOUT if the timeout was reached."""
+        raise ConnNotImpError, "Cannot use base class"
+
+    def read_packet(self):
+        """Read a packet from the underlying I/O layer, and return
+           an instance of a class derived from pcs.Packet appropriate
+           to the data-link or transport layer in use.
+           If the Connector has multiple data-link layer support, then
+           the type returned by this method may vary.
+           If the underlying packet parsers throw an exception, it
+           will propagate here. """
+        raise ConnNotImpError, "Cannot use base class"
+
+    def read_chain(self):
+        """Read the next available packet and attempt to decapsulate
+           all available layers of encapsulation into Python objects.
+           If the underlying packet parsers throw an exception, it
+           will propagate here."""
+        p = self.read_packet()
+        return p.chain()
 
     def write(self):
         raise ConnNotImpError, "Cannot use base class"
@@ -1131,10 +1267,94 @@ class Connector(object):
     def close(self):
         raise ConnNotImpError, "Cannot use base class"
 
-class UnpackError(Exception):
-    """Error raised when we fail to unpack a packet."""
-    def __init__(self, message):
-        self.message = message
+    def expect(self, patterns=[], timeout=None, limit=None):
+        """Read from the Connector and return the index of the
+           first pattern which matches the input chain; otherwise,
+           raise an exception.
+
+           On return, the match property will contain the matching
+           packet chain.
+
+           The syntax is intentionally similar to that of pexpect.
+            Both timeouts and limits may be specified as patterns.
+            If a pattern contains a Packet, it is matched against
+            the chain using the Chain.contains() method.
+            If a pattern contains a Chain, it is matched against
+            the chain using the Chain.match() method.
+
+           If a timeout is specified, raise an exception after the
+           timeout expires. This is only supported if the underlying
+           Connector implements non-blocking I/O.
+
+           If a limit is specified, raise an exception after 'limit'
+           packets have been read, regardless of match.
+           If neither a timeout or a limit is specified, or an EOF
+           was not encountered, this function may potentially block forever.
+
+           TODO: Buffer for things like TCP reassembly.
+           TODO: Make this drift and jitter robust (CLOCK_MONOTONIC).
+           TODO: Accept a wider pattern language. """
+        from time import time
+        start = time()
+        then = start
+        count = 0
+        delta = timeout
+        while True:
+            result = self.poll_read(delta)
+
+            # Compute the wait quantum for the next read attempt.
+            if timeout != None:
+                now = time()
+                delta = now - then
+                then = now
+
+            c = self.read_chain()    # XXX Should check for EOF.
+            count += 1
+
+            # Check if the user tried to match exceptional conditions
+            # as patterns. We need to check for timer expiry upfront.
+            if timeout != None and (now - start) > timeout:
+                for i in range(len(patterns)):
+                    if isinstance(patterns[i], TIMEOUT):
+                        self.match = p
+                        return i
+                raise TimeoutError
+
+            if isinstance(result, TIMEOUT):
+                if delta > 0:
+                    continue   # Early wakeup.
+
+            elif isinstance(result, EOF):
+                for i in range(len(patterns)):
+                    if isinstance(patterns[i], EOF):
+                        self.match = p
+                        self.match_index = i
+                        return i
+                raise EOFError
+            elif limit != None and count == limit:
+                for i in range(len(patterns)):
+                    if isinstance(patterns[i], LIMIT):
+                        self.match = p
+                        self.match_index = i
+                        return i
+                raise LimitReachedError
+
+            # Otherwise, look for a chain or packet match. The index of
+            # the first match is returned.
+            for i in range(len(patterns)):
+                p = patterns[i]
+                if isinstance(p, Chain):
+                    if p.matches(c):
+                        self.match = c
+                        self.match_index = i
+                        return i
+                if isinstance(p, Packet):
+                    if c.contains(p):
+                        self.match = c
+                        self.match_index = i
+                        return i
+
+        return None
 
 class PcapConnector(Connector):
     """A connector for protocol capture and injection using the pcap library
@@ -1177,14 +1397,25 @@ class PcapConnector(Connector):
         """recvfrom a packet from a pcap file or interface"""
         return self.file.next()[1]
 
-    def readpkt(self):
-        """read a packet from a pcap file or interfaces returning an
-        appropriate packet object
+    def poll_read(self, timeout=None):
+        """Poll the underlying I/O layer for a read.
+           Return TIMEOUT if the timeout was reached."""
+        from select import select
+        fd = self.file.fileno()
+        self.file.setnonblock()
+        result = select([fd],[],[], timeout)
+        self.file.setnonblock(False)
+        if not fd in result[0]:
+            return TIMEOUT()
+        return None
 
-        This is the most usefule method for use by naive applications
-        that do not wish to interrogate the underlying packet data."""
+    def read_packet(self):
         (timestamp, packet) = self.file.next()
         return self.unpack(packet, self.dlink, self.dloff, timestamp)
+
+    def readpkt(self):
+        # XXX legacy name.
+        return self.read_packet()
 
     def write(self, packet, bytes):
         """Write a packet to a pcap file or network interface.
@@ -1307,11 +1538,15 @@ class TapConnector(Connector):
         """recvfrom a packet from a tap interface"""
         return self.blocking_read()
 
-    def readpkt(self):
-        """read a packet from a pcap file or interfaces returning an
-        appropriate packet object """
+    def read_packet(self):
+        """Read a packet from a pcap file or interfaces returning an
+        appropriate packet object."""
         bytes = self.blocking_read()
         return packets.ethernet.ethernet(bytes)
+
+    def readpkt(self):
+        # XXX legacy name.
+        return self.read_packet()
 
     def write(self, packet, bytes):
         """Write a packet to a pcap file or network interface.
@@ -1329,15 +1564,23 @@ class TapConnector(Connector):
         bytes - the bytes of the packet, and not the packet object"""
         return self.blocking_write(packet)
 
+    def poll_read(self, timeout=None):
+        """Needed to work with expect"""
+        from select import select
+        fd = self.fileno
+        result = select([fd],[],[], timeout)
+        if not fd in result[0]:
+            return TIMEOUT()
+        return None
+
     def blocking_read(self):
         import array
         import fcntl
         import os
-        from select import select
         from termios import FIONREAD
         try:
             # Block until data is ready to be read.
-            select([self.fileno],[],[])
+            poll_read(None)
             # Ask the kernel how many bytes are in the queued Ethernet frame.
             buf = array.array('i', [0])
             s = fcntl.ioctl(self.fileno, FIONREAD, buf)
@@ -1377,6 +1620,10 @@ class IP4Connector(Connector):
     def read(self, len):
         """read data from an IPv4 socket"""
         return self.file.recv(len)
+
+    def read_packet(self):
+        bytes = self.file.read()
+        return packets.ipv4.ipv4(bytes)
 
     def recv(self, len, flags = 0):
         """recv data from an IPv4 socket"""
@@ -1490,20 +1737,27 @@ class UmlMcast4Connector(UDP4Connector):
         except:
             raise
 
-    def readpkt(self):
-        """read a packet from a pcap file or interfaces returning an
-        appropriate packet object """
+    def read_packet(self):
         bytes = self.blocking_read()
         return packets.ethernet.ethernet(bytes)
 
-    def blocking_read(self):
-        import os
+    def readpkt(self):
+        # XXX legacy name.
+        return self.read_packet()
+
+    def poll_read(self, timeout=None):
         from select import select
-	#print "going to sleep"
-        select([self.file],[],[])
-	#print "woken up"
-	# XXX Should use recvfrom.
-	# XXX Shouldn't have to guess buffer size.
+        fd = self.file.fileno()
+        result = select([fd],[],[], timeout)
+        if not fd in result[0]:
+            return TIMEOUT()
+        return None
+
+    def blocking_read(self):
+        # XXX Should use recvfrom.
+        # XXX Shouldn't have to guess buffer size.
+        import os
+        poll_read(None)
         return os.read(self.file.fileno(), 1502)
 
     def write(self, packet, flags = 0):
@@ -1549,6 +1803,14 @@ class IP6Connector(Connector):
         """read from an IPv6 connection"""
         return self.file.recv(len)
 
+    def read_packet(self):
+        bytes = self.file.read()
+        return packets.ipv6.ipv6(bytes)
+
+    def recv(self, len, flags = 0):
+        """recv data from an IPv4 socket"""
+        return self.file.recv(len, flags)
+
     def recv(self, len, flags = 0):
         """recv from an IPv6 connection"""
         return self.file.recv(len, flags)
@@ -1571,6 +1833,7 @@ class IP6Connector(Connector):
 
     def mcast(self, iface):
         """set IP6 connector into multicast mode"""
+        # TODO: support Windows; use ctypes module in Python >2.5.
         import dl
         _libc = dl.open('libc.so')
         ifn = _libc.call('if_nametoindex', iface)
