@@ -98,15 +98,18 @@ class ethernet(pcs.Packet):
     def __str__(self):
         """return a human readable version of an Ethernet packet"""
         retval = "Ethernet\n"
+
         retval += "dst: "
-        for byte in range(0,5):
-            retval += "%x:" % ord(self.dst[byte])
-        retval += "%x" % ord(self.dst[5])
+        if len(self.dst) >= 6:
+            for byte in range(0,5):
+                retval += "%x:" % ord(self.dst[byte])
+            retval += "%x" % ord(self.dst[5])
 
         retval += "\nsrc: "
-        for byte in range(0,5):
-            retval += "%x:" % ord(self.src[byte])
-        retval += "%x" % ord(self.src[5])
+        if len(self.dst) >= 6:
+            for byte in range(0,5):
+                retval += "%x:" % ord(self.src[byte])
+            retval += "%x" % ord(self.src[5])
 
         retval += "\ntype: 0x%x" % self.type
 
