@@ -79,14 +79,17 @@ class ethernet(pcs.Packet):
         """return a human readable version of an Ethernet packet"""
         retval = "<Ethernet: "
         retval += "dst: "
-        for byte in range(0,5):
-            retval += "%x:" % ord(self.dst[byte])
-        retval += "%x " % ord(self.dst[5])
+
+        if len(self.dst) >= 6:
+            for byte in range(0,5):
+                retval += "%x:" % ord(self.dst[byte])
+            retval += "%x " % ord(self.dst[5])
 
         retval += "src: "
-        for byte in range(0,5):
-            retval += "%x:" % ord(self.src[byte])
-        retval += "%x " % ord(self.src[5])
+        if len(self.src) >= 6:
+            for byte in range(0,5):
+                retval += "%x:" % ord(self.src[byte])
+            retval += "%x " % ord(self.src[5])
 
         retval += "type: 0x%x>" % self.type
 

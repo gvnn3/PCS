@@ -80,17 +80,19 @@ class arp(pcs.Packet):
         retval += "%d\n" % self.op
         
         retval += "sha: "
-        for byte in range(0,5):
-            retval += "%s:" % hex(ord(self.sha[byte]))[2:4]
-        retval += "%s\n" % hex(ord(self.sha[5]))[2:4]
+        if len(self.sha) >= 6:
+            for byte in range(0,5):
+                retval += "%s:" % hex(ord(self.sha[byte]))[2:4]
+            retval += "%s\n" % hex(ord(self.sha[5]))[2:4]
 
         retval += "spa: "
         retval += "%s\n" % inet_ntop(AF_INET, struct.pack('!L', self.spa))
         
         retval += "tha: "
-        for byte in range(0,5):
-            retval += "%s:" % hex(ord(self.tha[byte]))[2:4]
-        retval += "%s\n" % hex(ord(self.tha[5]))[2:4]
+        if len(self.tha) >= 6:
+            for byte in range(0,5):
+                retval += "%s:" % hex(ord(self.tha[byte]))[2:4]
+            retval += "%s\n" % hex(ord(self.tha[5]))[2:4]
 
         retval += "tpa: "
         retval += "%s\n" % inet_ntop(AF_INET, struct.pack('!L', self.tpa))
