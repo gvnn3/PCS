@@ -202,6 +202,7 @@ class tcp(pcs.Packet):
                     else:
                         #print "warning: unknown option %d" % option
 			optdatalen = optlen - 2
+			value = struct.unpack("!B", bytes[curr+2:curr+optdatalen])[0]
 			options.append(pcs.TypeLengthValueField("unknown", \
 				       pcs.Field("t", 8, default = option), \
 				       pcs.Field("l", 8, default = optlen), \

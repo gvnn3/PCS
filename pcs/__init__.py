@@ -402,7 +402,7 @@ class TypeLengthValueField(object):
     is encoded before a length and value.  """
 
     def __init__(self, name, type, length, value,
-                 inclusive = False):
+                 inclusive = True, bytewise = True):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
@@ -417,6 +417,7 @@ class TypeLengthValueField(object):
             raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
         self.width = type.width + length.width + value.width
         self.inclusive = inclusive
+        self.bytewise = bytewise
 
     def __repr__(self):
         return "<pcs.TypeLengthValueField type %s, length %s, value %s>" \
@@ -435,17 +436,22 @@ class TypeLengthValueField(object):
         
     def encode(self, bytearray, value, byte, byteBR):
         """Encode a TypeLengthValue field."""
-	# XXX Break existing assumptions and assume the TLV encodes
-	# the length in bytes, not bits, and that this length INCLUDES
-	# the type and length fields.
-	#  In PCS all field widths are currently defined in bits.
-	# This, uh, fixes the TCP option stuff...
+
         if isinstance(self.value, Field):
-            self.length.value = (self.type.width +
-				 self.length.width +
-				 self.value.width) / 8
+	    # Value is a field. Take its width in bits.
+            self.length.value = self.value.width
         else:
-            self.length.value = len(self.value)
+	    # Value is any other Python type. Take its actual length in bits. 
+            self.length.value = len(self.value) * 8
+
+	if self.inclusive is True:
+	    # Length field includes the size of the type and length fields.
+            self.length.value += (self.type.width + self.length.width)
+
+	if self.bytewise is True:
+	    # Length should be encoded as a measure of bytes, not bits.
+            self.length.value /= 8
+
         [byte, byteBR] = self.type.encode(bytearray, self.type.value, byte, byteBR)
         [byte, byteBR] = self.length.encode(bytearray, self.length.value, byte, byteBR)
         [byte, byteBR] = self.value.encode(bytearray, self.value.value, byte, byteBR)
@@ -1174,6 +1180,91 @@ class PcapDumpConnector(Connector):
         """close the dumpfile"""
         self.file.dump_close()
 
+
+class TapConnector(Connector):
+    """A connector for capture and injection using the character
+       device slave node of a TAP interface.
+       Like PcapConnector, reads are always blocking, however writes
+       may always be non-blocking. The underlying I/O is non-blocking;
+       it is hard to make it work with Python's buffering strategy
+       for file(), so os-specific reads/writes are used.
+       No filtering is currently performed, it would be useful to
+       extend pcap itself to work with tap devices.
+    """
+
+    def __init__(self, name):
+        """initialize a TapConnector object
+        name - the name of a file or network interface to open
+        """
+        import os
+        from os import O_NONBLOCK, O_RDWR
+        try:
+            self.fileno = os.open(name, O_RDWR + O_NONBLOCK)
+        except:
+            raise
+
+    def read(self):
+        """read a packet from a tap interface
+        returns the packet as a bytearray
+        """
+        return self.blocking_read()
+
+    def recv(self):
+        """recv a packet from a tap interface"""
+        return self.blocking_read()
+    
+    def recvfrom(self):
+        """recvfrom a packet from a tap interface"""
+        return self.blocking_read()
+
+    def readpkt(self):
+        """read a packet from a pcap file or interfaces returning an
+        appropriate packet object """
+        bytes = self.blocking_read()
+        return packets.ethernet.ethernet(bytes)
+
+    def write(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+        bytes - the bytes of the packet, and not the packet object
+        """
+        return self.blocking_write(packet)
+
+    def send(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+        bytes - the bytes of the packet, and not the packet object"""
+        return self.blocking_write(packet)
+
+    def sendto(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+        bytes - the bytes of the packet, and not the packet object"""
+        return self.blocking_write(packet)
+
+    def blocking_read(self):
+        import array
+        import fcntl
+        import os
+        from select import select
+        from termios import FIONREAD
+        try:
+            # Block until data is ready to be read.
+            select([self.fileno],[],[])
+            # Ask the kernel how many bytes are in the queued Ethernet frame.
+            buf = array.array('i', [0])
+            s = fcntl.ioctl(self.fileno, FIONREAD, buf)
+            qbytes = buf.pop()
+            return os.read(self.fileno, qbytes)
+        except:
+            raise
+        return -1
+
+    def blocking_write(self, bytes):
+        import os
+        return os.write(self.fileno, bytes)
+
+    def close(self):
+        import os
+        os.close(self.fileno)
+
 class IP4Connector(Connector):
     """Base class for all IPv4 connectors.
 
@@ -1260,6 +1351,75 @@ class TCP4Connector(IP4Connector):
                 self.file.connect((addr, port))
             except:
                 raise
+
+class UmlMcast4Connector(UDP4Connector):
+    """A connector for hooking up to a User Mode Linux virtual LAN,
+       implemented by Ethernet frames over UDP sockets in a multicast group.
+       Typically used for interworking with QEMU. See:
+          http://user-mode-linux.sourceforge.net/old/text/mcast.txt
+
+       No additional encapsulation of the frames is performed, nor is
+       any filtering performed.
+       Be aware that this encapsulation may fragment traffic if sent
+       across a real LAN. The multicast API is being somewhat abused here
+       to send and receive the session on the same socket; generally apps
+       shouldn't bind to group addresses, and it's not guaranteed to work
+       with all host IP stacks.
+    """
+
+    def __init__(self, group, port, ifaddr = None):
+        """initialize a UML Mcast v4 connector
+        group - the multicast group to join
+        port - the UDP source/destination port for the session
+        ifaddr - optionally, the interface upon which to join the group.
+        """
+        import os
+        import fcntl
+        from os import O_NONBLOCK
+        from fcntl import F_GETFL, F_SETFL
+        if ifaddr is None:
+            ifaddr = "127.0.0.1"
+        try:
+	    self.group = group
+	    self.port = int(port)
+
+            self.file = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+
+            flags = fcntl.fcntl(self.file, F_GETFL)
+            flags |= O_NONBLOCK
+            fcntl.fcntl(self.file, F_SETFL, flags)
+
+            self.file.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+            self.file.setsockopt(IPPROTO_IP, IP_MULTICAST_LOOP, 1)
+
+            gaddr = inet_atol(self.group)
+            mreq = struct.pack('!LL', gaddr, inet_atol(ifaddr))
+            self.file.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
+
+            self.file.bind((self.group, self.port))
+        except:
+            raise
+
+    def readpkt(self):
+        """read a packet from a pcap file or interfaces returning an
+        appropriate packet object """
+        bytes = self.blocking_read()
+        return packets.ethernet.ethernet(bytes)
+
+    def blocking_read(self):
+        import os
+        from select import select
+	#print "going to sleep"
+        select([self.file],[],[])
+	#print "woken up"
+	# XXX Should use recvfrom.
+	# XXX Shouldn't have to guess buffer size.
+        return os.read(self.file.fileno(), 1502)
+
+    def write(self, packet, flags = 0):
+        """write data to an IPv4 socket"""
+        return self.file.sendto(packet, flags, (self.group, self.port))
+
 
 class SCTP4Connector(IP4Connector):
     """A connector for IPv4 SCTP sockets

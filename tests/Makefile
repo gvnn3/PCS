@@ -23,7 +23,7 @@ test:
 test-local: 
 	for file in $(TESTS); do\
 		echo Running test $$file; \
-		sudo $(PYTHON) $$file -l; \
+		sudo PYTHONPATH=${PYTHONPATH} $(PYTHON) $$file -l; \
 	done
 
 test-versions:

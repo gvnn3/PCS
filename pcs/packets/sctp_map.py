@@ -1,4 +1,4 @@
-# Copyright (c) 2005, Neville-Neil Consulting
+# Copyright (c) 2007, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,44 +28,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: udpv4.py,v 1.1 2005/10/14 00:53:16 gnn Exp $
+# File: $Id: $
 #
 # Author: George V. Neville-Neil
 #
-# Description: A class which implements UDP v4 packets
+# Description: A mapping of SCTP port numbers to higher level protocols
 
-import sys
-sys.path.append("../src")
-
-import pcs
-import socket
-
-class udpv4(pcs.Packet):
-
-    _layout = pcs.Layout()
-
-    def __init__(self, bytes = None):
-        """Initialize a UDP packet for IPv4"""
-        sport = pcs.Field("sport", 16)
-        dport = pcs.Field("dport", 16)
-        length = pcs.Field("length", 16)
-        checksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [sport, dport, length, checksum], bytes)
-
-    def cksum(self, ip, data = ""):
-        """return tcpv4 checksum"""
-        from pcs.packets.ipv4 import pseudoipv4
-        import struct
-        total = 0
-        tmpip = pseudoipv4(None, None, socket.IPPROTO_UDP)
-        tmpip.src = ip.src
-        tmpip.dst = ip.dst
-        tmpip.length = len(self.getbytes()) + len(data)
-        pkt = tmpip.getbytes() + self.getbytes() + data
-        if len(pkt) % 2 == 1:
-            pkt += "\0"
-        for i in range(len(pkt)/2):
-            total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return  ~total & 0xffff
+map = {}
