@@ -218,12 +218,12 @@ class tcp(pcs.Packet):
     # XXX TCP MUST have it's own next() function so that it can discrimnate
     # on either sport or dport.
 
-    def next(self, bytes):
+    def next(self, bytes, timestamp):
         """Decode higher layer packets contained in TCP."""
         if (self.dport in tcp_map.map):
-            return tcp_map.map[self.dport](bytes)
+            return tcp_map.map[self.dport](bytes, timestamp = timestamp)
         if (self.sport in tcp_map.map):
-            return tcp_map.map[self.sport](bytes)
+            return tcp_map.map[self.sport](bytes, timestamp = timestamp)
         return None
     
     def __str__(self):
