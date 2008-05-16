@@ -38,7 +38,8 @@
 # chunk is its own packet wrt PCS.
 
 import pcs
-import sctp_map
+import pcs.packets.crc32c
+import pcs.packets.sctp_map
 
 import inspect
 import time
@@ -69,6 +70,16 @@ class common(pcs.Packet):
                                   timestamp = timestamp)
         else:
             self.data = None
+
+    def calc_checksum():
+        """Calculate and store the checksum for this SCTP message.
+           Unlike other IP transports, SCTP does *not* need to see
+           preceding header fields when calculating the CRC32C."""
+        self.checksum = 0xffffffff
+        tmpbytes = self.bytes
+        if self._head is not None:
+            tmpbytes += self._head.collate_following(self)
+        self.checksum = crc32c.cksum(tmpbytes)
 
 class payload(pcs.Packet):
     """SCTP payload chunk class"""
@@ -342,7 +353,6 @@ class cookie_ack(pcs.Packet):
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
-
 
         if (bytes != None):
             self.data = self.next(bytes[0:len(bytes)],
