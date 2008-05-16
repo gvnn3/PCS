@@ -116,10 +116,8 @@ layout of the data and how it is addressed."""
         
     def __repr__(self):
         """return an appropriate representation for the Field object"""
-        return "<pcs.Field  name %s, %d bits, default %s, discriminator %d, " \
-               "compare %s>" % \
-               (self.name, self.width, self.default, self.discriminator, \
-                self.compare)
+        return "<pcs.Field  name %s, %d bits, default %s, discriminator %d>" %\
+               (self.name, self.width, self.default, self.discriminator)
 
     def decode(self, bytes, curr, byteBR):
         """Decode a field and return the value and the updated current
@@ -270,9 +268,8 @@ handled by the LengthValueField."""
         
     def __repr__(self):
         """return a human readable form of a StringFeild object"""
-        return "<pcs.StringField  name %s, %d bits, default %s, " \
-               "compare %s>" % \
-               (self.name, self.width, self.default, self.compare) # 
+        return "<pcs.StringField  name %s, %d bits, default %s>" % \
+               (self.name, self.width, self.default)
 
     def decode(self, bytes, curr, byteBR):
         """Decode the field and return the value as well as the new
@@ -405,7 +402,7 @@ class TypeValueField(object):
         self.width = type.width + value.width
 
     def __repr__(self):
-        return "<pcs.TypeValueField name %s, type %s, value %s, compare %s" % (self.name, self.type, self.value, self.compare)
+        return "<pcs.TypeValueField name %s, type %s, value %s>" % (self.name, self.type, self.value)
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
