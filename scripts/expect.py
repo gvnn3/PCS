@@ -51,12 +51,26 @@ def main():
     file = pcs.PcapConnector("fxp0")
 
     # Construct a filter chain. we are only interested in 3 fields.
-    a = ethernet.ethernet() / arp.arp()
-    a.wildcard_mask()
-    a.packets[0].wildcard_mask(["type"], False)
-    a.packets[1].wildcard_mask(["pro", "op"], False)
-    a.packets[1].pro = 0x0800	# ETHERTYPE_IP (default)
-    a.packets[1].op = 1		# ARPOP_REQUEST
+    # The new scapy style syntax makes this easy.
+    # If a field in a packet is not explicitly initialized by the user,
+    # and that packet is later used as a match filter by expect,
+    # it will be ignored. Otherwise the default filtering behaviour is
+    # to make an exact match, unless you install a different comparison
+    # function.
+    # Comparison functions are specified on a per-field basis. They are
+    # passed the packet(s) being compared so that back-references
+    # to fields are possible e.g. for figuring out that an ARP packet
+    # is gratuitous ARP for example. The lambda operator will let you
+    # do all this in one statement.
+
+    a = ethernet.ethernet(type=0x806) / arp.arp(pro=0x0800, op=1)
+
+    # Old-style syntax.
+    #a.wildcard_mask()
+    #a.packets[0].wildcard_mask(["type"], False)
+    #a.packets[1].wildcard_mask(["pro", "op"], False)
+    #a.packets[1].pro = 0x0800	# ETHERTYPE_IP (default)
+    #a.packets[1].op = 1		# ARPOP_REQUEST
 
     print "Waiting 10 seconds to see an ARP query."
     try:

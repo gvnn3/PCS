@@ -89,13 +89,14 @@ demultiplexing .  These classes are used by the packet to define the
 layout of the data and how it is addressed."""
     
     def __init__(self, name = "", width = 1, default = None,
-                 discriminator = False, is_wildcard=False):
+                 discriminator = False, compare=None):
         """initialize a field
 
         name - a string name
         width - a width in bits
         default - a default value
         discriminator - is this field used to demultiplex packets
+        match - a match function used to compare this field with another.
         """
         ## the name of the Field
         self.name = name
@@ -105,8 +106,8 @@ layout of the data and how it is addressed."""
         self.default = default
         ## Is this field used to demultiplex higher layer packets?
         self.discriminator = discriminator
-        ## Should this field be ignored by the Packet.matches() method?
-        self.is_wildcard = is_wildcard
+        ## the comparison function for this field
+        self.compare = compare
         ## Fields store the values
         if default == None:
             self.value = 0
@@ -116,9 +117,9 @@ layout of the data and how it is addressed."""
     def __repr__(self):
         """return an appropriate representation for the Field object"""
         return "<pcs.Field  name %s, %d bits, default %s, discriminator %d, " \
-               "wildcard %d>" % \
+               "compare %s>" % \
                (self.name, self.width, self.default, self.discriminator, \
-                self.is_wildcard)
+                self.compare)
 
     def decode(self, bytes, curr, byteBR):
         """Decode a field and return the value and the updated current
@@ -216,7 +217,24 @@ layout of the data and how it is addressed."""
             (value < 0) or
             (value > (2 ** self.width) - 1)):
             raise FieldBoundsError, "Value must be between 0 and %d but is %d" % ((2 ** self.width - 1), value)
-        
+
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method.
+
+           lp - packet on left hand side of comparison
+           lf - field in lp being compared
+           rp - packet on right hand side of comparison
+           rf - field in rp being compared
+
+           This function is installed in Field.compare on assignment.
+           It is declared static to allow folk to override it with lambda
+           functions. The packets are passed so that back-references
+           to other fields in the packet are possible during the match."""
+        return lf.value == rf.value
+
+    default_compare = staticmethod(default_compare)
+
+
 class FieldAlignmentError(Exception):
     """When a programmer tries to decode a field that is not
     on a byte boundary this exception is raised."""
@@ -226,6 +244,7 @@ class FieldAlignmentError(Exception):
         ## the message that will be output when this error is raised
         self.message = message
 
+
 class StringField(Field):
     """A string field is a name, a width in bits, and possibly a
 default value.  The data is to be interpreted as a string, but does
@@ -233,7 +252,7 @@ not encode the length into the packet.  Length encoded values are
 handled by the LengthValueField."""
     
     def __init__(self, name = "", width = 1, default = None, \
-                 is_wildcard = False ):
+                 compare = None ):
         """initialtize a StringField"""
         ## the name of the StringField
         self.name = name
@@ -241,8 +260,8 @@ handled by the LengthValueField."""
         self.width = width
         ## the default value, if any, of the StringField
         self.default = default
-        ## if this field is a wildcard field in a filter
-        self.is_wildcard = is_wildcard
+        ## the comparison function
+        self.compare = compare
         ## Fields store the values
         if default == None:
             self.value = ""
@@ -252,8 +271,8 @@ handled by the LengthValueField."""
     def __repr__(self):
         """return a human readable form of a StringFeild object"""
         return "<pcs.StringField  name %s, %d bits, default %s, " \
-               "wildcard %d>" % \
-               (self.name, self.width, self.default, self.is_wildcard) # 
+               "compare %s>" % \
+               (self.name, self.width, self.default, self.compare) # 
 
     def decode(self, bytes, curr, byteBR):
         """Decode the field and return the value as well as the new
@@ -301,10 +320,10 @@ class LengthValueField(object):
     packets.
     """
 
-    def __init__(self, name, length, value, is_wildcard=False):
+    def __init__(self, name, length, value, compare=None):
         self.packet = None
         self.name = name
-        self.is_wildcard = is_wildcard
+        self.compare = compare
         if not isinstance(length, Field):
             raise LengthValueFieldError, "Length must be of type Field but is %s" % type(length)
         object.__setattr__(self, 'length', length)
@@ -317,8 +336,8 @@ class LengthValueField(object):
 
     def __repr__(self):
         return "<pcs.LengthValueField name %s, length %s, value %s, " \
-               "wildcard %d" \
-               % (self.name, self.length, self.value, self.is_wildcard)
+               "compare %d" \
+               % (self.name, self.length, self.value, self.compare)
 
     def __len__(self):
         return self.length.width + self.value.width
@@ -363,11 +382,17 @@ class LengthValueField(object):
         """Check the bounds of this field."""
         self.value.bounds(value)
 
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method."""
+        return lf.value == rf.value
+
+    default_compare = staticmethod(default_compare)
+
 class TypeValueField(object):
     """A type-value field handles parts of packets where a type
     is encoded before a value.  """
 
-    def __init__(self, name, type, value, is_wildcard=False):
+    def __init__(self, name, type, value, compare=None):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
@@ -380,7 +405,7 @@ class TypeValueField(object):
         self.width = type.width + value.width
 
     def __repr__(self):
-        return "<pcs.TypeValueField name %s, type %s, value %s, wildcard %d" % (self.name, self.type, self.value, self.is_wildcard)
+        return "<pcs.TypeValueField name %s, type %s, value %s, compare %s" % (self.name, self.type, self.value, self.compare)
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
@@ -407,13 +432,19 @@ class TypeValueField(object):
             (len (value) > (((2 ** self.valuewidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method."""
+        return lf.value == rf.value
+
+    default_compare = staticmethod(default_compare)
+
 
 class TypeLengthValueField(object):
     """A type-length-value field handles parts of packets where a type
     is encoded before a length and value.  """
 
     def __init__(self, name, type, length, value,
-                 inclusive = True, bytewise = True, is_wildcard = False):
+                 inclusive = True, bytewise = True, compare = None):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
@@ -432,8 +463,8 @@ class TypeLengthValueField(object):
 
     def __repr__(self):
         return "<pcs.TypeLengthValueField type %s, length %s, value %s, " \
-               "wildcard %d>" \
-                % (self.type, self.length, self.value, self.is_wildcard)
+               "compare %d>" \
+                % (self.type, self.length, self.value, self.compare)
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
@@ -479,6 +510,13 @@ class TypeLengthValueField(object):
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method."""
+        return lf.value == rf.value
+
+    default_compare = staticmethod(default_compare)
+
+
 class CompoundField(object):
     """A compound field may contain other fields."""
 
@@ -495,7 +533,7 @@ class OptionListField(CompoundField, list):
     """A option list is a list of Fields.
        Option lists inhabit many protocols, including IP and TCP."""
 
-    def __init__(self, name, width = 0, option_list = [], is_wildcard = False):
+    def __init__(self, name, width = 0, option_list = [], compare = None):
         """Iniitialize an OptionListField."""
         list.__init__(self)
         self.name = name
@@ -505,7 +543,7 @@ class OptionListField(CompoundField, list):
             for option in option_list:
                 self._options.append(option)
         
-        self.is_wildcard = is_wildcard
+        self.compare = compare
         self.default = self
         self.value = self
         
@@ -633,6 +671,12 @@ class OptionListField(CompoundField, list):
     def reset(self):
         print self._options
 
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method."""
+        return lf == rf			# Will use __eq__ defined above.
+
+    default_compare = staticmethod(default_compare)
+
 # Types which implement Field's interface, even if not directly
 # inherited from Field. User types may inherit from these types.
 _fieldlist = (Field, StringField, LengthValueField, TypeValueField, TypeLengthValueField, CompoundField)
@@ -690,7 +734,13 @@ class FieldError(Exception):
 reserved_names = ["_layout", "_discriminator", "_map", "_head"]
 
 class Packet(object):
-    """A Packet is a base class for building real packets."""
+    """A Packet is a base class for building real packets.
+
+       Assigning a value to any field of a Packet, whether by
+       keyword argument passed to a constructor, or by using the
+       assignment operator, will cause a default comparison function
+       to be installed. This is to make it easy to specify match
+       filters for Connector.expect().  """
 
     # The layout is a list of fields without values that indicate how
     # the data in the packet is to be layed in terms of ordering and
@@ -787,15 +837,12 @@ class Packet(object):
                 self._discriminator = field
 
         # Set initial values of Fields using keyword arguments.
+        # Ignore any keyword arguments which do not correspond to
+        # packet fields in the Layout.
         if kv != None:
             for kw in kv.iteritems():
                 if kw[0] in self._fieldnames:
-                    self._fieldnames[kw[0]].bounds(kw[1])
-                    self._fieldnames[kw[0]].set_value(kw[1])
-                    if self._discriminator != None and \
-                       kw[0] == self._discriminator.name:
-                        self._discriminator_inited = True
-                    self._needencode = True
+                    self.__setattr__(kw[0], kw[1])
 
     def __add__(self, layout = None):
         """add two packets together
@@ -820,11 +867,16 @@ class Packet(object):
             return
 
         if (hasattr(self, '_fieldnames') and (name in self._fieldnames)):
-            self._fieldnames[name].bounds(value)
-            self._fieldnames[name].set_value(value)
-            # Record if a discriminator field has been explicitly initialized;
-            # this is so that the / operator will not clobber its value.
-            if self._discriminator != None and name == self._discriminator.name:
+            field = self._fieldnames[name]
+            field.bounds(value)
+            field.set_value(value)
+            if field.compare != None:
+                field.compare = field.default_compare
+            # If the field we're initializing is the discriminator field,
+            # record that we have initialized it, so that the / operator
+            # will not clobber its value.
+            if self._discriminator != None and \
+               name == self._discriminator.name:
                 self._discriminator_inited = True
             self._needencode = True
         else:
@@ -865,34 +917,34 @@ class Packet(object):
         return not self.__eq__(other)
 
     def matches(self, other):
-        """Return True if the packets match. A wildcard match is performed.
+        """Return True if the packets match.
 
-           This packet is assumed to contain fields which have the
-           'is_wildcard' flag set, and they will be ignored for the
-           comparison. Byte-wise comparison is NOT performed. """
+           Each contains a reference to a comparison function. If the
+           reference is None, we assume no comparison need be performed.
+           This allows full flexibility in performing matches."""
+
         if (type(self) != type(other)):
             return False
-        # TODO: Push logic into per-field match for richer filters.
-        for field in self._layout:
-            wild = self._fieldnames[field.name].is_wildcard
-            if not wild:
-                #print "%s is not wild" % field.name
-                if self._fieldnames[field.name].value != \
-                   other._fieldnames[field.name].value:
+        for i in self._fieldnames.iteritems():
+            if i[1].compare != None:
+                if i[1].compare(self, i[1], \
+                                other, other._fieldnames[i[0]]) != True:
                     return False
         return True
 
-    def wildcard_mask(self, fieldnames=[], is_wildcard=True):
+    def wildcard_mask(self, fieldnames=[], unmask=True):
         """Mark or unmark a list of fields in this Packet as
-           wildcard for match().
-           If an empty list is passed, apply is_wildcard to all fields."""
-        if fieldnames != []:
-            for i in fieldnames:
-                field = self._fieldnames[i]
-                field.is_wildcard = is_wildcard
-        else:
-            for f in self._fieldnames.iteritems():
-                f[1].is_wildcard = is_wildcard
+           wildcard for match(). If unmask is false, then apply a
+           default comparison function specific to the class of the Field.
+           If an empty list is passed, apply the mask to all fields."""
+        if fieldnames == []:
+            fieldnames = self._fieldnames.keys()
+        for i in fieldnames:
+            field = self._fieldnames[i]
+            if unmask is True:
+                field.compare = None
+            else:
+                field.compare = field.default_compare
 
     def __repr__(self):
         """Walk the entire packet and return the values of the fields."""
@@ -992,6 +1044,11 @@ class Packet(object):
            need to return a particular flavour of an encapsulated packet,
            or force a lookup against a map which isn't part of the class.
            This is provided as syntactic sugar, used only by the / operator.
+
+           If we find a match, and set the discriminator field, we will
+           also set its compare function to the default for the field's
+           class if a comparison function was not already specified.
+
            Return True if we made any changes to self."""
 
         if (not isinstance(packet, Packet)):
@@ -1010,7 +1067,10 @@ class Packet(object):
 
         for i in map.iteritems():
             if isinstance(packet, i[1]):
-                self._fieldnames[discfieldname].value = i[0]
+                field = self._fieldnames[discfieldname]
+                field.value = i[0]
+                if field.compare != None:
+                    field.compare = field.default_compare
                 return True
 
         return False
@@ -1132,11 +1192,11 @@ class Chain(list):
                 return False
         return True
 
-    def wildcard_mask(self, is_wildcard=True):
+    def wildcard_mask(self, unmask=True):
         """Mark or unmark all of the fields in each Packet in this Chain
            as a wildcard for match() or contains()."""
         for i in range(len(self.packets)):
-            self.packets[i].wildcard_mask([], is_wildcard)
+            self.packets[i].wildcard_mask([], unmask)
 
     def encode(self):
         """Encode all the packets in a chain into a set of bytes for the Chain"""
