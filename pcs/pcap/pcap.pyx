@@ -215,7 +215,9 @@ cdef class pcap:
             
         self.__name = strdup(p)
         self.__filter = strdup("")
-        try: self.__dloff = dltoff[pcap_datalink(self.__pcap)]
+        try:
+            dlt = pcap_datalink(self.__pcap)
+            self.__dloff = dltoff[dlt]
         except KeyError: pass
         if immediate and pcap_ex_immediate(self.__pcap) < 0:
             raise OSError, "couldn't set BPF immediate mode"
