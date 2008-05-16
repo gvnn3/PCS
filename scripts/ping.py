@@ -122,7 +122,7 @@ def main():
     count = int(options.count)
     while (count > 0):
         icmp.checksum = icmp_packet.calc_checksum()
-        ip.checksum = ip.calc_checksum()
+        ip.checksum = ip.cksum()
         packet.encode()
         out = output.write(packet.bytes, len(packet.bytes))
 #        packet = input.read()
