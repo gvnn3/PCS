@@ -46,6 +46,8 @@ def main():
            print "A required argument is missing."
            return
 
+    output = PcapConnector(options.ether_iface)
+
     c = ethernet(src=ether_atob(options.ether_source),	\
                  dst=ETHER_MAP_IP_MULTICAST(INADDR_ALLRTRS_GROUP)) / \
         ipv4(flags=0x02, id=123, ttl=1, 		\
@@ -70,10 +72,8 @@ def main():
                     len(c.packets[3].bytes)
 
     ip.checksum = ip.cksum()
-
-    output = PcapConnector(options.ether_iface)
-
     c.encode()
+
     out = output.write(c.bytes, len(c.bytes))
 
 main()
