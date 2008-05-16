@@ -46,52 +46,34 @@ def main():
            print "A required argument is missing."
            return
 
-    # Set up the vanilla packet
-    ether = ethernet()
-    ether.type = 0x0800
-    ether.src = ether_atob(options.ether_source)
-    ether.dst = "\x01\x00\x5e\x00\x00\x02"
+    c = ethernet(src=ether_atob(options.ether_source),	\
+                 dst=ETHER_MAP_IP_MULTICAST(INADDR_ALLRTRS_GROUP)) / \
+        ipv4(flags=0x02, id=123, ttl=1, 		\
+             src=inet_atol(options.ip_source),		\
+             dst=INADDR_ALLRTRS_GROUP) /		\
+        igmp(type=IGMP_HOST_LEAVE_MESSAGE) /		\
+        igmpv2(group=inet_atol(options.igmp_group))
 
-    ip = ipv4()
-    ip.version = 4
-    ip.hlen = 5
-    ip.tos = 0
-    ip.id = 123
-    ip.flags = 0x02		# DF bit
-    ip.offset = 0
-    ip.ttl = 1
-    ip.protocol = IPPROTO_IGMP
-    ip.src = inet_atol(options.ip_source)
-    ip.dst = inet_atol("224.0.0.2")		# XXX should be a constant
+    # XXX  I need to do something about checksums, calculating
+    # them w/o syntactic sugar is a pain in the ass.
+    igmp_packet = Chain([c.packets[2], c.packets[3]])
+    c.packets[2].checksum = igmp_packet.calc_checksum()
 
-    ig = igmp()
-    ig.type = IGMP_HOST_LEAVE_MESSAGE
-    ig.code = 0
-
-    leave = igmpv2()
-    leave.group = inet_atol(options.igmp_group)
-
-    igmp_packet = Chain([ig, leave])
-    ig.checksum = igmp_packet.calc_checksum()
-
+    ip = c.packets[1]
     if options.no_ra is True:
 	ip.length = len(ip.bytes) + len(igmp_packet.bytes)
 	ip.hlen = len(ip.bytes) >> 2
     else:
-	ra = pcs.TypeLengthValueField("ra",
-				      pcs.Field("", 8, default = IPOPT_RA),
-				      pcs.Field("", 8),
-				      pcs.Field("", 16))
-	ip.options.append(ra)
+	ip.options.append(ipv4opt(IPOPT_RA))
 	ip.hlen = len(ip.bytes) >> 2
-	ip.length = len(ip.bytes) + len(ig.bytes) + len(leave.bytes)
+	ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
+                    len(c.packets[3].bytes)
 
     ip.checksum = ip.cksum()
-    packet = Chain([ether, ip, ig, leave])
 
     output = PcapConnector(options.ether_iface)
 
-    packet.encode()
-    out = output.write(packet.bytes, len(packet.bytes))
+    c.encode()
+    out = output.write(c.bytes, len(c.bytes))
 
 main()
