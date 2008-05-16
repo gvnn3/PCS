@@ -1143,7 +1143,9 @@ class Chain(list):
         if not isinstance(packet, Packet):
             raise exceptions.TypeError
         if rdiscriminate is True:
-            self.packets[-1].rdiscriminate(packet)
+            # Don't clobber a previously initialized field.
+            if self.packets[-1]._discriminator_inited != True:
+                self.packets[-1].rdiscriminate(packet)
         self.append(packet)
         return self
 
