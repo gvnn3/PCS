@@ -88,6 +88,16 @@ def IN_PRIVATE(i):
             (((i) & 0xfff00000) == 0xac100000) or \
             (((i) & 0xffff0000) == 0xc0a80000))
 
+class ipv4opt(pcs.TypeLengthValueField):
+    """Syntactic sugar for IPv4 option use in constructors.
+       XXX Currently only Router Alert is supported properly. """
+
+    def __init__(self, type, **kv):
+        pcs.TypeLengthValueField.__init__(self, "", \
+                                          pcs.Field("", 8, default = type), \
+                                          pcs.Field("", 8), \
+                                          pcs.Field("", 16)) # XXX
+
 class ipv4(pcs.Packet):
     """IPv4"""
 
