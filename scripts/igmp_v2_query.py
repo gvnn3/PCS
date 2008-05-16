@@ -56,54 +56,43 @@ def main():
     if options.igmp_maxresp is not None:
         maxresp = int(options.igmp_maxresp) * 10    # in units of deciseconds
 
-    # Set up the vanilla packet
-    ether = ethernet()
-    ether.type = 0x0800
-    ether.src = ether_atob(options.ether_source)
-    ether.dst = "\x01\x00\x5e\x00\x00\x01"
-
-    ip = ipv4()
-    ip.version = 4
-    ip.hlen = 5
-    ip.tos = 0
-    ip.id = 0
-    ip.flags = 0x02		# DF (yes, it's byte swapped here).
-    ip.offset = 0
-    ip.ttl = 1
-    ip.protocol = IPPROTO_IGMP
-    ip.src = inet_atol(options.ip_source)
-
-    ig = igmp()
-    ig.type = IGMP_HOST_MEMBERSHIP_QUERY
-    ig.code = maxresp
-
-    query = igmpv2()
     if options.igmp_group is None:
 	# General query.
-    	ip.dst = INADDR_ALLHOSTS_GROUP
-        query.group = INADDR_ANY
+    	dst = INADDR_ALLHOSTS_GROUP
+        group = INADDR_ANY
     else:
 	# Group-specific query.
-    	ip.dst = inet_atol(options.igmp_group)
-        query.group = ip.dst
-    
-    igmp_packet = Chain([ig, query])
-    ig.checksum = igmp_packet.calc_checksum()
+    	dst = inet_atol(options.igmp_group)
+        group = dst
 
     # Queries don't contain the Router Alert option as they are
     # destined for end stations, not routers.
 
+    c = ethernet(src=ether_atob(options.ether_source),		\
+                 dst=ETHER_MAP_IP_MULTICAST(dst)) /		\
+        ipv4(flags=0x02, id=0, ttl=1,				\
+             src=inet_atol(options.ip_source),			\
+             dst=dst) /						\
+        igmp(type=IGMP_HOST_MEMBERSHIP_QUERY, code=maxresp) /	\
+        igmpv2(group=group)
+
+    igmp_packet = Chain([c.packets[2], c.packets[3]])
+    c.packets[2].checksum = igmp_packet.calc_checksum()
+
+    # TODO: Fill out hlen and length during a fixup, and
+    # push the intelligence of how to calculate these checksums
+    # into the packet chain code.
+    ip = c.packets[1] 
     ip.length = len(ip.bytes) + len(igmp_packet.bytes)
     ip.checksum = ip.cksum()
 
-    packet = Chain([ether, ip, ig, query])
-    packet.encode()
+    c.encode()
  
     input = PcapConnector(options.ether_iface)
     input.setfilter("igmp")
 
     output = PcapConnector(options.ether_iface)
-    out = output.write(packet.bytes, len(packet.bytes))
+    out = output.write(c.bytes, len(c.bytes))
 
     #
     # Wait for up to 'count' responses to the query to arrive and print them.
