@@ -45,12 +45,12 @@ class icmpv4(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a ICMPv4 packet"""
         type = pcs.Field("type", 8)
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [type, code, cksum], bytes)
+        pcs.Packet.__init__(self, [type, code, cksum], bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

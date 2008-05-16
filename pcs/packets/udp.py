@@ -46,14 +46,14 @@ class udp(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a UDP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
         length = pcs.Field("length", 16)
         checksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [sport, dport, length, checksum],
-                            bytes = bytes)
+                            bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

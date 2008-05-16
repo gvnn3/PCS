@@ -94,7 +94,7 @@ class ipv4(pcs.Packet):
     _layout = pcs.Layout()
     _map = ipv4_map.map
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """ define the fields of an IPv4 packet, from RFC 791."""
         version = pcs.Field("version", 4, default = 4)
         hlen = pcs.Field("hlen", 4)
@@ -112,7 +112,7 @@ class ipv4(pcs.Packet):
         pcs.Packet.__init__(self,
                             [version, hlen, tos, length, id, flags, offset,
                              ttl, protocol, checksum, src, dst, options],
-                            bytes = bytes)
+                            bytes = bytes, **kv)
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
 

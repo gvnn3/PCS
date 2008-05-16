@@ -43,11 +43,11 @@ class null(pcs.Packet):
     """NULL."""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a TCP packet"""
         null = pcs.StringField("null", 80*8)
         pcs.Packet.__init__(self, [null],
-                            bytes = bytes)
+                            bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

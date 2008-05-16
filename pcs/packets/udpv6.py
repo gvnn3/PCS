@@ -44,13 +44,13 @@ class udpv6(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, **kv):
         """Initialize a UDP packet for IPv6"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
         length = pcs.Field("length", 16)
         checksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [sport, dport, length, checksum], bytes)
+        pcs.Packet.__init__(self, [sport, dport, length, checksum], bytes, **kv)
         
     def cksum(self, ip, data = "", nx = 0):
         """return udpv6 checksum"""

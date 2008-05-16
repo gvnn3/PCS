@@ -80,7 +80,7 @@ class dvmrp(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a header very similar to that of IGMPv1/v2"""
 	reserved00 = pcs.Field("reserved00", 8)
 	capabilities = pcs.Field("capabilities", 8)
@@ -88,7 +88,7 @@ class dvmrp(pcs.Packet):
 	major = pcs.Field("major", 8)
 	options = pcs.OptionListField("options")
         pcs.Packet.__init__(self, [reserved00, capabilities,
-				   minor, major, options], bytes)
+				   minor, major, options], bytes, **kv)
 
         self.description = inspect.getdoc(self)
 

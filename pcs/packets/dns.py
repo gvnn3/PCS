@@ -43,7 +43,7 @@ class dnsheader(pcs.Packet):
     """DNS Header"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, tcp = None):
+    def __init__(self, bytes = None, timestamp = None, tcp = None, **kv):
         """Define the fields of a DNS (RFC 1035) header"""
         id = pcs.Field("id", 16)
         query = pcs.Field("query", 1)
@@ -65,12 +65,12 @@ class dnsheader(pcs.Packet):
             pcs.Packet.__init__(self,
                                 [length, id, query, opcode, aa, tc, rd, ra, z,
                                  rcode, qdcount, ancount, nscount, arcount],
-                                bytes = bytes)
+                                bytes = bytes, **kv)
         else:
             pcs.Packet.__init__(self,
                             [id, query, opcode, aa, tc, rd, ra, z,
                              rcode, qdcount, ancount, nscount, arcount],
-                            bytes = bytes)
+                            bytes = bytes, **kv)
 
         self.description = inspect.getdoc(self)
         if timestamp == None:

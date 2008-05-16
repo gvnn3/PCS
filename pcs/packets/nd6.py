@@ -45,11 +45,11 @@ class nd6_solicit(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a Neighbor Solicitaion header"""
         reserved = pcs.Field("reserved", 32)
         target = pcs.Field("target", 128)
-        pcs.Packet.__init__(self, [reserved, target], bytes)
+        pcs.Packet.__init__(self, [reserved, target], bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

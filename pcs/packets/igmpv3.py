@@ -64,7 +64,7 @@ class query(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an IGMPv3 query"""
 	group = pcs.Field("group", 32)
 	reserved00 = pcs.Field("reserved00", 4)
@@ -75,7 +75,7 @@ class query(pcs.Packet):
 	sources = pcs.OptionListField("sources")
 
         pcs.Packet.__init__(self, [group, reserved00, sbit, qrv, qqic,
-				   nsrc, sources], bytes = bytes)
+				   nsrc, sources], bytes = bytes, **kv)
 
 	self.description = inspect.getdoc(self)
 
@@ -229,13 +229,13 @@ class report(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an IGMPv3 report header"""
 	reserved00 = pcs.Field("reserved00", 16)
 	nrecords = pcs.Field("nrecords", 16)
 	records = pcs.OptionListField("records")
 
-        pcs.Packet.__init__(self, [reserved00, nrecords, records], bytes)
+        pcs.Packet.__init__(self, [reserved00, nrecords, records], bytes, **kv)
         self.description = inspect.getdoc(self)
 
         if timestamp == None:

@@ -46,9 +46,9 @@ class udpv4(pcs.packets.udp.udp):
     _layout = pcs.Layout()
     _map = None
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """Initialize a UDP packet for IPv4"""
-        pcs.packets.udp.udp.__init__(self, bytes, timestamp)
+        pcs.packets.udp.udp.__init__(self, bytes, timestamp, **kv)
 
     def cksum(self, ip, data = ""):
         """return tcpv4 checksum"""

@@ -55,13 +55,13 @@ class ethernet(pcs.Packet):
     _layout = pcs.Layout()
     _map = ethernet_map.map
     
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an ethernet packet"""
         src = pcs.StringField("src", 48)
         dst = pcs.StringField("dst", 48)
         type = pcs.Field("type", 16, discriminator=True)
 
-        pcs.Packet.__init__(self, [dst, src, type], bytes = bytes)
+        pcs.Packet.__init__(self, [dst, src, type], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
 
         if timestamp == None:

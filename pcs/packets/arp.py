@@ -43,7 +43,7 @@ class arp(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an ARP packet"""
         hrd = pcs.Field("hrd", 16, default = 1)
         pro = pcs.Field("pro", 16, default = 0x800)
@@ -56,7 +56,7 @@ class arp(pcs.Packet):
         tpa = pcs.Field("tpa", 32)
         
         pcs.Packet.__init__(self, [hrd, pro, hln, pln, op,
-                                   sha, spa, tha, tpa], bytes = bytes)
+                                   sha, spa, tha, tpa], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

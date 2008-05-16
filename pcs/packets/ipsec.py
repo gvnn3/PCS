@@ -45,7 +45,7 @@ class ah(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an AH packet header"""
         next = pcs.Field("next_header", 8)
         plen = pcs.Field("payload_len", 8)
@@ -55,7 +55,7 @@ class ah(pcs.Packet):
         auth = pcs.Field("auth_data", 128)
         pcs.Packet.__init__(self,
                             [next, plen, rsvrd, spi, seq, auth],
-                            bytes)
+                            bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()
@@ -68,7 +68,7 @@ class esp(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an ESP packet header"""
         spi = pcs.Field("spi", 32)
         seq = pcs.Field("sequence", 32)
@@ -80,7 +80,7 @@ class esp(pcs.Packet):
         pcs.Packet.__init__(self,
                             [spi, seq, payload, padding, padlen, next_header,
                              auth],
-                            bytes)
+                            bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

@@ -753,11 +753,15 @@ class Packet(object):
 
         self._bytes = ''.join(bytearray) # Install the new value
 
-    def __init__(self, layout = None, bytes = None):
+    def __init__(self, layout = None, bytes = None, **kv):
         """initialize a Packet object
 
         layout - the layout of the packet, a list of Field objects
         bytes - if the packet is being set up now the bytes to set in it
+        kv - if the packet is being set up now, the initial values of
+             each named field, specified as keyword arguments. These
+             are always passed as a dict from classes which inherit
+             from Packet.
         """
         self._layout = layout
         self._fieldnames = {}
@@ -769,6 +773,8 @@ class Packet(object):
             self.decode(bytes)
 
         self._discriminator = None
+        self._discriminator_inited = False
+
         # The layout of the Packet, a list of Field objects.
         for field in layout:
             field.packet = self
@@ -779,7 +785,18 @@ class Packet(object):
                 raise LayoutDiscriminatorError, "Layout can only have one field marked as a discriminator, but there are at least two %s %s" % (field, self._discriminator)
             if (field.discriminator == True):
                 self._discriminator = field
-                
+
+        # Set initial values of Fields using keyword arguments.
+        if kv != None:
+            for kw in kv.iteritems():
+                if kw[0] in self._fieldnames:
+                    self._fieldnames[kw[0]].bounds(kw[1])
+                    self._fieldnames[kw[0]].set_value(kw[1])
+                    if self._discriminator != None and \
+                       kw[0] == self._discriminator.name:
+                        self._discriminator_inited = True
+                    self._needencode = True
+
     def __add__(self, layout = None):
         """add two packets together
 
@@ -805,6 +822,10 @@ class Packet(object):
         if (hasattr(self, '_fieldnames') and (name in self._fieldnames)):
             self._fieldnames[name].bounds(value)
             self._fieldnames[name].set_value(value)
+            # Record if a discriminator field has been explicitly initialized;
+            # this is so that the / operator will not clobber its value.
+            if self._discriminator != None and name == self._discriminator.name:
+                self._discriminator_inited = True
             self._needencode = True
         else:
             object.__setattr__(self, name, value)
@@ -902,15 +923,17 @@ class Packet(object):
     def __div__(self, packet):
         """/ operator: Insert a packet after this packet in a chain.
            If I am not already part of a chain, build one.
-           The default behaviour is to attempt to initialize any
-           discriminator fields based on the type of the packet
-           being appended.
+           If the discriminator field in this packet has not been
+           explicitly initialized, either by assignment or by constructor
+           keyword arguments, then attempt to initialize it based on the
+           type of the packet being appended.
            The head of the chain is always returned."""
         if not isinstance(packet, Packet):
             raise exceptions.TypeError
         if self._head is None:
             head = self.chain()
-            self.rdiscriminate(packet)
+            if self._discriminator_inited != True:
+                self.rdiscriminate(packet)
             head.append(packet)
             self._head = head
         else:

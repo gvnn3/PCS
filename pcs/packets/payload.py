@@ -47,10 +47,10 @@ class payload(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a payload packet"""
         payload = pcs.StringField("payload", len(bytes))
-        pcs.Packet.__init__(self, [payload], bytes = bytes)
+        pcs.Packet.__init__(self, [payload], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

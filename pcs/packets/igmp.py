@@ -48,12 +48,12 @@ class igmp(pcs.Packet):
     _map = igmp_map
     _descr = descr
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """ Define the common IGMP encapsulation; see RFC 2236. """
         type = pcs.Field("type", 8, discriminator=True)
         code = pcs.Field("code", 8)
         checksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [type, code, checksum], bytes = bytes)
+        pcs.Packet.__init__(self, [type, code, checksum], bytes = bytes, **kv)
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
 
