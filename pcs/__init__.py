@@ -457,11 +457,11 @@ class TypeLengthValueField(object):
         self.width = type.width + length.width + value.width
         self.inclusive = inclusive
         self.bytewise = bytewise
+        self.compare = compare
 
     def __repr__(self):
-        return "<pcs.TypeLengthValueField type %s, length %s, value %s, " \
-               "compare %d>" \
-                % (self.type, self.length, self.value, self.compare)
+        return "<pcs.TypeLengthValueField type %s, length %s, value %s>" \
+                % (self.type, self.length, self.value)
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
@@ -627,6 +627,13 @@ class OptionListField(CompoundField, list):
             raise IndexError, "index %d out of range" % index
         else:
             return self._options[index].value
+
+    def bounds(self, value):
+        pass
+
+    def set_value(self, value):
+        """Set the value of a field."""
+        self._options = value
 
     def __add__(self, other):
         if isinstance(other, _fieldlist):
@@ -865,7 +872,8 @@ class Packet(object):
 
         if (hasattr(self, '_fieldnames') and (name in self._fieldnames)):
             field = self._fieldnames[name]
-            field.bounds(value)
+            if hasattr(field, 'bounds'):
+                field.bounds(value)
             field.set_value(value)
             if field.compare != None:
                 field.compare = field.default_compare
