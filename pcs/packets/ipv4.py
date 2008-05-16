@@ -107,7 +107,7 @@ class ipv4(pcs.Packet):
     def __init__(self, bytes = None, timestamp = None, **kv):
         """ define the fields of an IPv4 packet, from RFC 791."""
         version = pcs.Field("version", 4, default = 4)
-        hlen = pcs.Field("hlen", 4)
+        hlen = pcs.Field("hlen", 4, default = 5)
         tos = pcs.Field("tos", 8)
         length = pcs.Field("length", 16)
         id = pcs.Field("id", 16)
