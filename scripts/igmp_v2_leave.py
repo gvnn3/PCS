@@ -56,14 +56,10 @@ def main():
         igmp(type=IGMP_HOST_LEAVE_MESSAGE) /		\
         igmpv2(group=inet_atol(options.igmp_group))
 
-    # XXX  I need to do something about checksums, calculating
-    # them w/o syntactic sugar is a pain in the ass.
-    igmp_packet = Chain([c.packets[2], c.packets[3]])
-    c.packets[2].checksum = igmp_packet.calc_checksum()
-
     ip = c.packets[1]
     if options.no_ra is True:
-	ip.length = len(ip.bytes) + len(igmp_packet.bytes)
+	ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
+                    len(c.packets[3].bytes)
 	ip.hlen = len(ip.bytes) >> 2
     else:
 	ip.options.append(ipv4opt(IPOPT_RA))
@@ -71,7 +67,7 @@ def main():
 	ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
                     len(c.packets[3].bytes)
 
-    ip.checksum = ip.cksum()
+    c.calc_checksums()
     c.encode()
 
     out = output.write(c.bytes, len(c.bytes))

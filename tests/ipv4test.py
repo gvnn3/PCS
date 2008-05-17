@@ -169,7 +169,7 @@ class ipTestCase(unittest.TestCase):
         ip = ipv4()
         assert (ip != None)
         ip.version = 4
-        ip.hlen = 6
+        ip.hlen = 6		# XXX We add an IP option below.
         ip.tos = 0
         ip.length = 24 		# a bare IP header w/o data
         ip.id = 1
@@ -181,15 +181,9 @@ class ipTestCase(unittest.TestCase):
         ip.dst = inet_atol("224.0.0.22")
 
         # Add Router Alert option.
-	# XXX: Note well: just because you add an option list,
-	# doesn't mean the IP hlen is correct.
         # hlen should, in fact, be 6 words after adding a single RA option.
-        ra = pcs.TypeLengthValueField("ra",
-                                      pcs.Field("t", 8, default = 148),
-                                      pcs.Field("l", 8),
-                                      pcs.Field("v", 16))
-        ip.options.append(ra)
-	ip.checksum = ip.cksum()
+        ip.options.append(ipv4opt(IPOPT_RA))
+        ip.calc_checksum()
 
         #hd = hexdumper()
         #print hd.dump(ip.bytes)

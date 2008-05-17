@@ -70,24 +70,22 @@ def main():
 
     c = ethernet(src=ether_atob(options.ether_source),		\
                  dst=ETHER_MAP_IP_MULTICAST(dst)) /		\
-        ipv4(flags=0x02, id=0, ttl=1,				\
+        ipv4(flags=0x02, ttl=1,				\
              src=inet_atol(options.ip_source),			\
              dst=dst) /						\
         igmp(type=IGMP_HOST_MEMBERSHIP_QUERY, code=maxresp) /	\
         igmpv2(group=group)
 
-    igmp_packet = Chain([c.packets[2], c.packets[3]])
-    c.packets[2].checksum = igmp_packet.calc_checksum()
+    # TODO: Push length logic into Chain and down into packets themselves.
+    ip = c.packets[1]
+    ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
+                len(c.packets[3].bytes)
+    ip.hlen = len(ip.bytes) >> 2
 
-    # TODO: Fill out hlen and length during a fixup, and
-    # push the intelligence of how to calculate these checksums
-    # into the packet chain code.
-    ip = c.packets[1] 
-    ip.length = len(ip.bytes) + len(igmp_packet.bytes)
-    ip.checksum = ip.cksum()
-
+    c.calc_checksums()
+    # XXX Always encode before you send.
     c.encode()
- 
+
     input = PcapConnector(options.ether_iface)
     input.setfilter("igmp")
 

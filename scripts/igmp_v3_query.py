@@ -9,23 +9,6 @@ from pcs.packets.payload import *
 from pcs import *
 from time import sleep
 
-# This hack by: Raymond Hettinger
-class hexdumper:
-    """Given a byte array, turn it into a string. hex bytes to stdout."""
-    def __init__(self):
-	self.FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' \
-						    for x in range(256)])
-
-    def dump(self, src, length=8):
-	result=[]
-	for i in xrange(0, len(src), length):
-	    s = src[i:i+length]
-	    hexa = ' '.join(["%02X"%ord(x) for x in s])
-	    printable = s.translate(self.FILTER)
-	    result.append("%04X   %-*s   %s\n" % \
-			  (i, length*3, hexa, printable))
-	return ''.join(result)
-
 # Send an IGMPv3 query. General, group-specific, or
 # group-and-source-specific queries are supported.
 
@@ -116,13 +99,18 @@ def main():
 	 	raise "Error parsing source list."
 
     # Set up the vanilla packet
-    ether = ethernet()
-    ether.type = 0x0800
-    ether.src = ether_atob(options.ether_source)
+
     if options.ether_dest is not None:
-        ether.dst = ether_atob(options.ether_dest)
+        edst = ether_atob(options.ether_dest)
     else:
-        ether.dst = "\x01\x00\x5e\x00\x00\x01"
+        edst = ETHER_MAP_IP_MULTICAST(INADDR_ALLHOSTS_GROUP)
+
+    c = ethernet(src=ether_atob(options.ether_source), dst=edst) / \
+        ipv4(flags=0x02, ttl=1, src=inet_atol(options.ip_source)) / \
+        igmp(type=IGMP_HOST_MEMBERSHIP_QUERY, code=maxresp) / \
+        igmpv3.query()
+    ip = c.packets[1]
+    q = c.packets[3]
 
     # IGMPv3 General Queries are always sent to ALL-SYSTEMS.MCAST.NET.
     # However we allow this to be overidden for protocol testing -- Windows,
@@ -132,22 +120,6 @@ def main():
     # Queries don't contain the Router Alert option as they are
     # destined for end stations, not routers.
 
-    ip = ipv4()
-    ip.version = 4
-    ip.hlen = 5
-    ip.tos = 0
-    ip.id = 0
-    ip.flags = 0x02		# DF (yes, it's byte swapped here).
-    ip.offset = 0
-    ip.ttl = 1
-    ip.protocol = IPPROTO_IGMP
-    ip.src = inet_atol(options.ip_source)
-
-    ig = igmp()
-    ig.type = IGMP_HOST_MEMBERSHIP_QUERY
-    ig.code = maxresp
-
-    q = igmpv3.query()
     if options.igmp_robustness is not None:
         q.qrv = int(options.igmp_robustness)
     else:
@@ -175,26 +147,23 @@ def main():
 
     if IN_MULTICAST(ip.dst) is True and \
        options.ether_dest is None:
-        ether.dst = ETHER_MAP_IP_MULTICAST(ip.dst)
+        c.packets[0].dst = ETHER_MAP_IP_MULTICAST(ip.dst)
 
     for src in sources:
         q.sources.append(pcs.Field("", 32, default = src))
     q.nsrc = len(sources)
 
-    igmp_packet = Chain([ig, q])
-    ig.checksum = igmp_packet.calc_checksum()
+    ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
+                len(c.packets[3].bytes)
 
-    ip.length = len(ip.bytes) + len(igmp_packet.bytes)
-    ip.checksum = ip.cksum()
-
-    packet = Chain([ether, ip, ig, q])
-    packet.encode()
+    c.calc_checksums()
+    c.encode()
 
     input = PcapConnector(options.ether_iface)
     input.setfilter("igmp")
 
     output = PcapConnector(options.ether_iface)
-    out = output.write(packet.bytes, len(packet.bytes))
+    out = output.write(c.bytes, len(c.bytes))
 
     #
     # Wait for up to 'count' responses to the query to arrive and print them.

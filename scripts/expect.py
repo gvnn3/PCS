@@ -40,6 +40,7 @@ from pcs.packets.udp import *
 from pcs.packets.tcp import *
 from pcs.packets.ipv4 import *
 from pcs.packets.ethernet import *
+from pcs.packets.ethernet_map import ETHERTYPE_IP 
 from pcs.packets.arp import *
 import pcs.packets.ethernet as ethernet
 import pcs.packets.arp as arp
@@ -50,27 +51,27 @@ def main():
 
     file = pcs.PcapConnector("fxp0")
 
-    # Construct a filter chain. we are only interested in 3 fields.
-    # The new scapy style syntax makes this easy.
+    # Construct a filter chain which lets us programmatically wait for a
+    # ARP request to appear on the network.
+    #
+    # The new syntax makes this easy. We are only interested in 3 fields.
+    #
     # If a field in a packet is not explicitly initialized by the user,
     # and that packet is later used as a match filter by expect,
     # it will be ignored. Otherwise the default filtering behaviour is
     # to make an exact match, unless you install a different comparison
-    # function.
+    # function by assigning to Field.compare.
+    #
     # Comparison functions are specified on a per-field basis. They are
-    # passed the packet(s) being compared so that back-references
-    # to fields are possible e.g. for figuring out that an ARP packet
-    # is gratuitous ARP for example. The lambda operator will let you
-    # do all this in one statement.
-
-    a = ethernet.ethernet(type=0x806) / arp.arp(pro=0x0800, op=1)
-
-    # Old-style syntax.
-    #a.wildcard_mask()
-    #a.packets[0].wildcard_mask(["type"], False)
-    #a.packets[1].wildcard_mask(["pro", "op"], False)
-    #a.packets[1].pro = 0x0800	# ETHERTYPE_IP (default)
-    #a.packets[1].op = 1		# ARPOP_REQUEST
+    # passed the packet(s) being compared so that back-references to fields
+    # are possible. The lambda operator will let you do all this in one
+    # statement, subject to its syntactic limitations in Python.
+    #
+    # This gives you the ability to make more complex comparisons involving
+    # multiple field values, e.g. looking for addressing collisions by
+    # monitoring gratuitous ARP.
+    #
+    a = ethernet.ethernet() / arp.arp(pro=ETHERTYPE_IP, op=arp.ARPOP_REQUEST)
 
     print "Waiting 10 seconds to see an ARP query."
     try:
@@ -82,8 +83,5 @@ def main():
     print "And the matching packet chain is:"
     print file.match
     sys.exit(0)
-
-    #  TODO: Add the ability to match more complex filters
-    #        e.g. ar_spa == ar_tpa which is gratuitous arp.
 
 main()

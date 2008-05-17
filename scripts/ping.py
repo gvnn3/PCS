@@ -78,53 +78,32 @@ def main():
                       help="The gateway Ethernet destination address.")
 
     (options, args) = parser.parse_args()
-    
-    # Set up the vanilla packet
-    ether = ethernet()
-    ether.type = 0x0800
-    ether.src = ether_atob(options.ether_source)
-    ether.dst = ether_atob(options.ether_dest)
+ 
+    c = ethernet(src=ether_atob(options.ether_source),  \
+                 dst=ether_atob(options.ether_dest)) /  \
+        ipv4(ttl=64, src=inet_atol(options.ip_source),  \
+                     dst=inet_atol(options.ip_dest)) / \
+        icmpv4(type=8) / icmpv4echo(id=12345) / payload(payload="foobar")
 
-    ip = ipv4()
-    ip.version = 4
-    ip.hlen = 5
-    ip.tos = 0
-    ip.id = 0
-    ip.flags = 0
-    ip.offset = 0
-    ip.ttl = 64
-    ip.protocol = IPPROTO_ICMP
-    ip.src = inet_atol(options.ip_source)
-    ip.dst = inet_atol(options.ip_dest)
-    
-    icmp = icmpv4()
-    icmp.type = 8
-    icmp.code = 0
-    
-    echo = icmpv4echo()
-    echo.id = 12345
-    echo.sequence = 0
-    
-    data = payload("foobar")
-    icmp_packet = Chain([icmp, echo, data])
+    # TODO: push length logic down into packets
+    #c.calc_lengths()
+    ip = c.packets[1]
+    icmp = c.packets[2]
+    echo = c.packets[3]
+    data = c.packets[4]
     ip.length = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes) + len(data.bytes) 
 
-    packet = Chain([ether, ip, icmp, echo, data])
-    
     output = PcapConnector(options.ether_iface)
-
-    #input = PcapConnector(options.ether_iface)
-    #input.setfilter("icmp")
 
     #
     # Increment ICMP echo sequence number with each iteration.
     #
     count = int(options.count)
     while (count > 0):
-        icmp.checksum = icmp_packet.calc_checksum()
-        ip.checksum = ip.cksum()
-        packet.encode()
-        out = output.write(packet.bytes, len(packet.bytes))
+        c.calc_checksums()
+        c.encode()
+
+        out = output.write(c.bytes, len(c.bytes))
 #        packet = input.read()
 #        print packet
         sleep(1)

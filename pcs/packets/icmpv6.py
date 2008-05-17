@@ -35,8 +35,10 @@
 # Description: A class which describes an ICMPv6 packet
 
 import pcs
+import pcs.packets.pseudoipv6
+import pcs.packets.ipv4
+
 import struct
-import pseudoipv6
 
 # icmp6 type
 ND_ROUTER_SOLICIT = 133
@@ -131,9 +133,8 @@ class icmpv6(pcs.Packet):
             pcs.Packet.__init__(self, [ty, code, cksum], bytes, **kv)
 
     def cksum(self, ip, data = "", nx = 0):
-        """return icmpv6 checksum if we send packet through 
-        raw link level (i.e bpf)"""
-        total = 0
+        """Calculate the checksum for this ICMPv6 header, outside
+           of a chain."""
         p6 = pseudoipv6.pseudoipv6()
         p6.src = ip.src
         p6.dst = ip.dst
@@ -143,13 +144,26 @@ class icmpv6(pcs.Packet):
         else:
             p6.next_header = ip.next_header
         pkt = p6.getbytes() + self.getbytes() + data
-        if len(pkt) % 2 == 1:
-            pkt += "\0"
-        for i in range(len(pkt)/2):
-            total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return  ~total & 0xffff
+        return ipv4.ipv4_cksum(pkt)
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this ICMPv6 header.
+           ICMPv6 checksums are computed over data payloads and
+           next-headers. The packet must be part of a chain."""
+        self.checksum = 0
+        if self._head is not None:
+            payload = self._head.collate_following(self)
+            ip6 = self._head.find_preceding(self, pcs.packets.ipv6)
+            assert ip6 != None, "No preceding IPv6 header."
+            pip6 = pseudoipv6.pseudoipv6()
+            pip6.src = ip6.src
+            pip6.dst = ip6.dst
+            pip6.next_header = ip6.next_header
+            pip6.length = len(self.getbytes()) + len(payload)
+            tmpbytes = pip6.getbytes() + self.getbytes() + payload
+        else:
+            tmpbytes = self.getbytes()
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
 
 class icmpv6option(pcs.Packet):
 

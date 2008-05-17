@@ -3,6 +3,7 @@
 from pcs.packets.localhost import *
 from pcs.packets.ethernet import *
 from pcs.packets.ipv4 import *
+from pcs.packets.igmp import *
 from pcs.packets.igmpv2 import *
 from pcs.packets.dvmrp import *
 from pcs.packets.payload import *
@@ -53,28 +54,16 @@ def main():
         print "Non-optional argument missing."
         return
 
-    # Set up the vanilla packet
-    ether = ethernet()
-    ether.type = 0x0800
-    ether.src = ether_atob(options.ether_source)
-    ether.dst = ether_atob(options.ether_dest)
-
-    ip = ipv4()
-    ip.version = 4
-    ip.hlen = 5
-    ip.tos = 0
-    ip.id = 0
-    ip.flags = 0x02		# DF (yes, it's byte swapped here).
-    ip.offset = 0
-    ip.ttl = 1
-    ip.protocol = IPPROTO_IGMP
-    ip.src = inet_atol(options.ip_source)
-
     if options.ip_dest is None:
-        ip.dst = INADDR_DVMRP_GROUP
+        idst = INADDR_DVMRP_GROUP
     else:
-        ip.dst = inet_atol(options.ip_dest)
+        idst = inet_atol(options.ip_dest)
 
+    c = ethernet(src=ether_atob(options.ether_source), \
+                 dst=ether_atob(options.ether_dest)) / \
+        ipv4(ttl=1, src=inet_atol(options.ip_source), dst=idst) / \
+        igmp(type=IGMP_DVMRP, code=DVMRP_ASK_NEIGHBORS2) / \
+        dvmrp(capabilities=DVMRP_CAP_DEFAULT, minor=0xFF, major=3)
 
     #
     # DVMRP "ask neighbors" does not contain the Router Alert option,
@@ -90,29 +79,17 @@ def main():
     #
     # TODO: Hook dvmrp up to the base igmp header somehow.
 
-    d = dvmrp()
-    d.version = 1
-    d.type = 3
-    d.subtype = DVMRP_ASK_NEIGHBORS2
+    ip = c.packets[1]
+    ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
+                len(c.packets[3].bytes)
+    c.calc_checksums()
+    c.encode()
 
-    d.capabilities = DVMRP_CAP_DEFAULT
-    d.minor = 0xFF
-    d.major = 3
-
-    d_p = Chain([d])
-    d.checksum = d_p.calc_checksum()
-
-    ip.length = len(ip.bytes) + len(d.bytes)
-    ip.checksum = ip.cksum()
-
-    packet = Chain([ether, ip, d])
-    packet.encode()
-    
     input = PcapConnector(options.ether_iface)
     input.setfilter("igmp")
 
     output = PcapConnector(options.ether_iface)
-    out = output.write(packet.bytes, len(packet.bytes))
+    out = output.write(c.bytes, len(c.bytes))
 
     #
     # Wait for up to 'count' responses to the query to arrive and print them.

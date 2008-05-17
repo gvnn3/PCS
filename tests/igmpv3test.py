@@ -22,12 +22,9 @@ class igmpv3TestCase(unittest.TestCase):
 
     def test_igmpv3_encode(self):
         # create one packet, copy its bytes, then compare their fields.
-        igh = igmp()
-        assert (igh != None)
-        igh.type = IGMP_v3_HOST_MEMBERSHIP_REPORT
-
-        rep = igmpv3.report()
-        assert (rep != None)
+        # TODO: Add syntactic sugar for option lists.
+        c = igmp(type=IGMP_v3_HOST_MEMBERSHIP_REPORT) / igmpv3.report()
+        rep = c.packets[1]
 
         # An ASM/SSM leave.
         rec0 = GroupRecordField("rec0")
@@ -63,14 +60,12 @@ class igmpv3TestCase(unittest.TestCase):
         rep.records.append(rec3)
 
         rep.nrecords = len(rep.records)
-        igmp_packet = Chain([igh, rep])
-        igh.checksum = igmp_packet.calc_checksum()
 
-        # make sure checksum is reflected in byte array representation.
-        igmp_packet.encode()
+        c.calc_checksums()
+        c.encode()
 
 	#hd = hexdumper()
-	#print hd.dump2(igmp_packet.bytes)
+	#print hd.dump2(c.bytes)
 	expected = "\x22\x00\xC5\xA5\x00\x00\x00\x04" \
 		   "\x03\x00\x00\x00\xEF\x00\x01\x02" \
 		   "\x03\x00\x00\x01\xEF\x03\x02\x01" \
@@ -79,7 +74,7 @@ class igmpv3TestCase(unittest.TestCase):
 		   "\xE1\x04\x03\x02\xC0\x00\x02\x63"
  
 	#print hd.dump2(expected)
-	gotttted = igmp_packet.bytes
+	gotttted = c.bytes
 	self.assertEqual(expected, gotttted, "test encoding")
 
     def test_igmpv3_decode(self):

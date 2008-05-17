@@ -36,7 +36,8 @@
 
 import pcs
 import struct
-from pseudoipv6 import *
+import pcs.packets.ipv4
+from pcs.packets.pseudoipv6 import *
 
 import inspect
 import time
@@ -82,7 +83,7 @@ class tcpv6(pcs.Packet):
         return retval
 
     def cksum(self, ip, data = "", nx = 0):
-        """return tcpv6 checksum"""
+        """Calculate checksum over TCP v6 segment outside of a chain."""
         total = 0
         p6 = pseudoipv6()
         p6.src = ip.src
@@ -93,10 +94,24 @@ class tcpv6(pcs.Packet):
         else:
             p6.next_header = ip.next_header
         pkt = p6.getbytes() + self.getbytes() + data
-        if len(pkt) % 2 == 1:
-            pkt += "\0"
-        for i in range(len(pkt)/2):
-            total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return  ~total
+        return ipv4.ipv4_cksum(pkt)
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this TCP v6 segment.
+           The packet must be part of a chain.
+           To do this we need to use an overlay, and copy some
+           header fields from the encapsulating IPv6 header."""
+         self.checksum = 0
+         if self._head is not None:
+             payload = self._head.collate_following(self)
+             ip6 = self._head.find_preceding(self, pcs.packets.ipv6)
+             assert ip6 != None, "No preceding IPv6 header."
+             pip6 = pseudoipv6()
+             pip6.src = ip.src
+             pip6.dst = ip.dst
+             pip6.next_header = ip6.next_header
+             pip6.length = len(self.getbytes()) + len(payload)
+             tmpbytes = pip6.getbytes() + self.getbytes() + payload
+         else:
+             tmpbytes = self.bytes
+         self.checksum = ipv4.ipv4_cksum(tmpbytes)

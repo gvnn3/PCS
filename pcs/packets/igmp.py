@@ -5,10 +5,11 @@ import struct
 import inspect
 import time
 
-import igmpv2
-import igmpv3
-#import dvmrp
-#import mtrace
+import pcs.packets.ipv4
+import pcs.packets.igmpv2 as igmpv2
+import pcs.packets.igmpv3 as igmpv3
+#import pcs.packets.dvmrp
+#import pcs.packets.mtrace
 
 IGMP_HOST_MEMBERSHIP_QUERY = 0x11
 IGMP_v1_HOST_MEMBERSHIP_REPORT = 0x12
@@ -79,6 +80,16 @@ class igmp(pcs.Packet):
            field value. Like next() only the first match is used."""
         #print "reverse discriminating %s" % type(packet)
         return pcs.Packet.rdiscriminate(self, packet, "type", map)
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this IGMP header.
+           IGMP checksums are computed over payloads too."""
+        from pcs.packets.ipv4 import ipv4
+        self.checksum = 0
+        tmpbytes = self.bytes
+        if not self._head is None:
+            tmpbytes += self._head.collate_following(self)
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""

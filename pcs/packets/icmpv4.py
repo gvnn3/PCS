@@ -35,7 +35,6 @@
 # Description: A class which describes an ICMPv4 packet
 
 import pcs
-from pcs.packets import payload
 
 import inspect
 import time
@@ -47,6 +46,7 @@ class icmpv4(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a ICMPv4 packet"""
+        from pcs.packets import payload
         type = pcs.Field("type", 8)
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
@@ -57,31 +57,38 @@ class icmpv4(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-
         if (bytes != None):
             offset = type.width + code.width + cksum.width
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:
             self.data = None
 
-
+    def calc_checksum(self):
+        """Calculate and store the checksum for this ICMP header.
+           ICMP checksums are computed over payloads, but not IP headers."""
+        from pcs.packets.ipv4 import ipv4
+        self.checksum = 0
+        tmpbytes = self.getbytes()
+        if not self._head is None:
+            tmpbytes += self._head.collate_following(self)
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
 
 class icmpv4echo(pcs.Packet):
     """ICMPv4 Echo"""
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an ICMPv4 echo packet, used by ping(8) and others"""
+        from pcs.packets import payload
         id = pcs.Field("id", 16)
         seq = pcs.Field("sequence", 16)
-        pcs.Packet.__init__(self, [id, seq], bytes)
+        pcs.Packet.__init__(self, [id, seq], bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
-
 
         if (bytes != None):
             offset = id.width + seq.width

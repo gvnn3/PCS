@@ -984,6 +984,8 @@ class Packet(object):
            explicitly initialized, either by assignment or by constructor
            keyword arguments, then attempt to initialize it based on the
            type of the packet being appended.
+           The packet being appended will have its head pointer overwritten
+           to point to the chain it is being appended to.
            The head of the chain is always returned."""
         if not isinstance(packet, Packet):
             raise exceptions.TypeError
@@ -993,12 +995,14 @@ class Packet(object):
                 self.rdiscriminate(packet)
             head.append(packet)
             self._head = head
+            packet._head = head
         else:
             head = self._head
             if not isinstance(head, Chain):
                 raise exceptions.TypeError
             if head.insert_after(self, packet) == False:
                 raise exceptions.IndexError
+            packet._head = head
         return head
 
     def chain(self):
@@ -1062,9 +1066,9 @@ class Packet(object):
         # If we were not passed discriminator field name and map, try
         # to infer it from what's inside the instance.
         if map == None:
-           map = self._map
-           if map == None:
+           if not hasattr(self, '_map') or self._map is None:
                return False
+           map = self._map
         if discfieldname == None:
            if self._discriminator == None:
                 return False
@@ -1079,6 +1083,12 @@ class Packet(object):
                 return True
 
         return False
+
+    def calc_checksum(self):
+        """Compute checksum for this packet.
+           The base class does nothing, it has no notion of checksum."""
+        #print "Packet.calc_checksum()"
+        pass
 
     def sizeof(self):
         """Return the size, in bytes, of the packet."""
@@ -1138,6 +1148,8 @@ class Chain(list):
 
     def __div__(self, packet, rdiscriminate=True):
         """/ operator: Append a packet to the end of a chain.
+           The packet's head pointer will be overwritten to point to
+           this chain.
            The default behaviour is to fill out the discriminator field
            of the packet in front of the new tail packet."""
         if not isinstance(packet, Packet):
@@ -1147,6 +1159,7 @@ class Chain(list):
             if self.packets[-1]._discriminator_inited != True:
                 self.packets[-1].rdiscriminate(packet)
         self.append(packet)
+        packet._head = self
         return self
 
     def append(self, packet):
@@ -1216,26 +1229,69 @@ class Chain(list):
         for packet in self.packets:
             packet.decode(packet.bytes)
 
-    def calc_checksum(self):
-        """Calculate a checksum for the whole chain based on RFC 792
+    def index_of(self, packet):
+        """Return the index of 'packet' in this chain."""
+        n = 0
+        for i in self.packets:
+            if i is packet:
+                pseen = True
+                break
+            n += 1
+        #print "index of %s is %d" % (type(packet), n)
+        assert pseen == True, "Chain inconsistent: packet not found"
+        return n
 
-        In this calculation any packet that specifically calls out a
-        checksum field will have that field zeroed first before the
-        checksum is calculated.
-        """
-        total = 0
-        bytes = ""
-        for packet in self.packets:
-            if (hasattr(packet, 'checksum')):
-                packet.checksum = 0
-            bytes = bytes + packet.bytes
-        if len(bytes) % 2 == 1:
-            bytes += "\0"
-        for i in range(len(bytes)/2):
-            total += (struct.unpack("!H", bytes[2*i:2*i+2])[0])
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return ~total & 0xffff
+    def collate_following(self, packet):
+        """Given a packet which is part of this chain, return a string
+           containing the bytes of all packets following it in this chain.
+           Helper method used by Internet transport protocols."""
+        tmpbytes = ""
+        n = self.index_of(packet)
+        if n == len(self.packets)-1:
+            return tmpbytes
+        for p in self.packets[n+1:]:
+            #print "collating %s" % (type(p))
+            tmpbytes += p.getbytes()
+        return tmpbytes
+
+    def find_preceding(self, packet, ptype, adjacent=True):
+        """Given a packet which is part of this chain, return a reference
+           to a packet of the given type which precedes this packet,
+           and its index in the chain, as a tuple.
+
+           If the 'adjacent' argument is True, then the packet
+           immediately preceding 'packet' must be an instance of type.
+           Helper method used by Internet transport protocols."""
+        n = self.index_of(packet)
+        if n == 0:
+            return (None, None)
+        lower = 0
+        if adjacent is True:
+            lower = max(n - 2, 0)
+        for p in reversed(self.packets[lower:n]):
+            n -= 1
+            if isinstance(p, ptype):
+                return (p, n)
+        return (None, None)
+
+    def calc_checksums(self):
+        """Compute and store checksums for all packets in this chain,
+           taking encapsulation into account.
+
+           By default the packets are enumerated in reverse order
+           to how they appear on the wire. This is how IETF-style
+           protocols are normally dealt with; ITU-style protocols
+           may require other quirks."""
+        #print "Chain.calc_checksum()"
+        for packet in reversed(self.packets):
+            packet.calc_checksum()
+
+    def calc_length(self):
+        """Compute and store length fields for all packets in this chain,
+           taking encapsulation into account. """
+        for packet in reversed(self.packets):
+            packet.calc_length()
+
 
 class ConnNotImpError(Exception):
     """Calling a method that is not implemented raises this exception.

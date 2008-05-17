@@ -155,14 +155,11 @@ class icmpTestCase(unittest.TestCase):
         echo.id = 37123
         echo.sequence = 0
 
+	ip.len = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
+
         packet = Chain([e, ip, icmp, echo])
 
-        icmp_packet = Chain([icmp, echo])
-        icmp.checksum = icmp_packet.calc_checksum()
-
-	ip.len = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
-        ip.checksum = ip.cksum()
-
+        packet.calc_checksums()
         packet.encode()
 
         input = PcapConnector(devname)

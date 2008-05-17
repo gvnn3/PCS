@@ -36,7 +36,7 @@
 
 import pcs
 import ethernet_map
-from pcs.packets.ipv4 import ipv4
+import pcs.packets.ipv4
 from pcs.packets.ipv6 import ipv6
 from pcs.packets.arp import arp
 

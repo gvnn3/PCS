@@ -39,7 +39,6 @@ sys.path.append("../src")
 
 import pcs
 import pcs.packets.udp
-import socket
 
 class udpv4(pcs.packets.udp.udp):
 
@@ -51,19 +50,30 @@ class udpv4(pcs.packets.udp.udp):
         pcs.packets.udp.udp.__init__(self, bytes, timestamp, **kv)
 
     def cksum(self, ip, data = ""):
-        """return tcpv4 checksum"""
+        """Calculate the checksum for this UDPv4 header,
+           outside of a chain."""
+        from socket import IPPROTO_UDP
+        from pcs.packets.ipv4 import ipv4
         from pcs.packets.ipv4 import pseudoipv4
-        import struct
-        total = 0
-        tmpip = pseudoipv4(None, None, socket.IPPROTO_UDP)
+        tmpip = pseudoipv4()
         tmpip.src = ip.src
         tmpip.dst = ip.dst
+        tmpip.protocol = IPPROTO_UDP
         tmpip.length = len(self.getbytes()) + len(data)
-        pkt = tmpip.getbytes() + self.getbytes() + data
-        if len(pkt) % 2 == 1:
-            pkt += "\0"
-        for i in range(len(pkt)/2):
-            total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return  ~total & 0xffff
+        tmpbytes = tmpip.getbytes() + self.getbytes() + data
+        return ipv4.ipv4_cksum(tmpbytes)
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this UDPv4 datagram.
+           The packet must be part of a chain.
+           To do this we need to use an overlay, and copy some
+           header fields from the encapsulating IPv4 header."""
+        from pcs.packets.ipv4 import ipv4
+        ip = None
+        if self._head is not None:
+            ip = self._head.find_preceding(self, pcs.packets.ipv4.ipv4)
+        if ip is None:
+            self.checksum = 0
+            self.checksum = ipv4.ipv4.ipv4_cksum(self.getbytes())
+            return
+        pcs.packets.udp.udp.calc_checksum_v4(self, ip)

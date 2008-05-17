@@ -38,7 +38,9 @@ import pcs
 import udp_map
 
 import inspect
+import socket
 import time
+
 
 class udp(pcs.Packet):
     """UDP"""
@@ -85,3 +87,67 @@ class udp(pcs.Packet):
         if result == False:
             result = pcs.Packet.rdiscriminate(self, packet, "sport", map)
         return result
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this UDP datagram.
+           The packet must be part of a chain.
+           We attempt to infer whether IPv4 or IPv6 encapsulation
+           is in use for the payload. The closest header wins the match.
+           The network layer header must immediately precede the UDP
+           datagram (for now)."""
+        from pcs.packets.ipv4 import ipv4
+        ip = None
+        ip6 = None
+        if self._head is not None:
+            (ip, iip) = self._head.find_preceding(self, pcs.packets.ipv4.ipv4)
+            (ip6, iip6) = self._head.find_preceding(self, pcs.packets.ipv6.ipv6)
+        # Either this UDP header is not in a chain, or no IPv4/IPv6
+        # outer header was found.
+        if ip is None and ip6 is None:
+            self.checksum = 0
+            self.checksum = ipv4.ipv4_cksum(self.getbytes())
+            return
+        # If we found both IPv4 and IPv6 headers then we must break the tie.
+        # The closest outer header wins and is used for checksum calculation.
+        if ip is not None and ip6 is not None:
+            assert iip != iip6, "ipv4 and ipv6 cannot be at same index"
+            if iip6 > iip:
+                ip = None	# ip6 is nearest outer header, ignore ip
+            else:
+                ip6 = None	# ip is nearest outer header, ignore ip6
+        if ip is not None:
+            self.calc_checksum_v4(ip)
+        else:
+            self.calc_checksum_v6(ip6)
+
+    def calc_checksum_v4(self, ip):
+        """Calculate and store the checksum for the UDP datagram
+           when encapsulated as an IPv4 payload with the given header."""
+        #print "udp.calc_checksum_v4()"
+        from pcs.packets.ipv4 import ipv4
+        from pcs.packets.ipv4 import pseudoipv4
+        self.checksum = 0
+        payload = self._head.collate_following(self)
+        pip = pseudoipv4()
+        pip.src = ip.src
+        pip.dst = ip.dst
+        pip.protocol = socket.IPPROTO_UDP
+        pip.length = len(self.getbytes()) + len(payload)
+        tmpbytes = pip.getbytes() + self.getbytes() + payload
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+
+    def calc_checksum_v6(self, ip6):
+        """Calculate and store the checksum for the UDP datagram
+           when encapsulated as an IPv6 payload with the given header."""
+        #print "udp.calc_checksum_v6()"
+        from pcs.packets.ipv4 import ipv4
+        from pcs.packets.pseudoipv6 import pseudoipv6
+        self.checksum = 0
+        payload = self._head.collate_following(self)
+        pip6 = pseudoipv6()
+        pip6.src = ip6.src
+        pip6.dst = ip6.dst
+        pip6.next_header = ip6.next_header
+        pip6.length = len(self.getbytes()) + len(payload)
+        tmpbytes = pip6.getbytes() + self.getbytes() + payload
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)

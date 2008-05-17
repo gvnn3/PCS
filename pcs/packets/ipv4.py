@@ -204,22 +204,27 @@ class ipv4(pcs.Packet):
                 return inet_ntop(AF_INET,
                                  struct.pack('!L', getattr(self,attr)))
 
-    def cksum(self):
-        """calculate the IPv4 checksum over a packet
+    def calc_checksum(self):
+        """Calculate and store the checksum for this packet."""
+        #print "ipv4.calc_checksum()"
+        self.checksum = 0
+        self.checksum = ipv4.ipv4_cksum(self.bytes)
 
-        returns the calculated checksum
-        """
+    def ipv4_cksum(bytes):
+        """Static method to: Calculate and return the IPv4 header checksum
+           over the string of bytes provided."""
+
+        tmpbytes = bytes
         total = 0
-        packet = ipv4(self.bytes)
-        packet.checksum = 0
-        bytes = packet.bytes
-        if len(bytes) % 2 == 1:
-            bytes += "\0"
-        for i in range(len(bytes)/2):
-            total += (struct.unpack("!H", bytes[2*i:2*i+2])[0])
+        if len(tmpbytes) % 2 == 1:
+            tmpbytes += "\0"
+        for i in range(len(tmpbytes)/2):
+            total += (struct.unpack("!H", tmpbytes[2*i:2*i+2])[0])
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16
         return ~total & 0xffff
+
+    ipv4_cksum = staticmethod(ipv4_cksum)
 
 #
 # Convenience object for higher level protocols that need a fake IPv4
