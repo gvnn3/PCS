@@ -50,7 +50,7 @@ def main():
     c = ethernet(src=ether_atob(options.ether_source),                    \
                  dst=ETHER_MAP_IP_MULTICAST(INADDR_ALLRPTS_GROUP)) /      \
         ipv4(src=inet_atol(options.ip_source), dst=INADDR_ALLRPTS_GROUP,  \
-             ttl=1, flags=0x02) /                                         \
+             ttl=1, flags=IP_DF) /                                         \
         igmp(type=IGMP_v3_HOST_MEMBERSHIP_REPORT) /                       \
         igmpv3.report(records=[GroupRecordField("",                       \
                                 group=inet_atol(options.igmp_group),      \

@@ -173,7 +173,7 @@ class ipTestCase(unittest.TestCase):
         ip.tos = 0
         ip.length = 24 		# a bare IP header w/o data
         ip.id = 1
-        ip.flags = 0x02		# df
+        ip.flags = IP_DF
         ip.offset = 0
         ip.ttl = 1
         ip.protocol = 2		# a fake IGMP packet

@@ -50,7 +50,7 @@ def main():
 
     c = ethernet(src=ether_atob(options.ether_source),	\
                  dst=ETHER_MAP_IP_MULTICAST(INADDR_ALLRTRS_GROUP)) / \
-        ipv4(flags=0x02, id=123, ttl=1, 		\
+        ipv4(flags=IP_DF, id=123, ttl=1, 		\
              src=inet_atol(options.ip_source),		\
              dst=INADDR_ALLRTRS_GROUP) /		\
         igmp(type=IGMP_HOST_LEAVE_MESSAGE) /		\

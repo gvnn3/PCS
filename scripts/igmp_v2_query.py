@@ -70,7 +70,7 @@ def main():
 
     c = ethernet(src=ether_atob(options.ether_source),		\
                  dst=ETHER_MAP_IP_MULTICAST(dst)) /		\
-        ipv4(flags=0x02, ttl=1,				\
+        ipv4(flags=IP_DF, ttl=1,				\
              src=inet_atol(options.ip_source),			\
              dst=dst) /						\
         igmp(type=IGMP_HOST_MEMBERSHIP_QUERY, code=maxresp) /	\

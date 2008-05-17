@@ -106,7 +106,7 @@ def main():
         edst = ETHER_MAP_IP_MULTICAST(INADDR_ALLHOSTS_GROUP)
 
     c = ethernet(src=ether_atob(options.ether_source), dst=edst) / \
-        ipv4(flags=0x02, ttl=1, src=inet_atol(options.ip_source)) / \
+        ipv4(flags=IP_DF, ttl=1, src=inet_atol(options.ip_source)) / \
         igmp(type=IGMP_HOST_MEMBERSHIP_QUERY, code=maxresp) / \
         igmpv3.query()
     ip = c.packets[1]

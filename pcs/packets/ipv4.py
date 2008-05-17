@@ -59,6 +59,13 @@ INADDR_ALLRPTS_GROUP	= 0xe0000016	# 224.0.0.22, IGMPv3
 INADDR_MAX_LOCAL_GROUP	= 0xe00000ff	# 224.0.0.255
 
 #
+# IPv4 header flags.
+#
+IP_MF = 1	# More fragments
+IP_DF = 2	# Don't fragment
+IP_RF = 4	# Reserved; always set to 0.
+
+#
 # IPv4 options.
 #
 IPOPT_EOL = 0
