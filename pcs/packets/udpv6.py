@@ -38,18 +38,16 @@ import sys
 sys.path.append("../src")
 
 import pcs
+import pcs.packets.udp
 
-class udpv6(pcs.Packet):
+class udpv6(pcs.packets.udp.udp):
 
     _layout = pcs.Layout()
+    _map = None
 
-    def __init__(self, bytes = None, **kv):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """Initialize a UDP packet for IPv6"""
-        sport = pcs.Field("sport", 16)
-        dport = pcs.Field("dport", 16)
-        length = pcs.Field("length", 16)
-        checksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [sport, dport, length, checksum], bytes, **kv)
+        pcs.packets.udp.udp.__init__(self, bytes, timestamp, **kv)
 
     def cksum(self, ip, data = "", nx = 0):
         """Calculate the checksum for this UDPv6 header, outside
