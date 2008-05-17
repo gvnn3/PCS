@@ -98,6 +98,7 @@ layout of the data and how it is addressed."""
         discriminator - is this field used to demultiplex packets
         match - a match function used to compare this field with another.
         """
+        self.packet = None
         ## the name of the Field
         self.name = name
         ## the width, in bites, of the field's data
@@ -252,6 +253,7 @@ handled by the LengthValueField."""
     def __init__(self, name = "", width = 1, default = None, \
                  compare = None ):
         """initialtize a StringField"""
+        self.packet = None
         ## the name of the StringField
         self.name = name
         ## the width, in bits, of the StringField
@@ -533,6 +535,7 @@ class OptionListField(CompoundField, list):
     def __init__(self, name, width = 0, option_list = [], compare = None):
         """Iniitialize an OptionListField."""
         list.__init__(self)
+        self.packet = None
         self.name = name
         self.width = width
         self._options = []
@@ -699,6 +702,10 @@ class Layout(list):
     the layout of the packet on the wire.  It is actually a list of
     Fields and is implemented as a descriptor.  A layout can only be
     set or get, but never deleted."""
+
+    # No need to implement __deepcopy__, as Layout is a descriptor
+    # modeled on the built-in type 'list' and will propagate deep-copies
+    # to the objects it contains.
 
     def __get__(self, obj, typ=None): 
         """return the Layout"""
@@ -1007,16 +1014,17 @@ class Packet(object):
 
     def chain(self):
         """Return the packet and its next packets as a chain."""
-        packet_list = []
-        done = False
+        chain = Chain([])
         packet = self
+        done = False
         while not done:
-            packet_list.append(packet)
+            packet._head = chain
+            chain.append(packet)
             if (packet.data != None):
                 packet = packet.data
             else:
                 done = True
-        return Chain(packet_list)
+        return chain
         
     def next(self, bytes, discriminator = None, timestamp = None):
         """Demultiplex higher layer protocols based on a supplied map and
@@ -1258,6 +1266,16 @@ class Chain(list):
             #print "collating %s" % (type(p))
             tmpbytes += p.getbytes()
         return tmpbytes
+
+    def find_first_of(self, ptype):
+        """Find the first packet of type 'ptype' in this chain.
+           Return a tuple (packet, index)."""
+        n = 0
+        for p in self.packets:
+            if isinstance(p, ptype):
+                return (p, n)
+            n += 1
+        return (None, None)
 
     def find_preceding(self, packet, ptype, adjacent=True):
         """Given a packet which is part of this chain, return a reference
