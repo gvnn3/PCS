@@ -42,7 +42,12 @@ from socket import IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_IC
 
 IPPROTO_SCTP = 132
 
-import udp, tcp, ipsec, icmpv4, igmp, sctp
+import icmpv4
+import igmp
+import ipsec
+import sctp
+import tcp
+import udp
 
 map = {IPPROTO_UDP: udp.udp,
        IPPROTO_TCP: tcp.tcp,
