@@ -130,30 +130,23 @@ class udpTestCase(unittest.TestCase):
         # Create a packet for raw injection and verify it meets criteria.
         from pcs import inet_atol
         from pcs.packets.payload import payload
+
         c = ethernet(src="\x01\x02\x03\x04\x05\x06",		\
                      dst="\xff\xff\xff\xff\xff\xff") /		\
             ipv4(src=inet_atol("192.168.123.17"),		\
-                 dst=inet_atol("192.0.2.2")) /			\
+                 dst=inet_atol("192.0.2.2"), id=5235) /		\
             udp(sport=67, dport=68) /				\
             payload("foobar\n")
 
-        # UDP length includes payload and header.
-        # TODO: Teach the packets how to do this themselves.
-        c.packets[2].length = len(c.packets[2].bytes) + len(c.packets[3].bytes)
-
+        c.calc_lengths()
         c.calc_checksums()
         c.encode()
-
-        #from hexdumper import hexdumper
-        #hd = hexdumper()
-        #print
-        #print hd.dump2(c.bytes)
 
         expected = \
         "\xFF\xFF\xFF\xFF\xFF\xFF\x01\x02" \
         "\x03\x04\x05\x06\x08\x00\x45\x00" \
-        "\x00\x00\x00\x00\x00\x00\x40\x11" \
-        "\x7D\x31\xC0\xA8\x7B\x11\xC0\x00" \
+        "\x00\x23\x14\x73\x00\x00\x40\x11" \
+        "\x68\x9B\xC0\xA8\x7B\x11\xC0\x00" \
         "\x02\x02\x00\x43\x00\x44\x00\x0F" \
         "\xC0\x48\x66\x6F\x6F\x62\x61\x72" \
         "\x0A"
