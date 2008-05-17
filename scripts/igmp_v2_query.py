@@ -76,14 +76,8 @@ def main():
         igmp(type=IGMP_HOST_MEMBERSHIP_QUERY, code=maxresp) /	\
         igmpv2(group=group)
 
-    # TODO: Push length logic into Chain and down into packets themselves.
-    ip = c.packets[1]
-    ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
-                len(c.packets[3].bytes)
-    ip.hlen = len(ip.bytes) >> 2
-
+    c.calc_lengths()
     c.calc_checksums()
-    # XXX Always encode before you send.
     c.encode()
 
     input = PcapConnector(options.ether_iface)

@@ -77,11 +77,8 @@ def main():
     # which handles these messages MAY tell you if it's peering with other
     # PIM routers (I believe only Ciscos do this).
     #
-    # TODO: Hook dvmrp up to the base igmp header somehow.
 
-    ip = c.packets[1]
-    ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
-                len(c.packets[3].bytes)
+    c.calc_lengths()
     c.calc_checksums()
     c.encode()
 

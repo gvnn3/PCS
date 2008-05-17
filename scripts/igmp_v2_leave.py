@@ -56,17 +56,7 @@ def main():
         igmp(type=IGMP_HOST_LEAVE_MESSAGE) /		\
         igmpv2(group=inet_atol(options.igmp_group))
 
-    ip = c.packets[1]
-    if options.no_ra is True:
-	ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
-                    len(c.packets[3].bytes)
-	ip.hlen = len(ip.bytes) >> 2
-    else:
-	ip.options.append(ipv4opt(IPOPT_RA))
-	ip.hlen = len(ip.bytes) >> 2
-	ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
-                    len(c.packets[3].bytes)
-
+    c.calc_lengths()
     c.calc_checksums()
     c.encode()
 

@@ -85,19 +85,14 @@ def main():
                      dst=inet_atol(options.ip_dest)) / \
         icmpv4(type=8) / icmpv4echo(id=12345) / payload(payload="foobar")
 
-    # TODO: push length logic down into packets
-    #c.calc_lengths()
-    ip = c.packets[1]
-    icmp = c.packets[2]
-    echo = c.packets[3]
-    data = c.packets[4]
-    ip.length = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes) + len(data.bytes) 
-
-    output = PcapConnector(options.ether_iface)
+    c.calc_lengths()
 
     #
     # Increment ICMP echo sequence number with each iteration.
     #
+    output = PcapConnector(options.ether_iface)
+    ip = c.packets[1]
+    echo = c.packets[3]
     count = int(options.count)
     while (count > 0):
         c.calc_checksums()

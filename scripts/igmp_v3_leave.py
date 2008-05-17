@@ -59,16 +59,12 @@ def main():
     rec0.type.value = IGMP_CHANGE_TO_INCLUDE
     rec0.group.value = inet_atol(options.igmp_group)
     rep.records.append(rec0)
-    rep.nrecords = len(rep.records)
 
     # Add Router Alert option.
     ip = c.packets[1]
     ip.options.append(ipv4opt(IPOPT_RA))
 
-    # Compute outer IP header length. TODO Push this into the framework.
-    ip.hlen = len(ip.bytes) >> 2
-    ip.length = len(ip.bytes) + len(c.packets[2].bytes) + len(rep.bytes)
-
+    c.calc_lengths()
     c.calc_checksums()
     c.encode()
 

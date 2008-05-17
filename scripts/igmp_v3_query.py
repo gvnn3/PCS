@@ -151,11 +151,8 @@ def main():
 
     for src in sources:
         q.sources.append(pcs.Field("", 32, default = src))
-    q.nsrc = len(sources)
 
-    ip.length = len(ip.bytes) + len(c.packets[2].bytes) + \
-                len(c.packets[3].bytes)
-
+    c.calc_lengths()
     c.calc_checksums()
     c.encode()
 
