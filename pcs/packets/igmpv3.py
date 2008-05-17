@@ -59,6 +59,9 @@ IGMP_BLOCK_OLD_SOURCES = 6
 #
 IGMP_V3_QUERY_MINLEN = 12
 
+# TODO: Add keyword initializer support to GroupRecordField.
+# TODO: Reflect any auxiliary data in GroupRecordField.
+
 class query(pcs.Packet):
     """IGMPv3 query message."""
 
@@ -95,9 +98,11 @@ class query(pcs.Packet):
                       (query_len, len(bytes))
 
             rem = sources_len
-            while rem > 4:
-                src = struct.unpack('I', bytes[curr])[0]
+            curr = self.sizeof()
+            while rem >= 4:
+                src = struct.unpack('I', bytes[curr:curr+4])[0]
                 sources.append(pcs.Field("", 32, default = src))
+                curr += 4
                 rem -= 4
             if rem > 0:
                 print "WARNING: %d trailing bytes in query." % rem
@@ -107,6 +112,15 @@ class query(pcs.Packet):
             self.data = payload.payload(bytes[query_len:len(bytes)])
         else:
             self.data = None
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet.
+           An IGMPv3 query has no auxiliary data; the query counts
+           only the number of sources being queried, which may be 0."""
+        #self.nsrc = len(self._fieldnames['sources'])
+        # OptionListFields are returned as themselves when accessed as
+        # attributes of the enclosing Packet.
+        self.nsrc = len(self.sources)
 
 class GroupRecordField(pcs.CompoundField):
     """An IGMPv3 group record contains report information about
@@ -257,3 +271,11 @@ class report(pcs.Packet):
 	    self.data = payload.payload(bytes[curr:len(bytes)])
         else:
             self.data = None
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet.
+           An IGMPv3 report itself has no auxiliary data; the report header
+           counts only the number of records it contains."""
+        # OptionListFields are returned as themselves when accessed as
+        # attributes of the enclosing Packet.
+        self.nrecords = len(self.records)

@@ -60,7 +60,12 @@ class dnsheader(pcs.Packet):
         arcount = pcs.Field("arcount", 16)
         
         # DNS Headers on TCP require a length but when encoded in UDP do not.
+        # TODO: Add chain support to figure out dynamically if this
+        # dnsheader is being encapsulated in TCP or UDP using find_preceding(),
+        # and modify the layout accordingly.
+        self.is_tcp = False
         if (tcp != None):
+            self.is_tcp = True
             length = pcs.Field("length", 16)
             pcs.Packet.__init__(self,
                                 [length, id, query, opcode, aa, tc, rd, ra, z,
@@ -77,6 +82,17 @@ class dnsheader(pcs.Packet):
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet.
+           DNS headers are prepended with a length field iff they are
+           encapsulated in TCP. The length is non-inclusive, it does not
+           include the length of the length field, however it does include
+           the length of any following payload."""
+        if self.is_tcp is True:
+            self.length = len(self.getbytes()) - 2
+            if self._head is not None:
+                self.length += len(self._head.collate_following(self))
 
 class dnslabel(pcs.Packet):
     """DNS Label""" 

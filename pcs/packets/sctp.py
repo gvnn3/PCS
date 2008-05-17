@@ -44,6 +44,8 @@ import pcs.packets.sctp_map
 import inspect
 import time
 
+# TODO: Add calc_length() methods.
+
 class common(pcs.Packet):
     """SCTP common header class"""
 

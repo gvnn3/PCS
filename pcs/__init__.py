@@ -1090,6 +1090,11 @@ class Packet(object):
         #print "Packet.calc_checksum()"
         pass
 
+    def calc_length(self):
+        """Compute length field for this packet.
+           The base class does nothing, it has no notion of a length field."""
+        pass
+
     def sizeof(self):
         """Return the size, in bytes, of the packet."""
         return (self._bitlength / 8)
@@ -1286,7 +1291,7 @@ class Chain(list):
         for packet in reversed(self.packets):
             packet.calc_checksum()
 
-    def calc_length(self):
+    def calc_lengths(self):
         """Compute and store length fields for all packets in this chain,
            taking encapsulation into account. """
         for packet in reversed(self.packets):

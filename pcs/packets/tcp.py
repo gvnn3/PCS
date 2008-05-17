@@ -315,3 +315,11 @@ class tcp(pcs.Packet):
         pip6.length = len(self.getbytes()) + len(payload)
         tmpbytes = pip6.getbytes() + self.getbytes() + payload
         self.checksum = ipv4.ipv4_cksum(tmpbytes)
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet.
+           For TCP, we need only calculate the length of the header and
+           any appended options; the length of the TCP payload is
+           calculated from the length field in the outer IP/IP6 header."""
+        tmpoff = len(self.getbytes())
+        self.off = (tmpoff >> 2)

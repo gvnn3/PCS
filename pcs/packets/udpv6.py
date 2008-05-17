@@ -67,7 +67,9 @@ class udpv6(pcs.packets.udp.udp):
 
     def calc_checksum(self):
         """Calculate and store the checksum for this UDPv6 datagram.
-           The packet SHOULD be part of a chain, and have an IPv6 header."""
+           The packet SHOULD be part of a chain, and have an IPv6 header.
+           udpv6 is a specialization of udp whose outer header must
+           always be ipv4, therefore we enforce this."""
         from pcs.packets.ipv4 import ipv4
         ip6 = None
         if self._head is not None:

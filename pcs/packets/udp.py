@@ -151,3 +151,9 @@ class udp(pcs.Packet):
         pip6.length = len(self.getbytes()) + len(payload)
         tmpbytes = pip6.getbytes() + self.getbytes() + payload
         self.checksum = ipv4.ipv4_cksum(tmpbytes)
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet."""
+        self.length = len(self.getbytes())
+        if self._head is not None:
+            self.length += len(self._head.collate_following(self))

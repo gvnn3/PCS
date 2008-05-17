@@ -66,8 +66,8 @@ class udpv4(pcs.packets.udp.udp):
     def calc_checksum(self):
         """Calculate and store the checksum for this UDPv4 datagram.
            The packet must be part of a chain.
-           To do this we need to use an overlay, and copy some
-           header fields from the encapsulating IPv4 header."""
+           udpv4 is a specialization of udp whose outer header must
+           always be ipv4, therefore we enforce this."""
         from pcs.packets.ipv4 import ipv4
         ip = None
         if self._head is not None:

@@ -106,14 +106,14 @@ class ipv4(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """ define the fields of an IPv4 packet, from RFC 791."""
-        version = pcs.Field("version", 4, default = 4)
-        hlen = pcs.Field("hlen", 4, default = 5)
+        version = pcs.Field("version", 4, default=4)
+        hlen = pcs.Field("hlen", 4, default=5)
         tos = pcs.Field("tos", 8)
-        length = pcs.Field("length", 16)
+        length = pcs.Field("length", 16, default=20)
         id = pcs.Field("id", 16)
         flags = pcs.Field("flags", 3)
-        offset = pcs.Field("offset", 13)
-        ttl = pcs.Field("ttl", 8, default = 64)
+        offset = pcs.Field("offset", 13, default=0)
+        ttl = pcs.Field("ttl", 8, default=64)
         protocol = pcs.Field("protocol", 8, discriminator=True)
         checksum = pcs.Field("checksum", 16)
         src = pcs.Field("src", 32)
@@ -208,7 +208,15 @@ class ipv4(pcs.Packet):
         """Calculate and store the checksum for this packet."""
         #print "ipv4.calc_checksum()"
         self.checksum = 0
-        self.checksum = ipv4.ipv4_cksum(self.bytes)
+        self.checksum = ipv4.ipv4_cksum(self.getbytes())
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet."""
+        tmpbytes = self.getbytes()
+        self.hlen = (len(tmpbytes) >> 2)
+        self.length = len(tmpbytes)
+        if self._head is not None:
+            self.length += len(self._head.collate_following(self))
 
     def ipv4_cksum(bytes):
         """Static method to: Calculate and return the IPv4 header checksum
