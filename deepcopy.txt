@@ -1,0 +1,76 @@
+---
+class Packet:
+...
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a Packet; used by copy module."""
+        # XXX: We don't try to deep-copy the bytes. This is because
+        # when an encode happens, Packet will rebind self._bytes to
+        # point to a new string literal created in encode().
+        # However, we *do* need to deep-copy the packet layout. The
+        # Fields are in there and they contain the values specific
+        # to this instance.
+        from copy import deepcopy
+        result = self.__class__()
+        memo[id(self)] = result
+        result.__init__(deepcopy(self._layout, memo), None)
+# XXX each 
+        return result
+
+-- Conclusion: we shouldn't need to implement deepcopy
+   for list, because it does a deepcopy of what it contains.
+
+But we do need to do a deepcopy for Field,
+and any Field-like objects.
+
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a Field; used by copy module.
+           Fields may be copied, they are not immutable.
+           The new copy should not be associated with a Packet."""
+        from copy import deepcopy
+        result = self.__class__()
+        memo[id(self)] = result
+        result.__init__(deepcopy(self._layout, memo), None)
+
+        value = True
+        for field in self._layout:
+            data[deepcopy(field, memo)] = value
+        return result
+
+Not needed for 
+
+---
+
+Actually... if you're going to
+
+__dict__, as always, contains...well...
+
+So.. if you go down that road...
+ you need to make a deep copy of the layout, because
+ the values are in the Fields.
+
+---
+
+Implement deep copies for various PCS objects.
+They are needed to support protocol segmentation and reassembly.
+
+__deepcopy__ overrides are required by most PCS classes.
+
+ * Chain requires no override as it is derived from 'list'.
+   deepcopy will be called for each Packet in self.packets.
+
+ * Packet needs to make sure its association with Chain is broken,
+   and that the following fields are set to their default values:
+    data _head _bytes _needencode _discriminator_inited
+   * Other fields are initialized by calling the constructor.
+
+ * Layout requires no override as it is a descriptor derived from 'list'.
+   deepcopy will be called for each Field in the Layout.
+
+ * All classes derived from Field need to break the association with
+   Packet when copied, with the following caveats:
+   * The compare function is preserved, to enable users to copy
+     chains used as filters. It should not be deep copied.
+   * OptionListField is derived from list and therefore needs the default
+     list-style behaviour.
+   * StringField's value will be rebound if assigned to.
