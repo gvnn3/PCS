@@ -35,28 +35,17 @@
 # Description: IPv4 Segmentation and Reassembly (SAR) module
 
 import pcs
+import payload
 
-#from pcs import UnpackError
-#from socket import AF_INET, inet_ntop
-#import ipv4_map
-
-#import struct
-#import inspect
-#import time
-
-class ipv4frag(pcs.Packet):
+class ipv4frag(pcs.packets.payload):
     """A fragment of an IPv4 datagram awaiting reassembly."""
-    # We must contain the offset and flow info.
-    # Override __hash__ ?
 
 class ipv4sar(object):
     """An IPv4 reassembler."""
 
     def __init__(self):
         """Construct an ipv4sar object."""
-        # I must contain a dict which hashes on ip_p, ip_src, ip_dst, ip_id.
-        #  ...how does hashing for python dicts work?
-        pass
+        self.flows = {}
 
     def reassemble(self, chain, index = None):
         """Attempt to reassemble an IP datagram.
@@ -69,34 +58,84 @@ class ipv4sar(object):
            to make it easy to use the reassembler in an expect() loop.
            In that case we just return the datagram.
 
-           Returns a tuple of (chain, num, flushed):
+           Returns a tuple of (chain, num, flushed).
            chain - the reassembled chain, or None if no reassembly done.
            num - the number of fragments used to produce chain
            flushed - the number of fragments garbage collected this pass."""
-        pass
+
+        # Perform garbage collection pass.
+        gc = self.garbage_collect()
+
+        # Locate the IPv4 header in the chain.
+        ip = None
+        if index is not None:
+            ip = chain.packets[index]
+            assert isinstance(ip, pcs.packets.ipv4), \
+                   "No IPv4 header present in chain."
+        else:
+            ip = chain.find_first_of(pcs.packets.ipv4)
+            assert ip != None, "No IPv4 header present in chain."
+
+        # If packet is DF or no more fragments expected, don't do anything.
+        if (ip.ip_flags & IP_DF):
+            return (None, 0, gc)
+        if not (ip.ip_flags & IP_MF) and ip.ip_off == 0:
+            return (None, 0, gc)
+
+        # Look for this datagram in reassembly queue.
+        # If not found, create a new ipv4frag from the payload
+        # and create a new queue for this datagram.
+        # XXX need to keep old IP header around.
+        flowtuple = (ip.id, ip.protocol, ip.src, ip.dst)
+        if not flowtuple in self.flows:
+            payload = chain.collate_following(ip)
+            self.flows[flowtuple] = [ ipv4frag(payload) ]
+            return (None, 0, gc)
+
+        # We need to walk the reassembly queue and check we have
+        # enough fragments.
+        # XXX ordered collections?
+
+        assert False, "Unfinished code."
+        return (None, 0, gc)
 
     def garbage_collect(self):
         """Garbage collect any old entries in the reassembly queue.
            Return the number of fragments """
-        pass
+        return 0
 
-    def ipopt_copied(ipopt):
+    def ipopt_copied(optno):
         """Given an IPv4 option number, return True if it should be copied
            into any fragments beyond the first fragment of a datagram."""
-        return (ipopt & 0x80) != 0
+        return (optno & 0x80) != 0
 
     def make_fragment_header(ip):
         """Given an IPv4 header possibly with options, return a copy of the
            header which should be used for subsequent fragments."""
         from copy import deepcopy
-        nip = deepcopy(ip)
-        # XXX IPOPT_EOL and IPOPT_NOP are 'special'.
-        # XXX Check alignment and padding required.
+        # We work on the object representation, NOT the bytes themselves here.
+        oldopts = ip.options._options
+        newopts = []
+        optlen = 0         # in bits
         for opt in nip.options._options:
-            if not ipopt_copied(opt.type.value):
-                nip.options._options.remove(opt)
-        # XXX Terminate list with IPOPT_EOL and add NOPs if required.
-        pass
+            # Skip EOLs and NOPs.
+            # XXX May break legacy multicast tunnel LSRR alignment.
+            if isinstance(opt, pcs.Field):
+                continue
+            assert isinstance(opt, pcs.TypeLengthValueField)
+            if ipopt_copied(opt.type.value):
+                newopts.append(opt)
+            optlen += opt.width
+        # Align options to 32 bits.
+        assert optlen <= 44, "IPv4 option space cannot exceed 44 bytes."
+        remaining = optlen % 32
+        while remaining > 0:
+            newopts.append(pcs.Field("eol", 8, default=IPOPT_EOL))
+        nip = deepcopy(ip)
+        nip.options._options = newopts
+        nip.encode()
+        assert len(nip.getbytes()) <= 64, "IPv4 header cannot exceed 64 bytes."
+        return nip
 
     def fragment(chain, mtu, index = None):
         """Static method to: fragment a Chain containing an IPv4 header
@@ -108,8 +147,6 @@ class ipv4sar(object):
            index - points to IPv4 header in chain (optional)
            return: a list of Chains containing the fragments, or
                    None if ip had the DF bit set."""
-
-        from copy import deepcopy
 
         # Locate the IPv4 header in the chain.
         ip = None
@@ -138,14 +175,15 @@ class ipv4sar(object):
 
         # Take a deep copy of the IP header, and construct the
         # fragmentation headers.
+        from copy import deepcopy
         fip = deepcopy(ip)		# first IP fragment header
         fip.ip_flags = IP_MF
-        assert (len(fip.getbytes() % 4) == 0, \
+        assert (len(fip.getbytes()) % 4) == 0, \
                "First IPv4 fragment header not on 4-byte boundary."
 
         sip = make_fragment_header(fip)	# template IP fragment header
         sip.ip_flags = IP_MF
-        assert (len(fip.getbytes() % 4) == 0, \
+        assert (len(fip.getbytes()) % 4) == 0, \
                "Subsequent IPv4 fragment header not on 4-byte boundary."
 
         result = []			# The fragments w/o other headers.
@@ -158,7 +196,7 @@ class ipv4sar(object):
         rmtu -= rmtu % 8
 
         fip.ip_off = 0
-        result.append(Chain([fip, ipv4frag(bytes=tmpbytes[:rmtu])])
+        result.append(Chain([fip, ipv4frag(bytes=tmpbytes[:rmtu])]))
         off += rmtu
         remaining -= rmtu
 
@@ -171,7 +209,7 @@ class ipv4sar(object):
         while remaining >= rmtu:
             sip.ip_off = off >> 3
             result.append(Chain([deepcopy(sip), \
-                                 ipv4frag(bytes=tmpbytes[off:rmtu])])
+                                 ipv4frag(bytes=tmpbytes[off:rmtu])]))
             off += rmtu
             remaining -= rmtu
 
@@ -184,7 +222,7 @@ class ipv4sar(object):
             if not (ip.ip_flags & IP_MF):
                 sip.ip_flags = 0
             result.append(Chain([deepcopy(sip), \
-                                 ipv4frag(bytes=tmpbytes[off:remaining])])
+                                 ipv4frag(bytes=tmpbytes[off:remaining])]))
             off += remaining
             remaining -= remaining
         assert off == len(tmpbytes), "Did not fragment entire payload."
