@@ -1496,6 +1496,11 @@ class Chain(list):
         for packet in reversed(self.packets):
             packet.calc_length()
 
+    def fixup(self):
+        """Convenience method to calculate lengths, checksums, and encode."""
+        self.calc_lengths()
+        self.calc_checksums()
+        self.encode()
 
 class ConnNotImpError(Exception):
     """Calling a method that is not implemented raises this exception.
