@@ -1620,6 +1620,9 @@ class Connector(object):
     def close(self):
         raise ConnNotImpError, "Cannot use base class"
 
+    # XXX This has serious problems if you want to try to use
+    # it in near real time. The pcap based implementation really
+    # needs to use pcap's event handling functionality.
     def expect(self, patterns=[], timeout=None, limit=None):
         """Read from the Connector and return the index of the
            first pattern which matches the input chain; otherwise,
@@ -1652,6 +1655,8 @@ class Connector(object):
         then = start
         count = 0
         delta = timeout
+        self.match = None
+        self.match_index = None
         while True:
             result = self.poll_read(delta)
 
@@ -1666,7 +1671,7 @@ class Connector(object):
             if timeout != None and (now - start) > timeout:
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], TIMEOUT):
-                        self.match = p
+                        self.match = patterns[i]
                         return i
                 raise TimeoutError
 
@@ -1674,23 +1679,28 @@ class Connector(object):
                 if delta > 0:
                     continue   # Early wakeup.
 
-            c = self.read_chain()    # XXX Should check for EOF.
-            count += 1
-
             if isinstance(result, EOF):
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], EOF):
-                        self.match = p
+                        self.match = patterns[i]
                         self.match_index = i
                         return i
                 raise EOFError
-            elif limit != None and count == limit:
+
+            # If we get here we know there's a packet available.
+            # Don't actually read it until we...
+            count += 1
+            #print count
+
+            if limit != None and count == limit:
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], LIMIT):
-                        self.match = p
+                        self.match = patterns[i]
                         self.match_index = i
                         return i
                 raise LimitReachedError
+
+            c = self.read_chain()    # XXX Should check for EOF here too.
 
             # Otherwise, look for a chain or packet match. The index of
             # the first match is returned.
@@ -1702,11 +1712,13 @@ class Connector(object):
                     if p.matches(c):
                         self.match = c
                         self.match_index = i
+                        #print "match"
                         return i
                 if isinstance(p, Packet):
                     if c.contains(p):
                         self.match = c
                         self.match_index = i
+                        #print "match"
                         return i
 
         return None
@@ -1736,6 +1748,10 @@ class PcapConnector(Connector):
         self.dloff = self.file.dloff
         self.setfilter = self.file.setfilter
         self.dlink = self.file.datalink()
+
+        self.file.setdirection(pcap.PCAP_D_IN)	# XXX
+        #self.file.setnonblock(True)
+        #self.is_nonblocking = True
         
     def read(self):
         """read a packet from a pcap file or interface
