@@ -82,6 +82,8 @@ class FieldBoundsError(Exception):
     def __str__(self):
         return repr(self.message)
     
+# XXX Should really be named IntegerField and the common methods shuffled
+# off into a base class.
 class Field(object):
     """A field is a name, a type, a width in bits, possibly a default
 value and can be marked as a dicriminator for higher level packet
@@ -217,6 +219,28 @@ layout of the data and how it is addressed."""
             (value > (2 ** self.width) - 1)):
             raise FieldBoundsError, "Value must be between 0 and %d but is %d" % ((2 ** self.width - 1), value)
 
+    def __copy__(self):
+        """Return a shallow copy of a Field; used by copy module.
+           Fields may be copied, they are not immutable."""
+        return self.__deepcopy__()
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a Field; used by copy module.
+           Fields may be copied, they are not immutable; however they
+           always contain integer types which *are* immutable."""
+        result = self.__class__()
+        memo[id(self)] = result
+        result.__init__(name=self.name, width=self.width, \
+                        default=self.default, \
+                        discriminator=self.discriminator, \
+                        compare=self.compare)
+        # Copy value, we can do so here with impunity -- no __setattr__.
+        result.value = self.value
+        assert result.value == self.value, "value not copied"
+        # The new copy MUST NOT be associated with a Packet.
+        assert result.packet == None, "dangling reference to Packet"
+        return result
+
     def default_compare(lp, lf, rp, rf):
         """Default comparison method.
 
@@ -243,6 +267,8 @@ class FieldAlignmentError(Exception):
         ## the message that will be output when this error is raised
         self.message = message
 
+# Both StringField and Field contain only immutable data types, therefore
+# they share copy semantics through inheritance.
 
 class StringField(Field):
     """A string field is a name, a width in bits, and possibly a
@@ -381,6 +407,27 @@ class LengthValueField(object):
         """Check the bounds of this field."""
         self.value.bounds(value)
 
+    # There is no __setattr__ to stomp on us here.
+    def __copy__(self):
+        """Return a shallow copy of a LengthValueField; used by copy module.
+           A shallow copy just makes references to these Fields in the copy."""
+        result = self.__class__(name=self.name, \
+                                length=self.length, \
+                                value=self.value, \
+                                compare=self.compare)
+        return result
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a LengthValueField; used by copy module.
+           A deep copy copies all of the embedded Fields."""
+        from copy import deepcopy
+        result = self.__class__(name=self.name, \
+                        length=deepcopy(self.length, memo), \
+                        value=deepcopy(self.value, memo), \
+                        compare=self.compare)
+        memo[id(self)] = result
+        return result
+
     def default_compare(lp, lf, rp, rf):
         """Default comparison method."""
         return lf.value == rf.value
@@ -402,6 +449,7 @@ class TypeValueField(object):
         else:
             raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
         self.width = type.width + value.width
+        self.compare = compare
 
     def __repr__(self):
         return "<pcs.TypeValueField name %s, type %s, value %s>" % (self.name, self.type, self.value)
@@ -430,6 +478,27 @@ class TypeValueField(object):
         if ((value == None) or
             (len (value) > (((2 ** self.valuewidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
+
+    # There is no __setattr__ to stomp on us here.
+    def __copy__(self):
+        """Return a shallow copy of a TypeValueField; used by copy module.
+           A shallow copy just makes references to these Fields in the copy."""
+        result = self.__class__(name=self.name, \
+                                type=self.type, \
+                                value=self.value, \
+                                compare=self.compare)
+        return result
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a TypeValueField; used by copy module.
+           A deep copy copies all of the embedded Fields."""
+        from copy import deepcopy
+        result = self.__class__(name=self.name, \
+                        type=deepcopy(self.type, memo), \
+                        value=deepcopy(self.value, memo), \
+                        compare=self.compare)
+        memo[id(self)] = result
+        return result
 
     def default_compare(lp, lf, rp, rf):
         """Default comparison method."""
@@ -508,6 +577,36 @@ class TypeLengthValueField(object):
         if ((value == None) or
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
+
+    # There is no __setattr__ to stomp on us here.
+    def __copy__(self):
+        """Return a shallow copy of a TypeLengthValueField;
+           used by copy module.
+           A shallow copy just makes references to these
+           Fields in the copy."""
+        result = self.__class__(name=self.name, \
+                                type=self.type, \
+                                length=self.length, \
+                                value=self.value, \
+                                inclusive=self.inclusive, \
+                                bytewise=self.bytewise, \
+                                compare=self.compare)
+        return result
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a TypeLengthValueField;
+           used by copy module.
+           A deep copy copies all of the embedded Fields."""
+        from copy import deepcopy
+        result = self.__class__(name=self.name, \
+                                type=deepcopy(self.type, memo), \
+                                length=deepcopy(self.length, memo), \
+                                value=deepcopy(self.value, memo), \
+                                inclusive=self.inclusive, \
+                                bytewise=self.bytewise, \
+                                compare=self.compare)
+        memo[id(self)] = result
+        return result
 
     def default_compare(lp, lf, rp, rf):
         """Default comparison method."""
@@ -677,6 +776,30 @@ class OptionListField(CompoundField, list):
 
     def reset(self):
         print self._options
+
+    # There is no __setattr__ to stomp on us here.
+    def __copy__(self):
+        """Return a shallow copy of an OptionListField; used by copy module.
+           A shallow copy just makes references to these Fields in the copy."""
+        result = self.__class__(name=self.name, \
+                                width=self.width, \
+                                option_list=self._options, \
+                                compare=self.compare)
+        return result
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of an OptionListField; used by copy module.
+           A deep copy copies all of the embedded Fields."""
+        from copy import deepcopy
+        optcopy = []
+        for opt in self._options:
+            optcopy.append(deepcopy(opt, memo))
+        result = self.__class__(name=self.name, \
+                                width=self.width, \
+                                option_list=optcopy, \
+                                compare=self.compare)
+        memo[id(self)] = result
+        return result
 
     def default_compare(lp, lf, rp, rf):
         """Default comparison method."""
@@ -1012,6 +1135,31 @@ class Packet(object):
             packet._head = head
         return head
 
+    def __copy__(self):
+        """Return a shallow copy of a Packet; used by copy module.
+           This is always implemented as a deep copy."""
+        return self.__deepcopy__()
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a Packet; used by copy module.
+
+           All derived classes of Packet create a new instance of Layout
+           and what it contains every time they are constructed. We need
+           to preserve that API contract down here in the lower layers;
+           and we need to return an instance of the derived class, so we
+           call its default constructor, and make a deep copy of all the
+           field values here.
+           The backing store in self.bytes is an immutable buffer
+           which is dynamically reallocated when changed, so we can
+           either copy it or forget about it."""
+        from copy import deepcopy
+        newp = self.__class__()
+        for field in newp._layout:
+            newp._fieldnames[field.name] = \
+                deepcopy(self._fieldnames[field.name], memo)
+        memo[id(self)] = newp
+        return newp
+
     def chain(self):
         """Return the packet and its next packets as a chain."""
         chain = Chain([])
@@ -1130,10 +1278,13 @@ class Chain(list):
     def __init__(self, packets = None):
         """initialize a Chain object
 
-        packets - an optionl array of packets to add to the new Chain
+        packets - an optional list of packets to add to the new Chain
         """
         list.__init__(self)
         self.packets = packets
+        # XXX We may clobber packets which belong to an existing Chain.
+        for p in self.packets:
+            p._head = self
         self.encode()
 
     def __eq__(self, other):
@@ -1174,6 +1325,36 @@ class Chain(list):
         self.append(packet)
         packet._head = self
         return self
+
+    def __copy__(self):
+        """Return a shallow copy of a Chain; used by copy module.
+           This is always implemented as a deep copy."""
+        return self.__deepcopy__()
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a Chain; used by copy module.
+
+           Chain is derived from list. We can't rely on the default deepcopy
+           handler for list, as it doesn't know our representation.
+
+           Chain may contain Packets, and Packets may refer back to their
+           parent Chain. Because of this, we need to make deep copies of
+           all Packets contained within a Chain to avoid clobbering
+           the contents of existing Chains, and set their head pointer
+           to point to the newly created Chain.
+
+           Also, the constructor for Chain needs a list of Packet, so we
+           pass it an empty list and then append each copied Packet to
+           its internal list."""
+        from copy import deepcopy
+        newchain = self.__class__([])
+        memo[id(self)] = newchain
+        for p in self.packets:
+            newp = deepcopy(p, memo)
+            newp._head = newchain
+            newchain.packets.append(newp)
+        newchain.encode()
+        return newchain
 
     def append(self, packet):
         """Append a packet to a chain.  Appending a packet requires
