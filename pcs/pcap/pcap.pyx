@@ -49,6 +49,8 @@ cdef extern from "pcap.h":
         int __xxx
     ctypedef struct pcap_dumper_t:
         int __xxx
+    ctypedef enum pcap_direction_t:
+        __xxx
     
 ctypedef void (*pcap_handler)(void *arg, pcap_pkthdr *hdr, char *pkt)
 
@@ -63,6 +65,7 @@ cdef extern from "pcap.h":
                          unsigned int netmask)
     int     pcap_setfilter(pcap_t *p, bpf_program *fp)
     void    pcap_freecode(bpf_program *fp)
+    int     pcap_setdirection(pcap_t *p, pcap_direction_t d)
     int     pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback,
                           unsigned char *arg)
     unsigned char *pcap_next(pcap_t *p, pcap_pkthdr *hdr)
@@ -113,6 +116,10 @@ cdef void __pcap_handler(void *arg, pcap_pkthdr *hdr, char *pkt):
     except:
         ctx.got_exc = 1
     PyGILState_Release(gil)
+
+PCAP_D_INOUT = 0
+PCAP_D_IN = 1
+PCAP_D_OUT = 2
 
 DLT_NULL =	0
 DLT_EN10MB =	1
@@ -263,6 +270,11 @@ cdef class pcap:
         if pcap_setfilter(self.__pcap, &fcode) < 0:
             raise OSError, pcap_geterr(self.__pcap)
         pcap_freecode(&fcode)
+
+    def setdirection(self, value):
+        """Set BPF capture direction."""
+        if pcap_setdirection(self.__pcap, value) < 0:
+            raise OSError, pcap_geterr(self.__pcap)
 
     def setnonblock(self, nonblock=True):
         """Set non-blocking capture mode."""
