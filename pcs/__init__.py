@@ -2265,3 +2265,10 @@ def inet_atol(string):
         value += ord(addr[i]) << (3 - i) * 8
     return value
 
+def inet_ltoa(l):
+    """convert a long IPv4 address into a string"""
+    value = ""
+    for i in xrange(4):
+        value = str(l & 0xFF) + "." + value
+        l >>= 8
+    return value[:-1]
