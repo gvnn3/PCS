@@ -55,10 +55,7 @@ def main():
              dst=INADDR_ALLRTRS_GROUP) /		\
         igmp(type=IGMP_HOST_LEAVE_MESSAGE) /		\
         igmpv2(group=inet_atol(options.igmp_group))
-
-    c.calc_lengths()
-    c.calc_checksums()
-    c.encode()
+    c.fixup()
 
     out = output.write(c.bytes, len(c.bytes))
 
