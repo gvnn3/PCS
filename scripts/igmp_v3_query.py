@@ -152,9 +152,7 @@ def main():
     for src in sources:
         q.sources.append(pcs.Field("", 32, default = src))
 
-    c.calc_lengths()
-    c.calc_checksums()
-    c.encode()
+    c.fixup()
 
     input = PcapConnector(options.ether_iface)
     input.setfilter("igmp")

@@ -75,10 +75,7 @@ def main():
              dst=dst) /						\
         igmp(type=IGMP_HOST_MEMBERSHIP_QUERY, code=maxresp) /	\
         igmpv2(group=group)
-
-    c.calc_lengths()
-    c.calc_checksums()
-    c.encode()
+    c.fixup()
 
     input = PcapConnector(options.ether_iface)
     input.setfilter("igmp")

@@ -50,20 +50,12 @@ def main():
     c = ethernet(src=ether_atob(options.ether_source),                    \
                  dst=ETHER_MAP_IP_MULTICAST(INADDR_ALLRPTS_GROUP)) /      \
         ipv4(src=inet_atol(options.ip_source), dst=INADDR_ALLRPTS_GROUP,  \
-             ttl=1, flags=IP_DF) /                                         \
+             ttl=1, flags=IP_DF, options=[ipvt4opt(IPOPT_RA)]) /          \
         igmp(type=IGMP_v3_HOST_MEMBERSHIP_REPORT) /                       \
         igmpv3.report(records=[GroupRecordField("",                       \
                                 group=inet_atol(options.igmp_group),      \
                                 type=IGMP_CHANGE_TO_INCLUDE)])
-
-    # Add Router Alert option.
-    # TODO: Add sugar for IP options too.
-    ip = c.packets[1]
-    ip.options.append(ipv4opt(IPOPT_RA))
-
-    c.calc_lengths()
-    c.calc_checksums()
-    c.encode()
+    c.fixup()
 
     # Send it.
     output = PcapConnector(options.ether_iface)
