@@ -77,11 +77,11 @@ ICMP_UNREACH_PROTOCO = 2	# bad protocol
 ICMP_UNREACH_POR = 3		# bad port 
 ICMP_UNREACH_NEEDFRA = 4	# IP_DF caused drop 
 ICMP_UNREACH_SRCFAI = 5		# src route failed 
-ICMP_UNREACH_NET_UNKNOWN 6	# unknown net 
-ICMP_UNREACH_HOST_UNKNOWN 7	# unknown host 
+ICMP_UNREACH_NET_UNKNOWN = 6	# unknown net 
+ICMP_UNREACH_HOST_UNKNOWN = 7	# unknown host 
 ICMP_UNREACH_ISOLATE = 8	# src host isolated 
 ICMP_UNREACH_NET_PROHI = 9	# prohibited access 
-ICMP_UNREACH_HOST_PROHIB 10	# ditto 
+ICMP_UNREACH_HOST_PROHIB = 10	# ditto 
 ICMP_UNREACH_TOSNE = 11		# bad tos for net 
 ICMP_UNREACH_TOSHOS = 12	# bad tos for host 
 ICMP_UNREACH_FILTER_PROHIB = 13	# admin prohib 
