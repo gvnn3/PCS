@@ -83,6 +83,11 @@ class dnsheader(pcs.Packet):
         else:
             self.timestamp = timestamp
 
+        # Unconditionally the last packet in a chain
+        # XXX This is obviously incorrect. We need to decode payload
+        # if we have one -- we may contain labels, etc.
+        self.data = None
+
     def calc_length(self):
         """Calculate and store the length field(s) for this packet.
            DNS headers are prepended with a length field iff they are
