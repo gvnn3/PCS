@@ -39,6 +39,69 @@ import pcs
 import inspect
 import time
 
+#
+# ICMP types.
+#
+ICMP_ECHOREPLY = 0		# echo reply 
+ICMP_UNREACH = 3		# dest unreachable, codes: 
+ICMP_SOURCEQUENC = 4		# packet lost, slow down 
+ICMP_REDIRECT = 5		# shorter route
+ICMP_ALTHOSTADD = 6		# alternate host address 
+ICMP_ECHO = 8			# echo service 
+ICMP_ROUTERADVER = 9		# router advertisement 
+ICMP_ROUTERSOLICI = 10		# router solicitation 
+ICMP_TIMXCEED = 11		# time exceeded, code: 
+ICMP_PARAMPROB = 12		# ip header bad 
+ICMP_TSTAMP = 13		# timestamp request 
+ICMP_TSTAMPREPL = 14		# timestamp reply 
+ICMP_IREQ = 15			# information request 
+ICMP_IREQREPLY = 16		# information reply 
+ICMP_MASKREQ = 17		# address mask request 
+ICMP_MASKREPLY = 18		# address mask reply 
+ICMP_TRACEROUTE = 30		# traceroute 
+ICMP_DATACONVER = 31		# data conversion error 
+ICMP_MOBILE_REDIREC = 32	# mobile host redirect 
+ICMP_IPV6_WHEREAREYO = 33	# IPv6 where-are-you 
+ICMP_IPV6_IAMHER = 34		# IPv6 i-am-here 
+ICMP_MOBILE_REGREQUES = 35	# mobile registration req 
+ICMP_MOBILE_REGREPL = 36	# mobile registration reply 
+ICMP_SKIP = 39			# SKIP 
+ICMP_PHOTURIS = 40		# Photuris 
+
+#
+# ICMP codes.
+#
+ICMP_UNREACH_NE = 0		# bad net 
+ICMP_UNREACH_HOS = 1		# bad host 
+ICMP_UNREACH_PROTOCO = 2	# bad protocol 
+ICMP_UNREACH_POR = 3		# bad port 
+ICMP_UNREACH_NEEDFRA = 4	# IP_DF caused drop 
+ICMP_UNREACH_SRCFAI = 5		# src route failed 
+ICMP_UNREACH_NET_UNKNOWN 6	# unknown net 
+ICMP_UNREACH_HOST_UNKNOWN 7	# unknown host 
+ICMP_UNREACH_ISOLATE = 8	# src host isolated 
+ICMP_UNREACH_NET_PROHI = 9	# prohibited access 
+ICMP_UNREACH_HOST_PROHIB 10	# ditto 
+ICMP_UNREACH_TOSNE = 11		# bad tos for net 
+ICMP_UNREACH_TOSHOS = 12	# bad tos for host 
+ICMP_UNREACH_FILTER_PROHIB = 13	# admin prohib 
+ICMP_UNREACH_HOST_PRECEDENCE = 14	# host prec vio. 
+ICMP_UNREACH_PRECEDENCE_CUTOFF = 1	# prec cutoff 
+ICMP_REDIRECT_NE = 0		# for network 
+ICMP_REDIRECT_HOS = 1		# for host 
+ICMP_REDIRECT_TOSNE = 2		# for tos and net 
+ICMP_REDIRECT_TOSHOS = 3	# for tos and host 
+ICMP_ROUTERADVERT_NORMAL = 0		# normal advertisement 
+ICMP_ROUTERADVERT_NOROUTE_COMMO = 1	# selective routing 
+ICMP_TIMXCEED_INTRAN = 0		# ttl==0 in transit 
+ICMP_TIMXCEED_REAS = 1			# ttl==0 in reass 
+ICMP_PARAMPROB_ERRATPTR = 0		# error at param ptr 
+ICMP_PARAMPROB_OPTABSENT = 1		# req. opt. absent 
+ICMP_PARAMPROB_LENGTH = 2		# bad length 
+ICMP_PHOTURIS_UNKNOWN_INDE = 1		# unknown sec index 
+ICMP_PHOTURIS_AUTH_FAILE = 2		# auth failed 
+ICMP_PHOTURIS_DECRYPT_FAILE = 3		# decrypt failed 
+
 class icmpv4(pcs.Packet):
     """ICMPv4"""
 
