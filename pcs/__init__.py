@@ -1565,7 +1565,7 @@ class Connector(object):
     real classes are based."""
 
     def __init__(self):
-        self.match = None
+        self.matches = None
         self.match_index = None
         raise ConnNotImpError, "Cannot use base class"
 
@@ -1607,6 +1607,22 @@ class Connector(object):
         p = self.read_packet()
         return p.chain()
 
+    def try_read_n_chains(self, n):
+        """Try to read at most n packet chains from the underlying
+           I/O layer. If n is None or 0, try to read exactly one packet.
+           Connectors with their own buffering semantics should override
+           this method (e.g. PcapConnector). Used by expect()."""
+        result = []
+        if n is None or n == 0:
+            n = 1
+        for i in xrange(n):
+            p = self.read_packet()
+            if p is not None:
+                result.append(p)
+            else:
+                break
+        return result
+
     def write(self):
         raise ConnNotImpError, "Cannot use base class"
 
@@ -1625,16 +1641,14 @@ class Connector(object):
     def close(self):
         raise ConnNotImpError, "Cannot use base class"
 
-    # XXX This has serious problems if you want to try to use
-    # it in near real time. The pcap based implementation really
-    # needs to use pcap's event handling functionality.
     def expect(self, patterns=[], timeout=None, limit=None):
         """Read from the Connector and return the index of the
            first pattern which matches the input chain; otherwise,
            raise an exception.
 
-           On return, the match property will contain the matching
-           packet chain.
+           On return, the matches property will contain a list of matching
+           packet chain(s). There may be more than one match if a live
+           capture matches more than one before the loop exits.
 
            The syntax is intentionally similar to that of pexpect.
             Both timeouts and limits may be specified as patterns.
@@ -1653,14 +1667,13 @@ class Connector(object):
            was not encountered, this function may potentially block forever.
 
            TODO: Buffer for things like TCP reassembly.
-           TODO: Make this drift and jitter robust (CLOCK_MONOTONIC).
-           TODO: Accept a wider pattern language. """
+           TODO: Make this drift and jitter robust (CLOCK_MONOTONIC)."""
         from time import time
         start = time()
         then = start
-        count = 0
+        remaining = limit
         delta = timeout
-        self.match = None
+        self.matches = None
         self.match_index = None
         while True:
             result = self.poll_read(delta)
@@ -1676,7 +1689,7 @@ class Connector(object):
             if timeout != None and (now - start) > timeout:
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], TIMEOUT):
-                        self.match = patterns[i]
+                        self.matches = [patterns[i]]
                         return i
                 raise TimeoutError
 
@@ -1687,44 +1700,58 @@ class Connector(object):
             if isinstance(result, EOF):
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], EOF):
-                        self.match = patterns[i]
+                        self.matches = [patterns[i]]
                         self.match_index = i
                         return i
                 raise EOFError
 
-            # If we get here we know there's a packet available.
-            # Don't actually read it until we...
-            count += 1
-            #print count
+            # Try to read as many pending packet chains as we can; some
+            # Connectors override this as their I/O layers expect to return
+            # multiple packets at once, and reentering Python might lose
+            # a race with the ring buffer (e.g. pcap_dispatch()).
+            chains = self.try_read_n_chains(remaining)
 
-            if limit != None and count == limit:
+            chain_index = 0
+            matches = []
+            match_index = None
+
+            # Check for a first match in the filter list.
+            # If we exceed the remaining packet count, break.
+            for c in chains:
+                if limit != None:
+                    remaining -= 1
+                chain_index += 1
+                for i in range(len(patterns)):
+                    p = patterns[i]
+                    if (isinstance(p, Chain) and p.matches(c)) or \
+                       (isinstance(p, Packet) and c.contains(p)):
+                        matches.append(c)
+                        match_index = i
+                        break
+                if limit != None and remaining == 0:
+                    break
+
+            # If one of our filters matched, try to match all the other
+            # packets we got in a batch from a possibly live capture.
+            if match_index != None:
+                p = patterns[match_index]
+                for c in chains[chain_index:]:
+                    if (isinstance(p, Chain) and p.matches(c)) or \
+                       (isinstance(p, Packet) and c.contains(p)):
+                        matches.append(c)
+                self.matches = matches
+                self.match_index = match_index
+                return match_index
+
+            # If we never got a match, and we reached our limit,
+            # return an error.
+            if limit != None and remaining == 0:
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], LIMIT):
-                        self.match = patterns[i]
+                        self.matches = [patterns[i]]
                         self.match_index = i
                         return i
                 raise LimitReachedError
-
-            c = self.read_chain()    # XXX Should check for EOF here too.
-
-            # Otherwise, look for a chain or packet match. The index of
-            # the first match is returned.
-            for i in range(len(patterns)):
-                p = patterns[i]
-                if isinstance(p, Chain):
-                    #print "trying to match:" p
-                    #print "with: " c
-                    if p.matches(c):
-                        self.match = c
-                        self.match_index = i
-                        #print "match"
-                        return i
-                if isinstance(p, Packet):
-                    if c.contains(p):
-                        self.match = c
-                        self.match_index = i
-                        #print "match"
-                        return i
 
         return None
 
@@ -1739,25 +1766,29 @@ class PcapConnector(Connector):
     work on your own.
     """
 
-    def __init__(self, name = None):
+    def __init__(self, name=None, snaplen=65535, promisc=True, \
+                 timeout_ms=500):
         """initialize a PcapConnector object
 
         name - the name of a file or network interface to open
+        snaplen   - maximum number of bytes to capture for each packet
+        promisc   - boolean to specify promiscuous mode sniffing
+        timeout_ms - read timeout in milliseconds
         """
         try:
-            self.file = pcap.pcap(name)
+            self.file = pcap.pcap(name, snaplen, promisc, timeout_ms)
         except:
             raise
 
-        # Grab the underlying pcap objects members for convenienc
+        # Grab the underlying pcap objects members for convenience
         self.dloff = self.file.dloff
         self.setfilter = self.file.setfilter
         self.dlink = self.file.datalink()
 
-        self.file.setdirection(pcap.PCAP_D_IN)	# XXX
-        #self.file.setnonblock(True)
-        #self.is_nonblocking = True
-        
+        # Default to blocking I/O.
+        self.file.setnonblock(False)
+        self.is_nonblocking = False
+
     def read(self):
         """read a packet from a pcap file or interface
 
@@ -1773,14 +1804,22 @@ class PcapConnector(Connector):
         """recvfrom a packet from a pcap file or interface"""
         return self.file.next()[1]
 
+    def setdirection(self, inout):
+        """Set the pcap direction."""
+        return self.file.setdirection(inout)
+
     def poll_read(self, timeout=None):
         """Poll the underlying I/O layer for a read.
            Return TIMEOUT if the timeout was reached."""
         from select import select
         fd = self.file.fileno()
-        self.file.setnonblock()
+        # Switch to non-blocking mode if entered without.
+        if not self.is_nonblocking:
+            self.file.setnonblock(True)
         result = select([fd],[],[], timeout)
-        self.file.setnonblock(False)
+        # Restore non-blocking mode if entered without.
+        if not self.is_nonblocking:
+            self.file.setnonblock(False)
         if not fd in result[0]:
             return TIMEOUT()
         return None
@@ -1792,6 +1831,47 @@ class PcapConnector(Connector):
     def readpkt(self):
         # XXX legacy name.
         return self.read_packet()
+
+    def try_read_n_chains(self, n):
+        """Try to read at most n packet chains from the pcap session.
+           Used by Connector.expect() to do the right thing with
+           buffering live captures."""
+        if n is None or n == 0:
+            n = -1	# pcap: process all of the buffer in a live capture
+        result = []	# list of chain
+        ltp = []	# list of tuple (ts, packet)
+        def handler(ts, p, *args):
+            ltp = args[0]
+            ltp.append((ts, p))
+        self.file.dispatch(n, handler, ltp)
+        #print "PcapConnector.try_read_n_chains() read ", len(ltp)
+        for tp in ltp:
+            p = self.unpack(tp[1], self.dlink, self.dloff, tp[0])
+            result.append(p.chain())
+        return result
+
+    # TODO: Add the magic which transmutes a basic PCS filter chain
+    # into a simple BPF match program. We can't do a 1:1 mapping
+    # as comparison functions may exist, but if the default compare
+    # hook is installed, we can get away with an exact match providing
+    # the field type is Field. We can then install it as a BPF filter
+    # on entry to expect() and do less work in userland or indeed Python.
+
+    def expect(self, patterns=[], timeout=None, limit=None):
+        """PcapConnector needs to override expect to set it up for
+           non-blocking I/O throughout. We do this to avoid losing
+           packets between expect sessions.
+           Typically we would also set up pcap filter programs here
+           if performing potentially expensive matches."""
+        oldnblock = self.is_nonblocking
+        if oldnblock is False:
+            self.file.setnonblock(True)
+            self.is_nonblocking = True
+        result = Connector.expect(self, patterns, timeout, limit)
+        if oldnblock is False:
+            self.file.setnonblock(False)
+            self.is_nonblocking = False
+        return result
 
     def write(self, packet, bytes):
         """Write a packet to a pcap file or network interface.
