@@ -1975,8 +1975,9 @@ class TapConnector(Connector):
         """
         import os
         from os import O_NONBLOCK, O_RDWR
+        self.is_nonblocking = False
         try:
-            self.fileno = os.open(name, O_RDWR + O_NONBLOCK)
+            self.fileno = os.open(name, O_RDWR)
         except:
             raise
 
@@ -2020,35 +2021,126 @@ class TapConnector(Connector):
         bytes - the bytes of the packet, and not the packet object"""
         return self.blocking_write(packet)
 
+    # XXX We could just call PcapConnector's method here.
     def poll_read(self, timeout=None):
-        """Needed to work with expect"""
+        """Poll the underlying I/O layer for a read.
+           Return TIMEOUT if the timeout was reached."""
         from select import select
-        fd = self.fileno
+        fd = self.file.fileno()
+        # Switch to non-blocking mode if entered without.
+        if not self.is_nonblocking:
+            self.file.setnonblock(True)
         result = select([fd],[],[], timeout)
+        # Restore non-blocking mode if entered without.
+        if not self.is_nonblocking:
+            self.file.setnonblock(False)
         if not fd in result[0]:
             return TIMEOUT()
         return None
 
+    def try_read_n_chains(self, n):
+        """Try to read as many packet chains from the tap device as are
+           currently available. Used by Connector.expect() to do the
+           right thing with buffering live captures.
+           Note that unlike pcap, timestamps are not real-time."""
+        from time import time
+        result = []	# list of chain
+        lpb = []	# list of strings (packet buffers) 
+        if __debug__ and not self.is_nonblocking:
+            print "WARNING: TapConnector.try_read_n_chains w/o O_NONBLOCK"
+        ts = time()
+        for i in xrange(n):
+            pb = self.try_read_one()
+            if pb is None:
+                break
+            lpb.append(pb)
+        for pb in lpb:
+            p = self.unpack(pb, self.dlink, self.dloff, ts)
+            result.append(p.chain())
+        return result
+
+    # XXX We could just call PcapConnector's method here.
+    def expect(self, patterns=[], timeout=None, limit=None):
+        """TapConnector needs to override expect just like
+           PcapConnector does."""
+        # Force non-blocking mode.
+        oldnblock = self.is_nonblocking
+        if oldnblock is False:
+            self.setnonblock(True)
+            self.is_nonblocking = True
+        # Call base class expect() routine.
+        result = Connector.expect(self, patterns, timeout, limit)
+        # Unconditionally restore O_NBLOCK mode.
+        self.setnonblock(oldnblock)
+        self.is_nonblocking = oldnblock
+        return result
+
+    def setnonblock(enabled):
+        """Set the non-blocking flag. Return the value of the file flags."""
+        from os import O_NONBLOCK
+        from fcntl import fcntl, F_SETFL, F_GETFL
+        flags = fcntl(self.fileno, F_GETFL)
+        if ((flags & O_NONBLOCK) == O_NONBLOCK) != enabled:
+            flags ^= O_NONBLOCK
+            if fcntl(self.fileno, F_SETFL, flags) == -1:
+                raise OSError, "fcntl"
+        return flags
+
+    def write(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+           bytes - the bytes of the packet, and not the packet object"""
+        return self.file.inject(packet, bytes)
+
+    def send(self, packet, bytes):
+        """Write a packet to a pcap file or network interface.
+
+        bytes - the bytes of the packet, and not the packet object"""
+        return self.file.inject(packet, bytes)
+
     def blocking_read(self):
+        """Block until the next packet arrives and return it."""
+        # Force a blocking read.
+        oldnblock = self.is_nonblocking
+        if oldnblock is True:
+            self.setnonblocking(False)
+            self.is_nonblocking = False
+            poll_read(None)
+        result = try_read_one(self)
+        # Unconditionally restore O_NBLOCK mode.
+        self.setnonblocking(oldnblock)
+        self.is_nonblocking = oldnblock
+        return result
+
+    def try_read_one(self):
+        """Low-level non-blocking read routine, tries to read the
+           next frame from the tap."""
         import array
         import fcntl
         import os
         from termios import FIONREAD
         try:
-            # Block until data is ready to be read.
-            poll_read(None)
-            # Ask the kernel how many bytes are in the queued Ethernet frame.
             buf = array.array('i', [0])
             s = fcntl.ioctl(self.fileno, FIONREAD, buf)
             qbytes = buf.pop()
+            if qbytes == 0:
+                return None
             return os.read(self.fileno, qbytes)
         except:
             raise
-        return -1
+        return None
 
     def blocking_write(self, bytes):
         import os
-        return os.write(self.fileno, bytes)
+        # Force a blocking write.
+        oldnblock = self.is_nonblocking
+        if oldnblock is True:
+            self.setnonblocking(False)
+            self.is_nonblocking = False
+        result = os.write(self.fileno, bytes)
+        # Unconditionally restore O_NBLOCK mode.
+        self.setnonblocking(oldnblock)
+        self.is_nonblocking = oldnblock
+        return result
 
     def close(self):
         import os
