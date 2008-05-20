@@ -37,9 +37,9 @@
 # Description: The setup script for all of the Packet Construction Set
 #
 
-from distutils.core import setup, Extension
+from distutils.core import setup
 from distutils.command import config, clean
-from Pyrex.Distutils import build_ext
+from Pyrex.Distutils import build_ext, Extension
 import cPickle, glob, os, sys
 
 pcap_config = {}
@@ -120,6 +120,16 @@ if len(sys.argv) > 1 and sys.argv[1] == 'build':
 
 pcap = Extension(name='pcs.pcap',
                  sources=[ 'pcs/pcap/pcap.pyx', 'pcs/pcap/pcap_ex.c' ],
+                 pyrex_include_dirs=[ 'pcs/bpf' ],
+                 include_dirs=pcap_config.get('include_dirs', ''),
+                 library_dirs=pcap_config.get('library_dirs', ''),
+                 libraries=pcap_config.get('libraries', ''),
+                 extra_compile_args=pcap_config.get('extra_compile_args', '')
+	)
+
+bpf = Extension(name='pcs.bpf',
+                 sources=[ 'pcs/bpf/bpf.pyx' ],
+                 pyrex_include_dirs=[ 'pcs/bpf' ],
                  include_dirs=pcap_config.get('include_dirs', ''),
                  library_dirs=pcap_config.get('library_dirs', ''),
                  libraries=pcap_config.get('libraries', ''),
@@ -136,5 +146,5 @@ setup(name='pcs',
       url='http://pcs.sf.net',
       packages = ['pcs', 'pcs.packets'],
       cmdclass=pcap_cmds,
-      ext_modules = [ pcap ],
+      ext_modules = [ pcap, bpf ],
       )

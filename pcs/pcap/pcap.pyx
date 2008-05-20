@@ -28,15 +28,15 @@ cdef extern from "Python.h":
     void   PyGILState_Release(int gil)
     void   Py_BEGIN_ALLOW_THREADS()
     void   Py_END_ALLOW_THREADS()
-    
+
+cimport bpf
+import bpf
+
+from bpf cimport bpf_insn
+from bpf cimport bpf_program
+from bpf cimport bpf_timeval
+
 cdef extern from "pcap.h":
-    struct bpf_insn:
-        int __xxx
-    struct bpf_program:
-        bpf_insn *bf_insns
-    struct bpf_timeval:
-        unsigned int tv_sec
-        unsigned int tv_usec
     struct pcap_stat:
         unsigned int ps_recv
         unsigned int ps_drop
@@ -51,7 +51,7 @@ cdef extern from "pcap.h":
         int __xxx
     ctypedef enum pcap_direction_t:
         __xxx
-    
+
 ctypedef void (*pcap_handler)(void *arg, pcap_pkthdr *hdr, char *pkt)
 
 cdef extern from "pcap.h":
@@ -76,28 +76,24 @@ cdef extern from "pcap.h":
     void    pcap_close(pcap_t *p)
     int     pcap_inject(pcap_t *p, char *buf, int size)
     void    pcap_dump(pcap_dumper_t *p, pcap_pkthdr *h, char *sp)
-    int     bpf_filter(bpf_insn *insns, char *buf, int len, int caplen)
     int     pcap_get_selectable_fd(pcap_t *)
     int     pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
     int     pcap_getnonblock(pcap_t *p, char *errbuf)
+    char   *pcap_lookupdev(char *errbuf)
+    int     pcap_compile_nopcap(int snaplen, int dlt, bpf_program *fp,
+                                char *str, int optimize, unsigned int netmask)
 
 cdef extern from "pcap_ex.h":
-    # XXX - hrr, sync with libdnet and libevent
     int     pcap_ex_immediate(pcap_t *p)
     char   *pcap_ex_name(char *name)
-    char   *pcap_ex_lookupdev(char *ebuf)
-    int     pcap_ex_fileno(pcap_t *p)
     void    pcap_ex_setup(pcap_t *p)
-    void    pcap_ex_setnonblock(pcap_t *p, int nonblock, char *ebuf)
-    int     pcap_ex_getnonblock(pcap_t *p, char *ebuf)
     int     pcap_ex_next(pcap_t *p, pcap_pkthdr **hdr, char **pkt)
-    int     pcap_ex_compile_nopcap(int snaplen, int dlt,
-                                   bpf_program *fp, char *str,
-                                   int optimize, unsigned int netmask)
+    char   *pcap_ex_lookupdev(char *errbuf)
 
+# XXX Lacks size_t; known Pyrex limitation
 cdef extern from *:
-    char *strdup(char *src)
     void  free(void *ptr)
+    char *strdup(char *src)
     
 cdef struct pcap_handler_ctx:
     void *callback
@@ -148,22 +144,24 @@ dltoff = { DLT_NULL:4, DLT_EN10MB:14, DLT_IEEE802:22, DLT_ARCNET:6,
           DLT_SLIP:16, DLT_PPP:4, DLT_FDDI:21, DLT_PFLOG:48, DLT_PFSYNC:4,
           DLT_LOOP:4, DLT_RAW:0, DLT_LINUX_SLL:16 }
 
-cdef class bpf:
-    """bpf(filter, dlt=DLT_RAW) -> BPF filter object"""
-    cdef bpf_program fcode
-    def __init__(self, char *filter, dlt=DLT_RAW):
-        if pcap_ex_compile_nopcap(65535, dlt, &self.fcode, filter, 1, 0) < 0:
-            raise IOError, 'bad filter'
-    def filter(self, buf):
-        """Return boolean match for buf against our filter."""
-        cdef int n
-        n = len(buf)
-        if bpf_filter(self.fcode.bf_insns, buf, n, n) == 0:
-            return False
-        return True
-    def __dealloc__(self):
-        pcap_freecode(&self.fcode)
-            
+def compile(char *str, int snaplen=65536, int dlt=DLT_RAW, int optimize=1,
+            long netmask=0):
+    """Compile a pcap filter expression to a BPF program.
+       This is not a class method, because we want to do the same
+       from within the pcap class."""
+    cdef bpf_program prog
+    cdef int rc
+    prog.bf_len = 0
+    prog.bf_insns = NULL
+    rc = pcap_compile_nopcap(snaplen, dlt, &prog, str, optimize, netmask)
+    if rc == -1:
+        raise OSError
+    # Python-ize the bpf_program. Note that this simply wraps the buffer
+    # which pcap just allocated in the C library heap.
+    pb = bpf.progbuf(<object> &prog, None)
+    program = pb.__program__()
+    return program
+
 cdef class pcap:
     """pcap(name=None, snaplen=65535, promisc=True, immediate=False) -> packet capture object
     
@@ -252,12 +250,10 @@ cdef class pcap:
     property fd:
         """File descriptor (or Win32 HANDLE) for capture handle."""
         def __get__(self):
-            #return pcap_ex_fileno(self.__pcap)
             return pcap_get_selectable_fd(self.__pcap)
         
     def fileno(self):
         """Return file descriptor (or Win32 HANDLE) for capture handle."""
-        #return pcap_ex_fileno(self.__pcap)
         return pcap_get_selectable_fd(self.__pcap)
     
     def setfilter(self, value, optimize=1):
@@ -271,6 +267,25 @@ cdef class pcap:
             raise OSError, pcap_geterr(self.__pcap)
         pcap_freecode(&fcode)
 
+    def setbpfprogram(self, bpfprogram):
+        """Set BPF-format packet capture filter using an
+           explicitly specified BPF program."""
+        # cast to temporary required.
+        pb = bpfprogram.__progbuf__()
+        bp = pb.__bpf_program__()
+        if pcap_setfilter(self.__pcap, <bpf_program *>bp) < 0:
+            raise OSError, pcap_geterr(self.__pcap)
+
+    def compile(self, value, optimize=True, netmask=0):
+        """Compile a filter expression to a BPF program for this pcap.
+           Return the filter as a bpf program."""
+        cdef bpf_program fcode
+        if pcap_compile(self.__pcap, &fcode, value, optimize, netmask) < 0:
+            raise OSError, pcap_geterr(self.__pcap)
+        pb = bpf.progbuf(<object>&fcode, None)
+        program = pb.__program__()
+        return program
+
     def setdirection(self, value):
         """Set BPF capture direction."""
         if pcap_setdirection(self.__pcap, value) < 0:
@@ -278,12 +293,10 @@ cdef class pcap:
 
     def setnonblock(self, nonblock=True):
         """Set non-blocking capture mode."""
-        #pcap_ex_setnonblock(self.__pcap, nonblock, self.__ebuf)
         pcap_setnonblock(self.__pcap, nonblock, self.__ebuf)
     
     def getnonblock(self):
         """Return non-blocking capture mode as boolean."""
-        #ret = pcap_ex_getnonblock(self.__pcap, self.__ebuf)
         ret = pcap_getnonblock(self.__pcap, self.__ebuf)
         if ret < 0:
             raise OSError, self.__ebuf
