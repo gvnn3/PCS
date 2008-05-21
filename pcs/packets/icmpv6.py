@@ -154,7 +154,7 @@ class icmpv6(pcs.Packet):
         if self._head is not None:
             payload = self._head.collate_following(self)
             ip6 = self._head.find_preceding(self, pcs.packets.ipv6)
-            assert ip6 != None, "No preceding IPv6 header."
+            assert ip6 is not None, "No preceding IPv6 header."
             pip6 = pseudoipv6.pseudoipv6()
             pip6.src = ip6.src
             pip6.dst = ip6.dst

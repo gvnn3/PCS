@@ -54,12 +54,12 @@ def main():
     
     (options, args) = parser.parse_args()
 
-    if options.udp != None:
+    if options.udp is not None:
         conn = UDP4Connector(options.addr, 53)
     else:
         conn = TCP4Connector(options.addr, 53)
 
-    if (options.udp == None):
+    if (options.udp is None):
         header = dnsheader(tcp = True)
     else:
         header = dnsheader()
@@ -86,7 +86,7 @@ def main():
 
     packet = Chain([header, lab1, lab2, lab3, lab4, query])
 
-    if options.udp == None:
+    if options.udp is None:
         header.length = 38
         packet = Chain([header, lab1, lab2, lab3, lab4, query])
 

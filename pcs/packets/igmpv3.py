@@ -79,13 +79,13 @@ class query(pcs.Packet):
 
 	self.description = inspect.getdoc(self)
 
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
         # Decode source list if provided.
-	if bytes != None:
+	if bytes is not None:
 	    sources_len = self.nsrc * 4
             query_len = self.sizeof() + sources_len
 
@@ -141,7 +141,7 @@ class GroupRecordField(pcs.CompoundField):
 		     self.sources.width + self.auxdata.width
 
         # If keyword initializers are present, deal with the syntactic sugar.
-        if kv != None:
+        if kv is not None:
             for kw in kv.iteritems():
                 if kw[0] in self.__dict__:
                     if kw[0] == 'auxdata':
@@ -174,7 +174,7 @@ class GroupRecordField(pcs.CompoundField):
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
-        if self.packet != None:
+        if self.packet is not None:
             self.packet.__needencode = True
 
     # XXX OptionList decode is funny. If you don't have the packet
@@ -280,7 +280,7 @@ class report(pcs.Packet):
         pcs.Packet.__init__(self, [reserved00, nrecords, records], bytes, **kv)
         self.description = inspect.getdoc(self)
 
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
@@ -289,7 +289,7 @@ class report(pcs.Packet):
         # Group records are variable length structures, so we
         # have no way of bounds checking upfront -- we have to
         # attempt to parse the entire payload. This gets interesting.
-	if bytes != None:
+	if bytes is not None:
             curr = self.sizeof()
             byteBR = 8
             while curr < len(bytes):

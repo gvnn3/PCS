@@ -73,13 +73,13 @@ class ipv6(pcs.Packet):
                             [version, traffic, flow, length, next_header, hop,
                              src, dst], bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             ## 40 bytes is the standard size of an IPv6 header
             offset = 40
             self.data = self.next(bytes[offset:len(bytes)],

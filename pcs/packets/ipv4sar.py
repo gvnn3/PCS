@@ -74,7 +74,7 @@ class ipv4sar(object):
                    "No IPv4 header present in chain."
         else:
             ip = chain.find_first_of(pcs.packets.ipv4)
-            assert ip != None, "No IPv4 header present in chain."
+            assert ip is not None, "No IPv4 header present in chain."
 
         # If packet is DF or no more fragments expected, don't do anything.
         if (ip.ip_flags & IP_DF):
@@ -156,7 +156,7 @@ class ipv4sar(object):
                    "No IPv4 header present in chain."
         else:
             ip = chain.find_first_of(pcs.packets.ipv4)
-            assert ip != None, "No IPv4 header present in chain."
+            assert ip is not None, "No IPv4 header present in chain."
 
         # If DF is set, game over.
         if ip.ip_flags & IP_DF:

@@ -56,12 +56,12 @@ class localhost(pcs.Packet):
 
         pcs.Packet.__init__(self, [type], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[lolen:len(bytes)],
                                   timestamp = timestamp)
         else:

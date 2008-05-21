@@ -76,12 +76,12 @@ class query(pcs.Packet):
 
         self.description = inspect.getdoc(self)
 
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes != None):
+        if (bytes is not None):
             offset = self.sizeof()
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:
@@ -111,12 +111,12 @@ class reply(pcs.Packet):
 
         self.description = inspect.getdoc(self)
 
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes != None):
+        if (bytes is not None):
             offset = self.sizeof()
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:

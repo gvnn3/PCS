@@ -115,12 +115,12 @@ class icmpv4(pcs.Packet):
         cksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [type, code, cksum], bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes != None):
+        if (bytes is not None):
             offset = type.width + code.width + cksum.width
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:
@@ -148,12 +148,12 @@ class icmpv4echo(pcs.Packet):
         seq = pcs.Field("sequence", 16)
         pcs.Packet.__init__(self, [id, seq], bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes != None):
+        if (bytes is not None):
             offset = id.width + seq.width
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:

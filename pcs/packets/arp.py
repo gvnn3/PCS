@@ -71,7 +71,7 @@ class arp(pcs.Packet):
         pcs.Packet.__init__(self, [hrd, pro, hln, pln, op,
                                    sha, spa, tha, tpa], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp

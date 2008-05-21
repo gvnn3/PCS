@@ -73,13 +73,13 @@ class tcp(pcs.Packet):
                                    checksum, urgp, options],
                             bytes = bytes,  **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
         # Decode TCP options.
-        if bytes != None:
+        if bytes is not None:
             data_offset = self.offset * 4        # in bytes
             options_len = data_offset - self.sizeof()
 
@@ -209,7 +209,7 @@ class tcp(pcs.Packet):
 				       pcs.Field("v", optdatalen * 8, default = value)))
                         curr += optlen
 
-        if (bytes != None and (self.offset * 4 < len(bytes))):
+        if (bytes is not None and (self.offset * 4 < len(bytes))):
             self.data = self.next(bytes[(self.offset * 4):len(bytes)],
                                   timestamp = timestamp)
         else:

@@ -92,14 +92,14 @@ class dvmrp(pcs.Packet):
 
         self.description = inspect.getdoc(self)
 
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 	# XXX optional bytes not processed yet.
 
-        if bytes != None:
+        if bytes is not None:
             offset = self.sizeof()
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:

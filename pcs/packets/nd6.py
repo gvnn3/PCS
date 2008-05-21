@@ -51,7 +51,7 @@ class nd6_solicit(pcs.Packet):
         target = pcs.Field("target", 128)
         pcs.Packet.__init__(self, [reserved, target], bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp

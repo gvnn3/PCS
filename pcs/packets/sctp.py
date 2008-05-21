@@ -61,12 +61,12 @@ class common(pcs.Packet):
         pcs.Packet.__init__(self, [sport, dport, tag, checksum],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes != None and len(bytes) > self.sizeof() ):
+        if (bytes is not None and len(bytes) > self.sizeof() ):
             self.data = self.next(bytes[self.sizeof():len(bytes)],
                                   discriminator = bytes[self.sizeof() + 1],
                                   timestamp = timestamp)
@@ -106,13 +106,13 @@ class payload(pcs.Packet):
                              length, tsn, stream_im, stream_seq, ppi],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -141,13 +141,13 @@ class init(pcs.Packet):
                                    inbound_streams, initial_tsn],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -174,13 +174,13 @@ class sack(pcs.Packet):
                                    duplicate_tsns],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -199,13 +199,13 @@ class heartbeat(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -225,13 +225,13 @@ class abort(pcs.Packet):
         pcs.Packet.__init__(self, [type, reserved, tag, length],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -251,13 +251,13 @@ class shutdown(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length, cumulative_tsn],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -276,13 +276,13 @@ class shutdown_ack(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -301,13 +301,13 @@ class operation_error(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -326,13 +326,13 @@ class cookie_echo(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -351,12 +351,12 @@ class cookie_ack(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:
@@ -376,13 +376,13 @@ class shutdown_complete(pcs.Packet):
         pcs.Packet.__init__(self, [type, reserved, tag, length],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[0:len(bytes)],
                                   timestamp = timestamp)
         else:

@@ -49,13 +49,13 @@ class null(pcs.Packet):
         pcs.Packet.__init__(self, [null],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes, timestamp = timestamp)
         else:
             self.data = None

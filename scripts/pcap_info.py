@@ -81,7 +81,7 @@ def main():
         if type(packet.data) == pcs.packets.arp.arp:
             arp_cnt += 1
 
-        if ip != None:
+        if ip is not None:
             if type(ip.data) == pcs.packets.icmpv4.icmpv4:
                 icmp_cnt += 1
             if type(ip.data) == pcs.packets.udp.udp:

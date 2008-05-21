@@ -68,7 +68,7 @@ class ymsg_hdr(pcs.Packet):
                             [version, id, length, command, status, session],
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp

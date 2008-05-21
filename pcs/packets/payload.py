@@ -56,7 +56,7 @@ class payload(pcs.Packet):
             payload = pcs.StringField("payload", len(bytes) * 8)
         pcs.Packet.__init__(self, [payload], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp

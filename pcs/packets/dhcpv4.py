@@ -102,7 +102,7 @@ class dhcpv4(pcs.Packet):
 			    bytes = bytes, **kv)
 	self.description = inspect.getdoc(self)
 
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
@@ -111,7 +111,7 @@ class dhcpv4(pcs.Packet):
 	# correct slice as a vanilla payload iff no options are parsed.
 	curr = self.sizeof()
 	#print "self.sizeof() %d\n" % curr
-	if bytes != None:
+	if bytes is not None:
 	    opts_off = curr
 	    end = len(bytes)
 	    if (end - curr) > 4:
@@ -184,7 +184,7 @@ class dhcpv4(pcs.Packet):
 		    options.append(optinst.field())
 		    curr += optlen
 
-	if bytes != None and curr < len(bytes):
+	if bytes is not None and curr < len(bytes):
 	    self.data = payload.payload(bytes[curr:len(bytes)])
 	else:
 	    self.data = None

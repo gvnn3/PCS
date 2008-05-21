@@ -133,12 +133,12 @@ class ipv4(pcs.Packet):
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
 
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if bytes != None:
+        if bytes is not None:
             hlen_bytes = self.hlen * 4
             options_len = hlen_bytes - self.sizeof()
 
@@ -187,7 +187,7 @@ class ipv4(pcs.Packet):
                                                  default = value)))
                         curr += optlen
 
-        if (bytes != None):
+        if (bytes is not None):
             offset = self.hlen << 2
             self.data = self.next(bytes[offset:len(bytes)],
                                   timestamp = timestamp)
@@ -264,7 +264,7 @@ class pseudoipv4(pcs.Packet):
                             bytes = bytes)
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp

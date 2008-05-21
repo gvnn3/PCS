@@ -58,12 +58,12 @@ class igmp(pcs.Packet):
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
 
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if bytes != None:
+        if bytes is not None:
             offset = self.sizeof()
             if self.type == IGMP_HOST_MEMBERSHIP_QUERY and \
                len(bytes) >= igmpv3.IGMP_V3_QUERY_MINLEN:

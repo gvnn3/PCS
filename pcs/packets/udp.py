@@ -57,12 +57,12 @@ class udp(pcs.Packet):
         pcs.Packet.__init__(self, [sport, dport, length, checksum],
                             bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes != None):
+        if (bytes is not None):
             self.data = self.next(bytes[8:len(bytes)], timestamp)
         else:
             self.data = None
@@ -84,7 +84,7 @@ class udp(pcs.Packet):
            field value. Like next() only the first match is used."""
         #print "reverse discriminating %s" % type(packet)
         result = pcs.Packet.rdiscriminate(self, packet, "dport", map)
-        if result == False:
+        if result is False:
             result = pcs.Packet.rdiscriminate(self, packet, "sport", map)
         return result
 

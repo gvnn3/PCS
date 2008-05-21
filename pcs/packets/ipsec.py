@@ -57,7 +57,7 @@ class ah(pcs.Packet):
                             [next, plen, rsvrd, spi, seq, auth],
                             bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
@@ -82,7 +82,7 @@ class esp(pcs.Packet):
                              auth],
                             bytes, **kv)
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp

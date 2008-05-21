@@ -64,7 +64,7 @@ class dnsheader(pcs.Packet):
         # dnsheader is being encapsulated in TCP or UDP using find_preceding(),
         # and modify the layout accordingly.
         self.is_tcp = False
-        if (tcp != None):
+        if (tcp is not None):
             self.is_tcp = True
             length = pcs.Field("length", 16)
             pcs.Packet.__init__(self,
@@ -78,7 +78,7 @@ class dnsheader(pcs.Packet):
                             bytes = bytes, **kv)
 
         self.description = inspect.getdoc(self)
-        if timestamp == None:
+        if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
