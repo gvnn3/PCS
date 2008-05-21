@@ -112,7 +112,7 @@ layout of the data and how it is addressed."""
         ## the comparison function for this field
         self.compare = compare
         ## Fields store the values
-        if default == None:
+        if default is None:
             self.value = 0
         else:
             self.value = default
@@ -214,7 +214,7 @@ layout of the data and how it is addressed."""
 
     def bounds(self, value):
         """Check the bounds of this field."""
-        if ((value == None) or
+        if ((value is None) or
             (value < 0) or
             (value > (2 ** self.width) - 1)):
             raise FieldBoundsError, "Value must be between 0 and %d but is %d" % ((2 ** self.width - 1), value)
@@ -238,7 +238,7 @@ layout of the data and how it is addressed."""
         result.value = self.value
         assert result.value == self.value, "value not copied"
         # The new copy MUST NOT be associated with a Packet.
-        assert result.packet == None, "dangling reference to Packet"
+        assert result.packet is None, "dangling reference to Packet"
         return result
 
     def default_compare(lp, lf, rp, rf):
@@ -303,7 +303,7 @@ handled by the LengthValueField."""
         """Decode the field and return the value as well as the new
         current position in the bytes array."""
         # byteBR == 8 is the neutral state
-        if (byteBR != None and byteBR != 8):
+        if (byteBR is not None and byteBR != 8):
             raise FieldAlignmentError, "Strings must start on a byte boundary"
         packarg = "%ds" % (self.width / 8)
         end = curr + self.width / 8
@@ -314,7 +314,7 @@ handled by the LengthValueField."""
 
     def encode(self, bytearray, value, byte, byteBR):
         """Encode a string field, make sure the bytes are aligned."""
-        if (byteBR != None and byteBR != 8):
+        if (byteBR is not None and byteBR != 8):
             raise FieldAlignmentError, "Strings must start on a byte boundary"
         packarg = "%ds" % (self.width / 8)
         bytearray.append(struct.pack(packarg, value))
@@ -326,7 +326,7 @@ handled by the LengthValueField."""
 
     def bounds(self, value):
         """Check the bounds of this field."""
-        if (value == None) or (len (value) > (self.width / 8)):
+        if (value is None) or (len (value) > (self.width / 8)):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (self.width / 8)
 
 class LengthValueFieldError(Exception):
@@ -369,7 +369,7 @@ class LengthValueField(object):
     
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
-        if self.packet != None:
+        if self.packet is not None:
             self.packet.__needencode = True
 
     def decode(self, bytes, curr, byteBR):
@@ -393,7 +393,7 @@ class LengthValueField(object):
         """Set the value of a LengthValueField."""
 	self.length.value = len(value)
         self.value.value = value
-        if self.packet != None:
+        if self.packet is not None:
             self.packet.__needencode = True
 
     #def get_value(self):
@@ -456,7 +456,7 @@ class TypeValueField(object):
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
-        if self.packet != None:
+        if self.packet is not None:
             self.packet.__needencode = True
 
     def decode(self, bytes, curr, byteBR):
@@ -475,7 +475,7 @@ class TypeValueField(object):
 
     def bounds(self, value):
         """Check the bounds of this field."""
-        if ((value == None) or
+        if ((value is None) or
             (len (value) > (((2 ** self.valuewidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
@@ -536,7 +536,7 @@ class TypeLengthValueField(object):
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
-        if self.packet != None:
+        if self.packet is not None:
             self.packet.__needencode = True
 
     def decode(self, bytes, curr, byteBR):
@@ -574,7 +574,7 @@ class TypeLengthValueField(object):
 
     def bounds(self, value):
         """Check the bounds of this field."""
-        if ((value == None) or
+        if ((value is None) or
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
@@ -667,7 +667,7 @@ class OptionListField(CompoundField, list):
         """Test two option lists for equality.
            Two option lists are equal if and only if they have the
            same options and values."""
-        if (other == None):
+        if (other is None):
             return False
         if len(self._options) != len(other._options):
             return False
@@ -851,7 +851,7 @@ class Layout(list):
             # This is a special case, we don't want to recurse back
             # through the encapsulating class's __setattr__ routine.
             # We want to set this directly in the class's dictionary
-            if not hasattr(field, 'default') or field.default == None:
+            if not hasattr(field, 'default') or field.default is None:
                 obj.__dict__[field.name] = field.reset()
             else:
                 obj.__dict__[field.name] = field.default
@@ -953,7 +953,7 @@ class Packet(object):
         for field in layout:
             self._fieldnames[field.name] = field
         self._needencode = True
-        if bytes != None:
+        if bytes is not None:
             self.decode(bytes)
 
         self._discriminator = None
@@ -964,16 +964,16 @@ class Packet(object):
             field.packet = self
             if (not hasattr(field, 'discriminator')):
                 continue
-            if ((field.discriminator == True) and
-                (self._discriminator != None)):
+            if ((field.discriminator is True) and
+                (self._discriminator is not None)):
                 raise LayoutDiscriminatorError, "Layout can only have one field marked as a discriminator, but there are at least two %s %s" % (field, self._discriminator)
-            if (field.discriminator == True):
+            if (field.discriminator is True):
                 self._discriminator = field
 
         # Set initial values of Fields using keyword arguments.
         # Ignore any keyword arguments which do not correspond to
         # packet fields in the Layout.
-        if kv != None:
+        if kv is not None:
             for kw in kv.iteritems():
                 if kw[0] in self._fieldnames:
                     self.__setattr__(kw[0], kw[1])
@@ -1005,12 +1005,14 @@ class Packet(object):
             if hasattr(field, 'bounds'):
                 field.bounds(value)
             field.set_value(value)
+            # If we are setting a field which has no comparison hook,
+            # install the default comparison functor.
             if field.compare is None:
                 field.compare = field.default_compare
             # If the field we're initializing is the discriminator field,
             # record that we have initialized it, so that the / operator
             # will not clobber its value.
-            if self._discriminator != None and \
+            if self._discriminator is not None and \
                name == self._discriminator.name:
                 self._discriminator_inited = True
             self._needencode = True
@@ -1061,9 +1063,9 @@ class Packet(object):
         if (type(self) != type(other)):
             return False
         for i in self._fieldnames.iteritems():
-            if i[1].compare != None:
+            if i[1].compare is not None:
                 if i[1].compare(self, i[1], \
-                                other, other._fieldnames[i[0]]) != True:
+                                other, other._fieldnames[i[0]]) is not True:
                     return False
         return True
 
@@ -1121,7 +1123,7 @@ class Packet(object):
             raise exceptions.TypeError
         if self._head is None:
             head = self.chain()
-            if self._discriminator_inited != True:
+            if self._discriminator_inited is not True:
                 self.rdiscriminate(packet)
             head.append(packet)
             self._head = head
@@ -1130,7 +1132,7 @@ class Packet(object):
             head = self._head
             if not isinstance(head, Chain):
                 raise exceptions.TypeError
-            if head.insert_after(self, packet) == False:
+            if head.insert_after(self, packet) is False:
                 raise exceptions.IndexError
             packet._head = head
         return head
@@ -1168,7 +1170,7 @@ class Packet(object):
         while not done:
             packet._head = chain
             chain.append(packet)
-            if (packet.data != None):
+            if packet.data is not None:
                 packet = packet.data
             else:
                 done = True
@@ -1185,11 +1187,11 @@ class Packet(object):
         # current packet does not contain knowledge about what comes
         # next.
 
-        if ((discriminator != None) and (self._map != None)):
+        if ((discriminator is not None) and (self._map is not None)):
             if (discriminator in self._map):
                 return self._map[self._fieldnames[discriminator.name].value](bytes, timestamp = timestamp)
             
-        if ((self._discriminator != None) and (self._map != None)):
+        if ((self._discriminator is not None) and (self._map is not None)):
             if (self._fieldnames[self._discriminator.name].value in self._map):
                 return self._map[self._fieldnames[self._discriminator.name].value](bytes, timestamp = timestamp)
         
@@ -1221,12 +1223,12 @@ class Packet(object):
 
         # If we were not passed discriminator field name and map, try
         # to infer it from what's inside the instance.
-        if map == None:
+        if map is None:
            if not hasattr(self, '_map') or self._map is None:
                return False
            map = self._map
-        if discfieldname == None:
-           if self._discriminator == None:
+        if discfieldname is None:
+           if self._discriminator is None:
                 return False
            discfieldname = self._discriminator.name
 
@@ -1320,7 +1322,7 @@ class Chain(list):
             raise exceptions.TypeError
         if rdiscriminate is True:
             # Don't clobber a previously initialized field.
-            if self.packets[-1]._discriminator_inited != True:
+            if self.packets[-1]._discriminator_inited is not True:
                 self.packets[-1].rdiscriminate(packet)
         self.append(packet)
         packet._head = self
@@ -1432,7 +1434,7 @@ class Chain(list):
                 break
             n += 1
         #print "index of %s is %d" % (type(packet), n)
-        assert pseen == True, "Chain inconsistent: packet not found"
+        assert pseen is True, "Chain inconsistent: packet not found"
         return n
 
     def collate_following(self, packet):
@@ -1679,14 +1681,14 @@ class Connector(object):
             result = self.poll_read(delta)
 
             # Compute the wait quantum for the next read attempt.
-            if timeout != None:
+            if timeout is not None:
                 now = time()
                 delta = now - then
                 then = now
 
             # Check if the user tried to match exceptional conditions
             # as patterns. We need to check for timer expiry upfront.
-            if timeout != None and (now - start) > timeout:
+            if timeout is not None and (now - start) > timeout:
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], TIMEOUT):
                         self.matches = [patterns[i]]
@@ -1718,7 +1720,7 @@ class Connector(object):
             # Check for a first match in the filter list.
             # If we exceed the remaining packet count, break.
             for c in chains:
-                if limit != None:
+                if limit is not None:
                     remaining -= 1
                 chain_index += 1
                 for i in range(len(patterns)):
@@ -1728,12 +1730,12 @@ class Connector(object):
                         matches.append(c)
                         match_index = i
                         break
-                if limit != None and remaining == 0:
+                if limit is not None and remaining == 0:
                     break
 
             # If one of our filters matched, try to match all the other
             # packets we got in a batch from a possibly live capture.
-            if match_index != None:
+            if match_index is not None:
                 p = patterns[match_index]
                 for c in chains[chain_index:]:
                     if (isinstance(p, Chain) and p.matches(c)) or \
@@ -1745,7 +1747,7 @@ class Connector(object):
 
             # If we never got a match, and we reached our limit,
             # return an error.
-            if limit != None and remaining == 0:
+            if limit is not None and remaining == 0:
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], LIMIT):
                         self.matches = [patterns[i]]
@@ -2253,7 +2255,7 @@ class UDP4Connector(IP4Connector):
         except:
             raise
 
-        if (address != None and port != None):
+        if (address is not None and port is not None):
             try:
                 self.file.connect((address, port))
             except:
@@ -2272,7 +2274,7 @@ class TCP4Connector(IP4Connector):
         except:
             raise
 
-        if (addr != None and port != None):
+        if (addr is not None and port is not None):
             try:
                 self.file.connect((addr, port))
             except:
@@ -2367,7 +2369,7 @@ class SCTP4Connector(IP4Connector):
         except:
             raise
 
-        if (addr != None and port != None):
+        if (addr is not None and port is not None):
             try:
                 self.file.connect((addr, port))
             except:
@@ -2441,7 +2443,7 @@ class UDP6Connector(IP6Connector):
         except:
             raise
 
-        if (address != None and port != None):
+        if (address is not None and port is not None):
             try:
                 self.file.connect([address, port])
             except:
@@ -2460,7 +2462,7 @@ class TCP6Connector(IP6Connector):
         except:
             raise
 
-        if (address != None and port != None):
+        if (address is not None and port is not None):
             try:
                 self.file.connect([address, port])
             except:
@@ -2479,7 +2481,7 @@ class SCTP6Connector(IP6Connector):
         except:
             raise
 
-        if (address != None and port != None):
+        if (address is not None and port is not None):
             try:
                 self.file.connect([address, port])
             except:
