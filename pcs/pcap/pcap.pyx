@@ -94,7 +94,8 @@ cdef extern from "pcap_ex.h":
 cdef extern from *:
     void  free(void *ptr)
     char *strdup(char *src)
-    
+    int   printf(char *, ...)
+
 cdef struct pcap_handler_ctx:
     void *callback
     void *args
@@ -257,23 +258,32 @@ cdef class pcap:
         return pcap_get_selectable_fd(self.__pcap)
     
     def setfilter(self, value, optimize=1):
-        """Set BPF-format packet capture filter."""
+        """Set packet capture filter using a filter expression."""
         cdef bpf_program fcode
         free(self.__filter)
         self.__filter = strdup(value)
         if pcap_compile(self.__pcap, &fcode, self.__filter, optimize, 0) < 0:
             raise OSError, pcap_geterr(self.__pcap)
+        printf("%p: %d %p\n", <void *>&fcode, fcode.bf_len, <void  *>fcode.bf_insns)
         if pcap_setfilter(self.__pcap, &fcode) < 0:
             raise OSError, pcap_geterr(self.__pcap)
         pcap_freecode(&fcode)
 
-    def setbpfprogram(self, bpfprogram):
-        """Set BPF-format packet capture filter using an
-           explicitly specified BPF program."""
+    def setbpfprogram(self, object bpfprogram):
+        """Set packet capture filter using a pre-compiled BPF program."""
+        cdef object pbp
+        cdef bpf_program *bp
+        #cdef int i
+        if not isinstance(bpfprogram, bpf.program):
+            raise ValueError, ""
         # cast to temporary required.
-        pb = bpfprogram.__progbuf__()
-        bp = pb.__bpf_program__()
-        if pcap_setfilter(self.__pcap, <bpf_program *>bp) < 0:
+        pbp = bpf.program.__progbuf__(bpfprogram)
+        #printf("%p\n", <void *>pbp)
+        bp = bpf.progbuf.__bpf_program__(pbp)
+        #printf("%p: %d %p\n", <void *>bp, bp[0].bf_len, <void  *>bp[0].bf_insns)
+        #for 0 <= i < bp[0].bf_len:
+        #    printf("%d %x\n", i, bp[0].bf_insns[i].code)
+        if pcap_setfilter(self.__pcap, bp) < 0:
             raise OSError, pcap_geterr(self.__pcap)
 
     def compile(self, value, optimize=True, netmask=0):

@@ -33,7 +33,9 @@ cdef extern from "pcap.h":
 
 cdef class progbuf:
     cdef bpf_program bp
+    cdef bpf_program *__bpf_program__(self)
 
 cdef class program:
     cdef list insns
     cdef object progbuf
+    cdef __progbuf__(self)

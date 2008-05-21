@@ -29,6 +29,7 @@ cdef extern from "pcap.h":
 cdef extern from *:
     void  free(void *ptr)
     void *malloc(unsigned int len)
+    int   printf(char *, ...)
 
 BPF_LD = 0x00
 BPF_LDX = 0x01
@@ -337,9 +338,12 @@ cdef class progbuf:
         cdef bpf_insn *bufp
         cdef bpf_insn *ip
 
+        #printf("__init__(%p) called\n", <void *>self)
+
         # Deal with the pcap case upfront.
         if pbp is not None:
             self.bp = (<bpf_program *> pbp)[0]
+            #printf("__init__(%p) returning\n", <void *>self)
             return
 
         self.bp.bf_len = 0
@@ -352,7 +356,9 @@ cdef class progbuf:
             raise ValueError
 
         # We have to use malloc to match pcap's semantics.
-        bufp = <bpf_insn*> malloc(ninsns)
+        #printf("__init__(%p) is calling malloc(%u)\n", <void *>self,
+        #       ninsns * sizeof(bpf_insn))
+        bufp = <bpf_insn*> malloc(ninsns * sizeof(bpf_insn))
         if bufp == NULL:
             raise MemoryError, 'malloc'
 
@@ -363,8 +369,10 @@ cdef class progbuf:
 
         self.bp.bf_len = ninsns
         self.bp.bf_insns = bufp
+        #printf("__init__(%p) returning\n", <void *>self)
 
     def __dealloc__(self):
+        #printf("__deallocate__(%p) called\n", <void *>self)
         if self.bp.bf_insns != NULL:
             free(self.bp.bf_insns)
 
@@ -384,9 +392,9 @@ cdef class progbuf:
                 ip = ip + 1
         return program(li, self)
 
-    def __bpf_program__(self):
+    cdef bpf_program *__bpf_program__(self):
         """Return the internal representation."""
-        return <object> &self.bp
+        return &self.bp
 
     def validate(self):
         """Return boolean True if BPF program is valid."""
@@ -417,14 +425,16 @@ cdef class program:
         else:
             self.insns = []
 
-    def __progbuf__(self):
+    cdef __progbuf__(self):
         """Return a lazy-allocated progbuf object.
            XXX We can't fully lazy-allocate without implementing list.
            It holds a contiguous copy of all of the BPF instructions
            in a C bpf_program struct, suitable for passing to kernel
            and pcap APIs."""
-        self.progbuf = progbuf(None, self.insns)
-        return self.progbuf
+        cdef progbuf pbp
+        pbp = progbuf(None, self.insns)
+        self.progbuf = pbp
+        return pbp
 
     def disassemble(self):
         """Return a list of strings, each is a disassembled BPF opcode."""
