@@ -118,6 +118,10 @@ if len(sys.argv) > 1 and sys.argv[1] == 'build':
         print >>sys.stderr, 'run "%s config" first!' % sys.argv[0]
         sys.exit(1)
 
+# XXX The Pyrex Distutils extension is currently unable to propagate
+# dependencies on *.pxd files. If you change them you SHOULD rebuild from
+# scratch to be sure dependencies are not stale.
+
 pcap = Extension(name='pcs.pcap',
                  sources=[ 'pcs/pcap/pcap.pyx', 'pcs/pcap/pcap_ex.c' ],
                  pyrex_include_dirs=[ 'pcs/bpf' ],
