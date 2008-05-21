@@ -947,6 +947,8 @@ class Packet(object):
              are always passed as a dict from classes which inherit
              from Packet.
         """
+        # XXX
+        #self._bytes = ""
         self._layout = layout
         self._fieldnames = {}
         self._head = None
@@ -1059,14 +1061,26 @@ class Packet(object):
            Each contains a reference to a comparison function. If the
            reference is None, we assume no comparison need be performed.
            This allows full flexibility in performing matches."""
-
-        if (type(self) != type(other)):
+        if not isinstance(other, self.__class__):
+            #if __debug__:
+            #    print "Skipping match: isinstance(%s,%s) is False" % \
+            #          (type(self), type(other))
             return False
-        for i in self._fieldnames.iteritems():
-            if i[1].compare is not None:
-                if i[1].compare(self, i[1], \
-                                other, other._fieldnames[i[0]]) is not True:
-                    return False
+        nocomps = True
+        for fn in self._layout:
+            f = self._fieldnames[fn.name]
+            if f.compare is None:
+                continue
+            nocomps = False
+            #if __debug__ and f.compare is not f.default_compare:
+            #    print "WARNING: %s.%s not using default_compare." % \
+            #          (type(self), fn.name)
+            #if __debug__ and isinstance(f, Field):
+            #    print " comparing", f.value, "with", other._fieldnames[fn.name].value
+            if not f.compare(self, f, other, other._fieldnames[fn.name]):
+                return False
+        #if __debug__ and nocomps is True:
+        #    print "WARNING: no comparisons were made"
         return True
 
     def wildcard_mask(self, fieldnames=[], unmask=True):
@@ -1085,6 +1099,7 @@ class Packet(object):
 
     def __repr__(self):
         """Walk the entire packet and return the values of the fields."""
+        #print "Packet.__repr__() called"
         if hasattr(self, 'description'):
             name = self.description
         else:
@@ -1097,12 +1112,15 @@ class Packet(object):
 
     def __str__(self):
         """Pretty print, with returns, the fields of the packet."""
+        #print "Packet.__str__() called"
         retval = ""
         if hasattr(self, 'description'):
             retval += "%s\n" % self.description
         for field in self._layout:
             retval += "%s %s\n" % (field.name,
                                    self._fieldnames[field.name].value)
+        #for field in self._layout:
+        #    retval += "%s %s\n" % (field.name, field.value)
         return retval
 
     def __len__(self):
@@ -1277,15 +1295,17 @@ class Chain(list):
     """A chain is simply a list of packets.  Chains are used to
     aggregate related sub packets into one chunk for transmission."""
 
-    def __init__(self, packets = None):
+    def __init__(self, packets=[]):
         """initialize a Chain object
 
         packets - an optional list of packets to add to the new Chain
         """
         list.__init__(self)
         self.packets = packets
-        # XXX We may clobber packets which belong to an existing Chain.
         for p in self.packets:
+            # XXX We may clobber packets which belong to an existing Chain.
+            #if __debug__ and p._head is not None:
+            #    print "WARNING: clobbering head pointer"
             p._head = self
         self.encode()
 
@@ -1296,7 +1316,7 @@ class Chain(list):
         packets have the same data in them."""
         if len(self.packets) != len(other.packets):
             return False
-        for i in range(len(self.packets)):
+        for i in xrange(len(self.packets)):
             if self.packets[i] != other.packets[i]:
                 return False
         return True
@@ -1307,10 +1327,16 @@ class Chain(list):
             
     def __str__(self):
         """return a pretty printed Chain"""
+        #print "Chain.__str__() called"
+        #self.encode()
         retval = ""
         for packet in self.packets:
             retval += "%s " % packet.__str__()
         return retval
+
+    def __repr__(self):
+        #print "Chain.__repr__() called"
+        return self.packets.__repr__()
 
     def __div__(self, packet, rdiscriminate=True):
         """/ operator: Append a packet to the end of a chain.
@@ -1385,13 +1411,10 @@ class Chain(list):
            this is the logical reverse of Field.match() and Packet.match().
            A bitwise comparison is not performed; a structural match
            using the match() function is used instead."""
-        result = None
-        for i in range(len(self.packets)):
-            if isinstance(self.packets[i], type(packet)):
-                if packet.matches(self.packets[i]):
-                    result = i
-                    break
-        return result
+        (p, i) = self.find_first_of(type(packet))
+        if p is not None and packet.matches(p):
+            return i
+        return None
 
     def matches(self, chain):
         """Return True if this chain matches the chain provided.
@@ -1401,11 +1424,14 @@ class Chain(list):
            A bitwise comparison is not performed; a structural match
            using the match() function is used instead."""
         if len(self.packets) > len(chain.packets):
-            #print "lengths don't match"
+            #print "Skipping: packet header counts don't match"
             return False
-        for i in range(len(self.packets)):
-            if not self.packets[i].matches(chain.packets[i]):
+        i = 0
+        for p in self.packets:
+            #print "comparing %s", type(p)
+            if not p.matches(chain.packets[i]):
                 return False
+            i += 1
         return True
 
     def wildcard_mask(self, unmask=True):
@@ -1425,6 +1451,8 @@ class Chain(list):
         for packet in self.packets:
             packet.decode(packet.bytes)
 
+    # XXX We are a model of list so if we proxy this to member
+    # self.packets this can be renamed index() and go away.
     def index_of(self, packet):
         """Return the index of 'packet' in this chain."""
         n = 0
@@ -1569,7 +1597,8 @@ class Connector(object):
     def __init__(self):
         self.matches = None
         self.match_index = None
-        raise ConnNotImpError, "Cannot use base class"
+        # XXX Can't do protected constructors in Python.
+        #raise ConnNotImpError, "Cannot use base class"
 
     def accept(self):
         raise ConnNotImpError, "Cannot use base class"
@@ -1620,7 +1649,8 @@ class Connector(object):
         for i in xrange(n):
             p = self.read_packet()
             if p is not None:
-                result.append(p)
+                c = p.chain()
+                result.append(c)
             else:
                 break
         return result
@@ -1652,23 +1682,21 @@ class Connector(object):
            packet chain(s). There may be more than one match if a live
            capture matches more than one before the loop exits.
 
-           The syntax is intentionally similar to that of pexpect.
-            Both timeouts and limits may be specified as patterns.
-            If a pattern contains a Packet, it is matched against
-            the chain using the Chain.contains() method.
-            If a pattern contains a Chain, it is matched against
-            the chain using the Chain.match() method.
+            * If the 'limit' argument is set, raise an exception after 'limit'
+              packets have been read, regardless of match.
+            * If 'timeout' is set, raise an exception after the
+              timeout expires. This is only supported if the underlying
+              Connector fully implements non-blocking I/O.
 
-           If a timeout is specified, raise an exception after the
-           timeout expires. This is only supported if the underlying
-           Connector implements non-blocking I/O.
+           The syntax is intentionally similar to that of pexpect:
+            * If any of EOF, LIMIT or TIMEOUT are specified, the exceptions
+              are not raised but are instead matched as patterns.
+            * If a Chain is specified, it is matched against
+              the chain using the Chain.match() method.
+            * If neither a timeout or a limit is specified, or an EOF
+              was not encountered, this function may potentially block forever.
+            * NOTE: Packets can no longer be specified on their own as filters.
 
-           If a limit is specified, raise an exception after 'limit'
-           packets have been read, regardless of match.
-           If neither a timeout or a limit is specified, or an EOF
-           was not encountered, this function may potentially block forever.
-
-           TODO: Buffer for things like TCP reassembly.
            TODO: Make this drift and jitter robust (CLOCK_MONOTONIC)."""
         from time import time
         start = time()
@@ -1689,18 +1717,20 @@ class Connector(object):
             # Check if the user tried to match exceptional conditions
             # as patterns. We need to check for timer expiry upfront.
             if timeout is not None and (now - start) > timeout:
-                for i in range(len(patterns)):
+                for i in xrange(len(patterns)):
                     if isinstance(patterns[i], TIMEOUT):
                         self.matches = [patterns[i]]
+                        self.match_index = i
                         return i
                 raise TimeoutError
 
             if isinstance(result, TIMEOUT):
                 if delta > 0:
-                    continue   # Early wakeup.
+                    #print "woken up early"
+                    continue
 
             if isinstance(result, EOF):
-                for i in range(len(patterns)):
+                for i in xrange(len(patterns)):
                     if isinstance(patterns[i], EOF):
                         self.matches = [patterns[i]]
                         self.match_index = i
@@ -1713,34 +1743,46 @@ class Connector(object):
             # a race with the ring buffer (e.g. pcap_dispatch()).
             chains = self.try_read_n_chains(remaining)
 
-            chain_index = 0
+            next_chain = 0
             matches = []
             match_index = None
 
             # Check for a first match in the filter list.
             # If we exceed the remaining packet count, break.
-            for c in chains:
+            for i in xrange(len(chains)):
+                c = chains[i]
+                #print "expect() firstpass: saw", str(type(c.packets[2]))[:-2].split('.')[-1]
                 if limit is not None:
                     remaining -= 1
-                chain_index += 1
-                for i in range(len(patterns)):
-                    p = patterns[i]
-                    if (isinstance(p, Chain) and p.matches(c)) or \
-                       (isinstance(p, Packet) and c.contains(p)):
+                for j in xrange(len(patterns)):
+                    filter = patterns[j]
+                    if isinstance(filter, Chain) and filter.matches(c):
+                        #print "matched at index", i
+                        #print "appending ip proto ", c.packets[1].protocol, \
+                        #   "with type ", type(c.packets[2]), "as match"
                         matches.append(c)
-                        match_index = i
+                        match_index = j
+                        next_chain = i+1
                         break
-                if limit is not None and remaining == 0:
+                # We need to break out of the outer loop too if we match.
+                if match_index is not None or \
+                   limit is not None and remaining == 0:
                     break
 
             # If one of our filters matched, try to match all the other
             # packets we got in a batch from a possibly live capture.
             if match_index is not None:
-                p = patterns[match_index]
-                for c in chains[chain_index:]:
-                    if (isinstance(p, Chain) and p.matches(c)) or \
-                       (isinstance(p, Packet) and c.contains(p)):
+                filter = patterns[match_index]
+                #print "scanning", next_chain, "to", len(chains)
+                for i in xrange(next_chain, len(chains)):
+                    c = chains[i]
+                    #print "expect() lastpass: saw", str(type(c.packets[2]))[:-2].split('.')[-1]
+                    if isinstance(filter, Chain) and filter.matches(c):
+                        #print "matched at index", i
+                        #print "appending ip proto ", c.packets[1].protocol, \
+                        #   "with type ", type(c.packets[2]), "as match"
                         matches.append(c)
+
                 self.matches = matches
                 self.match_index = match_index
                 return match_index
@@ -1748,12 +1790,14 @@ class Connector(object):
             # If we never got a match, and we reached our limit,
             # return an error.
             if limit is not None and remaining == 0:
-                for i in range(len(patterns)):
+                for i in xrange(len(patterns)):
                     if isinstance(patterns[i], LIMIT):
                         self.matches = [patterns[i]]
                         self.match_index = i
                         return i
                 raise LimitReachedError
+
+            #print "next expect() iteration"
 
         return None
 
@@ -1777,6 +1821,7 @@ class PcapConnector(Connector):
         promisc   - boolean to specify promiscuous mode sniffing
         timeout_ms - read timeout in milliseconds
         """
+        super(PcapConnector, self).__init__()
         try:
             self.file = pcap.pcap(name, snaplen, promisc, timeout_ms)
         except:
@@ -1849,7 +1894,8 @@ class PcapConnector(Connector):
         #print "PcapConnector.try_read_n_chains() read ", len(ltp)
         for tp in ltp:
             p = self.unpack(tp[1], self.dlink, self.dloff, tp[0])
-            result.append(p.chain())
+            c = p.chain()
+            result.append(c)
         return result
 
     def expect(self, patterns=[], timeout=None, limit=None):
@@ -1888,7 +1934,7 @@ class PcapConnector(Connector):
         return self.file.inject(packet, bytes)
 
     def unpack(self, packet, dlink, dloff, timestamp):
-        """create a packet from a set of bytes
+        """Create a Packet from a string of bytes.
 
         packet - a Packet object
         dlink - a data link layer as defined in the pcap module
@@ -1907,6 +1953,12 @@ class PcapConnector(Connector):
     def close(self):
         """Close the pcap file or interface."""
         self.file.close()
+
+    def set_bpf_program(self, prog):
+        from pcs.bpf import program
+        if not isinstance(prog, program):
+            raise ValueError, "not a BPF program"
+        return self.file.setbpfprogram(prog)
 
     # The intention is to offload some, but not all, of the filtering work
     # from PCS to PCAP using BPF as an intermediate representation.
@@ -2099,7 +2151,8 @@ class TapConnector(Connector):
             lpb.append(pb)
         for pb in lpb:
             p = self.unpack(pb, self.dlink, self.dloff, ts)
-            result.append(p.chain())
+            c = p.chain()
+            result.append(c)
         return result
 
     # XXX We could just call PcapConnector's method here.
