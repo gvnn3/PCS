@@ -70,8 +70,12 @@ class igmp(pcs.Packet):
                     self.data = igmpv3.query(bytes[offset:len(bytes)],
                                              timestamp = timestamp)
             else:
+                # XXX Workaround Packet.next() -- it only returns something
+                # if it can discriminate.
                 self.data = self.next(bytes[offset:len(bytes)],
                                       timestamp = timestamp)
+                if self.data is None:
+                    self.data = payload.payload(bytes[offset:len(bytes)])
         else:
             self.data = None
 

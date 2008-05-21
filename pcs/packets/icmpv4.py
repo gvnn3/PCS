@@ -129,10 +129,12 @@ class icmpv4echo(pcs.Packet):
 # things being defined in a certain order.
 
 icmp_map = {
+	ICMP_ECHOREPLY:	icmpv4echo,
 	ICMP_ECHO:	icmpv4echo
 }
 
 descr = {
+	ICMP_ECHOREPLY:	"ICMPv4 Echo Reply",
 	ICMP_ECHO:	"ICMPv4 Echo Request"
 }
 

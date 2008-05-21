@@ -191,19 +191,25 @@ class ipv4(pcs.Packet):
             offset = self.hlen << 2
             self.data = self.next(bytes[offset:len(bytes)],
                                   timestamp = timestamp)
+            if self.data is None:
+                from pcs.packets.payload import payload
+                self.data = payload(bytes[offset:len(bytes)])
+            #if __debug__:
+            #    print "decoded IPv4 payload proto", self.protocol, "as", type(self.data)
         else:
             self.data = None
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""
         retval = "IPv4\n"
-        for field in self._layout:
-            if (field.name == "src" or field.name == "dst"):
+        for fn in self._layout:
+            f = self._fieldnames[fn.name]
+            if (fn.name == "src" or fn.name == "dst"):
                 value = inet_ntop(AF_INET,
-                                  struct.pack('!L', field.value))
-                retval += "%s %s\n" % (field.name, value)
+                                  struct.pack('!L', f.value))
+                retval += "%s %s\n" % (fn.name, value)
             else:
-                retval += "%s %s\n" % (field.name, field.value)
+                retval += "%s %s\n" % (fn.name, f.value)
         return retval
 
     def pretty(self, attr):
