@@ -44,17 +44,22 @@ def main():
     from pcs.packets.icmpv4 import icmpv4
     from pcs.packets.icmpv4 import icmpv4echo
     from pcs.packets.icmpv4 import ICMP_ECHO
+    #from pcs.packets.icmpv4 import ICMP_ECHOREPLY
 
     fxp0 = PcapConnector("fxp0")
-    #filter = ethernet() / ipv4() / icmpv4(type=ICMP_ECHO) / icmpv4echo()
-    # XXX Single packet matches are OK, partial chain matches
-    # seem to be broken.
+    filter = ethernet() / ipv4() / icmpv4(type=ICMP_ECHO) / icmpv4echo()
 
-    fxp0.setfilter('icmp')
+    #from pcs.bpf import program
+    #bp = fxp0.make_bpf_program(filter)
+    #for lp in bp.disassemble():
+    #    print lp
 
-    print "Waiting 10 seconds to see an ICMP echo request out of 10 packets."
+    #fxp0.setfilter('icmp')
+    #fxp0.set_bpf_program(bp)
+
+    print "Expecting at least 1 ICMP echo request within 10 seconds."
     try:
-        fxp0.expect([icmpv4(type=ICMP_ECHO)], 10)
+        fxp0.expect([filter], 10)
     except LimitReachedError:
         print "Limit reached."
         sys.exit(1)
@@ -62,11 +67,11 @@ def main():
         print "Timed out."
         sys.exit(1)
 
-    assert isinstance(fxp0.matches, list), "oops!"
+    nmatches = 0
+    if fxp0.matches is not None:
+        nmatches = len(fxp0.matches)
+    print "Matched", nmatches, "chain(s)."
 
-    print "There were %d matches from live capture." % len(fxp0.matches)
-    print "And the first matching packet chain is:"
-    print fxp0.matches[0]
     sys.exit(0)
 
 main()
