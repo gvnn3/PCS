@@ -289,7 +289,7 @@ handled by the LengthValueField."""
         ## the comparison function
         self.compare = compare
         ## Fields store the values
-        if default == None:
+        if default is None:
             self.value = ""
         else:
             self.value = default
@@ -1005,7 +1005,7 @@ class Packet(object):
             if hasattr(field, 'bounds'):
                 field.bounds(value)
             field.set_value(value)
-            if field.compare != None:
+            if field.compare is None:
                 field.compare = field.default_compare
             # If the field we're initializing is the discriminator field,
             # record that we have initialized it, so that the / operator
@@ -1234,7 +1234,7 @@ class Packet(object):
             if isinstance(packet, i[1]):
                 field = self._fieldnames[discfieldname]
                 field.value = i[0]
-                if field.compare != None:
+                if field.compare is None:
                     field.compare = field.default_compare
                 return True
 
@@ -1850,13 +1850,6 @@ class PcapConnector(Connector):
             result.append(p.chain())
         return result
 
-    # TODO: Add the magic which transmutes a basic PCS filter chain
-    # into a simple BPF match program. We can't do a 1:1 mapping
-    # as comparison functions may exist, but if the default compare
-    # hook is installed, we can get away with an exact match providing
-    # the field type is Field. We can then install it as a BPF filter
-    # on entry to expect() and do less work in userland or indeed Python.
-
     def expect(self, patterns=[], timeout=None, limit=None):
         """PcapConnector needs to override expect to set it up for
            non-blocking I/O throughout. We do this to avoid losing
@@ -1912,6 +1905,54 @@ class PcapConnector(Connector):
     def close(self):
         """Close the pcap file or interface."""
         self.file.close()
+
+    # The intention is to offload some, but not all, of the filtering work
+    # from PCS to PCAP using BPF as an intermediate representation.
+    # Only add BPF match opcodes for discriminator fields which satisfy
+    # certain criteria.
+    # Relative branches are forward only up to 256 instructions.
+    # The length of each packet header may not be constant if optional
+    # fields are present in filter chain, so calculate offset into
+    # chain using getbytes() not sizeof().
+    # XXX We always assume a datalink header is present in the chain.
+    def make_bpf_program(c):
+        """Given a filter chain c, create a simple BPF filter program."""
+        from pcs.bpf import program, ldw, ldb, ldh, jeq, ret
+        assert isinstance(c, Chain)
+        # XXX It seems necessary to compute offsets in bits. At the
+        # moment this code does no special handling of bytes within
+        # BPF's 32-bit words.
+        foff = 0
+        prog = program()
+        for p in c.packets:
+            for fn in p._layout:
+                f = p._fieldnames[fn.name]
+                #print "foff: ", foff
+                if isinstance(f, Field) and \
+                 f.compare is f.default_compare and \
+                 f.discriminator is True and (f.width % 8) == 0:
+                    if f.width == 8:
+                         prog.instructions.append(ldb(foff>>3))
+                    elif f.width == 16:
+                         prog.instructions.append(ldh(foff>>3))
+                    elif f.width == 32:
+                         prog.instructions.append(ldw(foff>>3))
+                    prog.instructions.append(jeq(0, 0, f.value))
+                foff += f.width
+        prog.instructions.append(ret(96))
+        prog.instructions.append(ret(0))
+        jfabs = len(prog.instructions) - 1
+        ii = 0
+        # Relative branch displacements are measured from the address of
+        # the following opcode.
+        for i in prog.instructions:
+            ii += 1
+            if isinstance(i, jeq):
+                assert ((jfabs - ii) <= 255), "Relative branch overflow."
+                i.jf = jfabs - ii
+        return prog
+
+    make_bpf_program = staticmethod(make_bpf_program)
 
 class PcapDumpConnector(Connector):
     """A connector for dumping packets to a file for later re-use.
