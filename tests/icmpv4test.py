@@ -108,7 +108,8 @@ class icmpTestCase(unittest.TestCase):
 
         icmp = ip.data
         
-        test_string = "ICMPv4\ntype 8\ncode 0\nchecksum 60550\n"
+        #test_string = "ICMPv4\ntype 8\ncode 0\nchecksum 60550\n"
+        test_string = "ICMPv4 Echo Request\ntype 8\ncode 0\nchecksum 60550\n"
 
         string = icmp.__str__()
 

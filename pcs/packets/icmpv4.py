@@ -44,97 +44,63 @@ import time
 #
 ICMP_ECHOREPLY = 0		# echo reply 
 ICMP_UNREACH = 3		# dest unreachable, codes: 
-ICMP_SOURCEQUENC = 4		# packet lost, slow down 
+ICMP_SOURCEQUENCH = 4		# packet lost, slow down 
 ICMP_REDIRECT = 5		# shorter route
-ICMP_ALTHOSTADD = 6		# alternate host address 
+ICMP_ALTHOSTADDR = 6		# alternate host address 
 ICMP_ECHO = 8			# echo service 
-ICMP_ROUTERADVER = 9		# router advertisement 
-ICMP_ROUTERSOLICI = 10		# router solicitation 
+ICMP_ROUTERADVERT = 9		# router advertisement 
+ICMP_ROUTERSOLICIT = 10		# router solicitation 
 ICMP_TIMXCEED = 11		# time exceeded, code: 
 ICMP_PARAMPROB = 12		# ip header bad 
 ICMP_TSTAMP = 13		# timestamp request 
-ICMP_TSTAMPREPL = 14		# timestamp reply 
+ICMP_TSTAMPREPLY = 14		# timestamp reply 
 ICMP_IREQ = 15			# information request 
 ICMP_IREQREPLY = 16		# information reply 
 ICMP_MASKREQ = 17		# address mask request 
 ICMP_MASKREPLY = 18		# address mask reply 
 ICMP_TRACEROUTE = 30		# traceroute 
-ICMP_DATACONVER = 31		# data conversion error 
-ICMP_MOBILE_REDIREC = 32	# mobile host redirect 
-ICMP_IPV6_WHEREAREYO = 33	# IPv6 where-are-you 
-ICMP_IPV6_IAMHER = 34		# IPv6 i-am-here 
-ICMP_MOBILE_REGREQUES = 35	# mobile registration req 
-ICMP_MOBILE_REGREPL = 36	# mobile registration reply 
+ICMP_DATACONVERR = 31		# data conversion error 
+ICMP_MOBILE_REDIRECT = 32	# mobile host redirect 
+ICMP_IPV6_WHEREAREYOU = 33	# IPv6 where-are-you 
+ICMP_IPV6_IAMHERE = 34		# IPv6 i-am-here 
+ICMP_MOBILE_REGREQUEST = 35	# mobile registration req 
+ICMP_MOBILE_REGREPLY = 36	# mobile registration reply 
 ICMP_SKIP = 39			# SKIP 
 ICMP_PHOTURIS = 40		# Photuris 
 
 #
 # ICMP codes.
 #
-ICMP_UNREACH_NE = 0		# bad net 
-ICMP_UNREACH_HOS = 1		# bad host 
-ICMP_UNREACH_PROTOCO = 2	# bad protocol 
-ICMP_UNREACH_POR = 3		# bad port 
-ICMP_UNREACH_NEEDFRA = 4	# IP_DF caused drop 
-ICMP_UNREACH_SRCFAI = 5		# src route failed 
-ICMP_UNREACH_NET_UNKNOWN = 6	# unknown net 
-ICMP_UNREACH_HOST_UNKNOWN = 7	# unknown host 
-ICMP_UNREACH_ISOLATE = 8	# src host isolated 
-ICMP_UNREACH_NET_PROHI = 9	# prohibited access 
-ICMP_UNREACH_HOST_PROHIB = 10	# ditto 
-ICMP_UNREACH_TOSNE = 11		# bad tos for net 
-ICMP_UNREACH_TOSHOS = 12	# bad tos for host 
-ICMP_UNREACH_FILTER_PROHIB = 13	# admin prohib 
+ICMP_UNREACH_NET = 0			# bad net 
+ICMP_UNREACH_HOST = 1			# bad host 
+ICMP_UNREACH_PROTOCOL = 2		# bad protocol 
+ICMP_UNREACH_PORT = 3			# bad port 
+ICMP_UNREACH_NEEDFRAH = 4		# IP_DF caused drop 
+ICMP_UNREACH_SRCFAIL = 5		# src route failed 
+ICMP_UNREACH_NET_UNKNOWN = 6		# unknown net 
+ICMP_UNREACH_HOST_UNKNOWN = 7		# unknown host 
+ICMP_UNREACH_ISOLATED = 8		# src host isolated 
+ICMP_UNREACH_NET_PROHIB = 9		# prohibited access 
+ICMP_UNREACH_HOST_PROHIB = 10		# ditto 
+ICMP_UNREACH_TOSNET = 11		# bad tos for net 
+ICMP_UNREACH_TOSHOST = 12		# bad tos for host 
+ICMP_UNREACH_FILTER_PROHIB = 13		# admin prohib 
 ICMP_UNREACH_HOST_PRECEDENCE = 14	# host prec vio. 
 ICMP_UNREACH_PRECEDENCE_CUTOFF = 1	# prec cutoff 
-ICMP_REDIRECT_NE = 0		# for network 
-ICMP_REDIRECT_HOS = 1		# for host 
-ICMP_REDIRECT_TOSNE = 2		# for tos and net 
-ICMP_REDIRECT_TOSHOS = 3	# for tos and host 
+ICMP_REDIRECT_NET = 0			# for network 
+ICMP_REDIRECT_HOST = 1			# for host 
+ICMP_REDIRECT_TOSNET = 2		# for tos and net 
+ICMP_REDIRECT_TOSHOST = 3		# for tos and host 
 ICMP_ROUTERADVERT_NORMAL = 0		# normal advertisement 
-ICMP_ROUTERADVERT_NOROUTE_COMMO = 1	# selective routing 
-ICMP_TIMXCEED_INTRAN = 0		# ttl==0 in transit 
-ICMP_TIMXCEED_REAS = 1			# ttl==0 in reass 
+ICMP_ROUTERADVERT_NOROUTE_COMMON = 1	# selective routing 
+ICMP_TIMXCEED_INTRANS = 0		# ttl==0 in transit 
+ICMP_TIMXCEED_REASS = 1			# ttl==0 in reass 
 ICMP_PARAMPROB_ERRATPTR = 0		# error at param ptr 
 ICMP_PARAMPROB_OPTABSENT = 1		# req. opt. absent 
 ICMP_PARAMPROB_LENGTH = 2		# bad length 
-ICMP_PHOTURIS_UNKNOWN_INDE = 1		# unknown sec index 
-ICMP_PHOTURIS_AUTH_FAILE = 2		# auth failed 
-ICMP_PHOTURIS_DECRYPT_FAILE = 3		# decrypt failed 
-
-class icmpv4(pcs.Packet):
-    """ICMPv4"""
-
-    _layout = pcs.Layout()
-
-    def __init__(self, bytes = None, timestamp = None, **kv):
-        """initialize a ICMPv4 packet"""
-        from pcs.packets import payload
-        type = pcs.Field("type", 8)
-        code = pcs.Field("code", 8)
-        cksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [type, code, cksum], bytes, **kv)
-        self.description = inspect.getdoc(self)
-        if timestamp is None:
-            self.timestamp = time.time()
-        else:
-            self.timestamp = timestamp
-
-        if (bytes is not None):
-            offset = type.width + code.width + cksum.width
-            self.data = payload.payload(bytes[offset:len(bytes)])
-        else:
-            self.data = None
-
-    def calc_checksum(self):
-        """Calculate and store the checksum for this ICMP header.
-           ICMP checksums are computed over payloads, but not IP headers."""
-        from pcs.packets.ipv4 import ipv4
-        self.checksum = 0
-        tmpbytes = self.getbytes()
-        if not self._head is None:
-            tmpbytes += self._head.collate_following(self)
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+ICMP_PHOTURIS_UNKNOWN_INDEX = 1		# unknown sec index 
+ICMP_PHOTURIS_AUTH_FAILED = 2		# auth failed 
+ICMP_PHOTURIS_DECRYPT_FAILED = 3	# decrypt failed 
 
 class icmpv4echo(pcs.Packet):
     """ICMPv4 Echo"""
@@ -143,7 +109,6 @@ class icmpv4echo(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an ICMPv4 echo packet, used by ping(8) and others"""
-        from pcs.packets import payload
         id = pcs.Field("id", 16)
         seq = pcs.Field("sequence", 16)
         pcs.Packet.__init__(self, [id, seq], bytes, **kv)
@@ -153,9 +118,75 @@ class icmpv4echo(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            offset = id.width + seq.width
+        if bytes is not None:
+            offset = self.sizeof()
+            from pcs.packets import payload
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:
             self.data = None
 
+# Gnarly: Python can't forward declare, and this module depends upon
+# things being defined in a certain order.
+
+icmp_map = {
+	ICMP_ECHO:	icmpv4echo
+}
+
+descr = {
+	ICMP_ECHO:	"ICMPv4 Echo Request"
+}
+
+class icmpv4(pcs.Packet):
+    """ICMPv4"""
+
+    _layout = pcs.Layout()
+    _map = icmp_map
+    _descr = descr
+
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        """initialize a ICMPv4 packet"""
+        type = pcs.Field("type", 8, discriminator=True)
+        code = pcs.Field("code", 8)
+        cksum = pcs.Field("checksum", 16)
+        pcs.Packet.__init__(self, [type, code, cksum], bytes, **kv)
+        self.description = inspect.getdoc(self)
+
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if bytes is not None:
+            offset = self.sizeof()
+            # XXX Workaround Packet.next() -- it only returns something
+            # if it can discriminate.
+            self.data = self.next(bytes[offset:len(bytes)],
+                                  timestamp = timestamp)
+            if self.data is None:
+                from pcs.packets.payload import payload
+                self.data = payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this ICMP header.
+           ICMP checksums are computed over payloads, but not IP headers."""
+        self.checksum = 0
+        tmpbytes = self.getbytes()
+        if not self._head is None:
+            tmpbytes += self._head.collate_following(self)
+        from pcs.packets.ipv4 import ipv4
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+
+    def rdiscriminate(self, packet, discfieldname = None, map = icmp_map):
+        """Reverse-map an encapsulated packet back to a discriminator
+           field value. Like next() only the first match is used."""
+        print "reverse discriminating %s" % type(packet)
+        return pcs.Packet.rdiscriminate(self, packet, "type", map)
+
+    def __str__(self):
+        """Walk the entire packet and pretty print the values of the fields."""
+        retval = self._descr[self.type] + "\n"
+        for field in self._layout:
+            retval += "%s %s\n" % (field.name, field.value)
+        return retval
