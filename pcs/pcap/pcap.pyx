@@ -264,7 +264,7 @@ cdef class pcap:
         self.__filter = strdup(value)
         if pcap_compile(self.__pcap, &fcode, self.__filter, optimize, 0) < 0:
             raise OSError, pcap_geterr(self.__pcap)
-        printf("%p: %d %p\n", <void *>&fcode, fcode.bf_len, <void  *>fcode.bf_insns)
+        #printf("%p: %d %p\n", <void *>&fcode, fcode.bf_len, <void  *>fcode.bf_insns)
         if pcap_setfilter(self.__pcap, &fcode) < 0:
             raise OSError, pcap_geterr(self.__pcap)
         pcap_freecode(&fcode)
