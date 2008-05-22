@@ -45,7 +45,6 @@ import payload
 
 # TODO: Add __str__ and __repr__ methods to objects which contain
 # structured addresses.
-# TODO: Add calls to pcs.bprintf() to print flags.
 # TODO: Deal with BSD routing socket address padding. These are handled
 # in a very specific way.
 # TODO: Deal with structure padding and architecture specific fields
@@ -56,6 +55,11 @@ import payload
 # Current FreeBSD routing socket version.
 #
 RTM_VERSION = 5
+
+#
+# Size of an interface name, always fixed.
+#
+IFNAMSIZ = 16
 
 #
 # Route flags
@@ -141,23 +145,63 @@ RTAX_AUTHOR = 6		# sockaddr for author of redirect
 RTAX_BRD = 7		# for NEWADDR, broadcast or p-p dest addr
 RTAX_MAX = 8		# size of array to allocate
 
-IFNAMSIZ = 16
-
+#
+# ifannounce "what".
+#
 IFAN_ARRIVAL = 0	# interface arrival
 IFAN_DEPARTURE = 1	# interface departure
 
-##
-# * This macro returns the size of a struct sockaddr when passed
-# * through a routing socket. Basically we round up sa_len to
-# * a multiple of sizeof(long), with a minimum of sizeof(long).
-# * The check for a NULL pointer is just a convenience, probably never used.
-# * The case sa_len == 0 should only apply to empty structures.
 #
-# cdefine SA_SIZE(sa)						\
-#    (  (!(sa) || ((struct sockaddr *)(sa))->sa_len == 0) ?	\
-#	sizeof(long)		:				\
-#	1 + ( (((struct sockaddr *)(sa))->sa_len - 1) | (sizeof(long) - 1) ) )
+# IEEE80211 "what".
 #
+RTM_IEEE80211_ASSOC = 100	# station associate (bss mode)
+RTM_IEEE80211_REASSOC = 101	# station re-associate (bss mode)
+RTM_IEEE80211_DISASSOC = 102	# station disassociate (bss mode)
+RTM_IEEE80211_JOIN = 103	# station join (ap mode)
+RTM_IEEE80211_LEAVE = 104	# station leave (ap mode)
+RTM_IEEE80211_SCAN = 105	# scan complete, results available
+RTM_IEEE80211_REPLAY = 106	# sequence counter replay detected
+RTM_IEEE80211_MICHAEL = 107	# Michael MIC failure detected
+RTM_IEEE80211_REJOIN = 108	# station re-associate (ap mode)
+
+#
+# BSD IFF* flags.
+#
+IFF_UP = 0x1			# (n) interface is up 
+IFF_BROADCAST = 0x2		# (i) broadcast address valid 
+IFF_DEBUG = 0x4			# (n) turn on debugging 
+IFF_LOOPBACK = 0x8		# (i) is a loopback net 
+IFF_POINTOPOINT = 0x10		# (i) is a point-to-point link 
+IFF_SMART = 0x20		# (i) interface manages own routes 
+IFF_DRV_RUNNING = 0x40		# (d) resources allocated 
+IFF_NOARP = 0x80		# (n) no address resolution protocol 
+IFF_PROMISC = 0x100		# (n) receive all packets 
+IFF_ALLMULTI = 0x200		# (n) receive all multicast packets 
+IFF_DRV_OACTIVE = 0x400		# (d) tx hardware queue is full 
+IFF_SIMPLEX = 0x800		# (i) can't hear own transmissions 
+IFF_LINK0 = 0x1000		# per link layer defined bit 
+IFF_LINK1 = 0x2000		# per link layer defined bit 
+IFF_LINK2 = 0x4000		# per link layer defined bit 
+IFF_ALTPHYS = IFF_LINK2		# use alternate physical connection 
+IFF_MULTICAST = 0x8000		# (i) supports multicast 
+IFF_PPROMISC = 0x20000		# (n) user-requested promisc mode 
+IFF_MONITOR = 0x40000		# (n) user-requested monitor mode 
+IFF_STATICARP = 0x80000		# (n) static ARP 
+IFF_NEEDSGIANT = 0x100000	# (i) hold Giant over if_start calls 
+
+#
+# if_link_state.
+#
+LINK_STATE_UNKNOWN = 0	# link invalid/unknown 
+LINK_STATE_DOWN = 1	# link is down 
+LINK_STATE_UP = 2	# link is up 
+
+_iff_flagbits =\
+        "\x01UP\x02BROADCAST\x03DEBUG\x04LOOPBACK"\
+        "\x04POINTOPOINT\x05SMART\x06DRV_RUNNING\x07NOARP"\
+        "\x08PROMISC\x09ALLMULTI\x0aDRV_OACTIVE\x0bSIMPLEX"\
+        "\x0cLINK0\x0dLINK1\x0eLINK2\x0fMULTICAST"\
+        "\x11PPROMISC\x12MONITOR\x13STATICARP\x14NEEDSGIANT"
 
 class if_link_msg(pcs.Packet):
     """BSD Routing socket -- link-state message (if_msghdr)"""
@@ -165,6 +209,7 @@ class if_link_msg(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     _descr = None
+    _flagbits = _iff_flagbits
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         addrs = pcs.Field("addrs", 32)
@@ -190,6 +235,18 @@ class if_link_msg(pcs.Packet):
         else:
             self.data = None
 
+    def __str__(self):
+        """Walk the entire packet and pretty print the values of the fields."""
+        s = self._descr[self.type] + "\n"
+        for fn in self._layout:
+            f = self._fieldnames[fn.name]
+            if fn.name == "flags":
+                bs = bsprintf(f.value, self._flagbits)
+                retval += "%s %s\n" % (fn.name, bs)
+            else:
+                retval += "%s %s\n" % (fn.name, f.value)
+        return retval
+
 class if_addr_msg(pcs.Packet):
     """BSD Routing socket -- protocol address message (ifa_msghdr) """
 
@@ -199,7 +256,7 @@ class if_addr_msg(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         addrs = pcs.Field("addrs", 32)
-        flags = pcs.Field("flags", 32)
+        flags = pcs.Field("flags", 32)	# ifa_flags, not much defined
         index = pcs.Field("index", 16)
         pad00 = pcs.Field("pad00", 16)		# XXX very likely it's padded
         metric = pcs.Field("metric", 32)
@@ -228,7 +285,7 @@ class if_maddr_msg(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         addrs = pcs.Field("addrs", 32)
-        flags = pcs.Field("flags", 32)
+        flags = pcs.Field("flags", 32)	# ifa_flags, not much defined
         index = pcs.Field("index", 16)
 
         pcs.Packet.__init__(self, [addrs, flags, index], bytes = bytes, **kv)
@@ -361,16 +418,6 @@ class ieee80211_michael_event(pcs.Packet):
         else:
             self.data = None
 
-RTM_IEEE80211_ASSOC = 100	# station associate (bss mode)
-RTM_IEEE80211_REASSOC = 101	# station re-associate (bss mode)
-RTM_IEEE80211_DISASSOC = 102	# station disassociate (bss mode)
-RTM_IEEE80211_JOIN = 103	# station join (ap mode)
-RTM_IEEE80211_LEAVE = 104	# station leave (ap mode)
-RTM_IEEE80211_SCAN = 105	# scan complete, results available
-RTM_IEEE80211_REPLAY = 106	# sequence counter replay detected
-RTM_IEEE80211_MICHAEL = 107	# Michael MIC failure detected
-RTM_IEEE80211_REJOIN = 108	# station re-associate (ap mode)
-
 ieee80211_map = {
 	RTM_IEEE80211_ASSOC:	ieee80211_join_event,
 	RTM_IEEE80211_REASSOC:	ieee80211_join_event,
@@ -435,6 +482,11 @@ class rt_msg(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     _descr = None
+    _flagbits = "\x01UP\x02GATEWAY\x03HOST\x04REJECT\x05DYNAMIC"\
+                "\x06MODIFIED\x07DONE\x09CLONING\x0aXRESOLVE\x0bLLINFO"\
+                "\x0cSTATIC\x0dBLACKHOLE\x0ePROTO2\x0fPROTO1\x10PRCLONING"\
+                "\x11WASCLONED\x12PROTO3\x14PINNED\x15LOCAL\x16BROADCAST"\
+                "\x17MULTICAST"
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """ Define the common rtmsg header; see <net/route.h>. """
@@ -463,6 +515,24 @@ class rt_msg(pcs.Packet):
             self.data = payload.payload(bytes[offset:len(bytes)])
         else:
             self.data = None
+
+        """Walk the entire packet and pretty print the values of the fields."""
+        for field in self._layout:
+
+            retval += "%s %s\n" % (field.name, field.value)
+        return retval
+
+    def __str__(self):
+        """Walk the entire packet and pretty print the values of the fields."""
+        s = self._descr[self.type] + "\n"
+        for fn in self._layout:
+            f = self._fieldnames[fn.name]
+            if fn.name == "flags":
+                bs = bsprintf(f.value, self._flagbits)
+                retval += "%s %s\n" % (fn.name, bs)
+            else:
+                retval += "%s %s\n" % (fn.name, f.value)
+        return retval
 
 # What "route -nv monitor" knows about.
 rtmsg_map = {
