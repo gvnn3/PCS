@@ -43,9 +43,9 @@ import pcs
 import payload
 #from socket import AF_INET, inet_ntop, inet_ntoa
 
-# TODO: bprintf-style flag printer.
 # TODO: Add __str__ and __repr__ methods to objects which contain
 # structured addresses.
+# TODO: Add calls to pcs.bprintf() to print flags.
 # TODO: Deal with BSD routing socket address padding. These are handled
 # in a very specific way.
 # TODO: Deal with structure padding and architecture specific fields
