@@ -97,11 +97,26 @@ class config_pcap(config.config):
                                 self._write_config_h(cfg)
                                 return cfg
         raise "couldn't find pcap build or installation directory"
-    
+
+    def _rt_config(self):
+        """Some systems keep their POSIX clock routines in librt."""
+        cfg = {}
+        dirs = [ '/', '/usr', sys.prefix ]
+        for d in dirs:
+            for sd in ['lib']:
+                for lib in [('rt', 'librt.so')]:
+                    #print "looking in", os.path.join(d, sd), "for", lib[1]
+                    if os.path.exists(os.path.join(d, sd, lib[1])):
+                        cfg['rt_library_dirs'] = [ os.path.join(d, sd) ]
+                        cfg['rt_libraries'] = [ lib[0] ]
+                        print 'found', cfg
+                        return cfg
+
     def run(self):
         #config.log.set_verbosity(0)
-        cPickle.dump(self._pcap_config([ self.with_pcap ]),
-                     open(pcap_cache, 'wb'))
+        pfile = open(pcap_cache, 'wb')
+        cPickle.dump(self._pcap_config([ self.with_pcap ]), pfile)
+        cPickle.dump(self._rt_config(), pfile)
         self.temp_files.append(pcap_cache)
 
 class clean_pcap(clean.clean):
@@ -140,7 +155,16 @@ bpf = Extension(name='pcs.bpf',
                  extra_compile_args=pcap_config.get('extra_compile_args', '')
 	)
 
-pcap_cmds = { 'config':config_pcap, 'clean':clean_pcap, 'build_ext':build_ext }
+clock = Extension(name='pcs.clock',
+                  sources=[ 'pcs/clock/clock.pyx' ],
+                  pyrex_include_dirs=[ 'pcs/clock' ],
+                  library_dirs=pcap_config.get('rt_library_dirs', ''),
+                  libraries=pcap_config.get('rt_libraries', '')
+	)
+
+# XXX Distutils only allows a single command class, direct everything
+# to the configuration wrapper for pcap.
+pcs_cmds = { 'config':config_pcap, 'clean':clean_pcap, 'build_ext':build_ext }
 
 setup(name='pcs',
       version='0.5',
@@ -149,6 +173,6 @@ setup(name='pcs',
       author_email='gnn@neville-neil.com',
       url='http://pcs.sf.net',
       packages = ['pcs', 'pcs.packets'],
-      cmdclass=pcap_cmds,
-      ext_modules = [ pcap, bpf ],
+      cmdclass=pcs_cmds,
+      ext_modules = [ pcap, bpf, clock ],
       )
