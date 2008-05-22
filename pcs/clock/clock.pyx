@@ -77,7 +77,7 @@ def settime(clockid_t clock_id, double value):
 def getres(clockid_t clock_id):
     """Get the resolution of a POSIX clock. Return float or None."""
     IF UNAME_SYSNAME == "Windows":
-        return False
+        return None
     ELSE:
         cdef timespec t
         cdef int rc
