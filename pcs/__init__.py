@@ -670,10 +670,19 @@ class OptionListField(CompoundField, list):
         if (other is None):
             return False
         if len(self._options) != len(other._options):
+            #print "option list lengths differ"
             return False
-        for i in range(len(self._options)):
-            if self._options[i].value != other._options[i].value:
-                return False
+        for i in xrange(len(self._options)):
+            #print "comparing option list field"
+            f = self._options[i]
+            if isinstance(f, Field):
+                if f.value != other._options[i].value:
+                    return False
+            else:
+                #print "option list member ", f.name, "is not a Field"
+                if f != other._options[i]:
+                    #print "did not match"
+                    return False
         return True
             
     def __ne__(self, other):
@@ -1394,7 +1403,7 @@ class Chain(list):
         """Insert a packet into a chain after a given packet instance.
            Used only by the div operator. The default behaviour is to
            set discriminator fields in p1 based on p2."""
-        for i in range(len(self.packets)):
+        for i in xrange(len(self.packets)):
             if self.packets[i] is p1:
                 if rdiscriminate is True:
                     p1.rdiscriminate(p2)
@@ -1437,7 +1446,7 @@ class Chain(list):
     def wildcard_mask(self, unmask=True):
         """Mark or unmark all of the fields in each Packet in this Chain
            as a wildcard for match() or contains()."""
-        for i in range(len(self.packets)):
+        for i in xrange(len(self.packets)):
             self.packets[i].wildcard_mask([], unmask)
 
     def encode(self):
@@ -2550,7 +2559,7 @@ def inet_atol(string):
     from socket import inet_aton
     value = 0
     addr = inet_aton(string)
-    for i in range(4):
+    for i in xrange(4):
         value += ord(addr[i]) << (3 - i) * 8
     return value
 
