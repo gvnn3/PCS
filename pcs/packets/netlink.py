@@ -171,7 +171,7 @@ class nlmsghdr(pcs.Packet):
             if self._fieldnames['type'].value == NLMSG_ERROR:
                 self.data = nlmsg_error(bytes[offset:remaining], \
                                         timestamp=timestamp)
-            elif (self._fieldnames['type'].value != NLMSG_NOOP) and
+            elif (self._fieldnames['type'].value != NLMSG_NOOP) and \
                  (self._fieldnames['type'].value != NLMSG_DONE):
                 self.data = self.next(bytes[offset:remaining], \
                                       timestamp=timestamp)
