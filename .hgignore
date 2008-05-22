@@ -13,6 +13,8 @@ docs/Web/*
 docs/latex/*
 docs/man/*
 make.out
+pcs/bpf/bpf.c
+pcs/clock/clock.c
 pcs/pcap/config.h
 pcs/pcap/config.pkl
 pcs/pcap/pcap.c
