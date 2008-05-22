@@ -2570,3 +2570,34 @@ def inet_ltoa(l):
         value = str(l & 0xFF) + "." + value
         l >>= 8
     return value[:-1]
+
+def bsprintf(flags, fmt):
+    """Return a formatted list of flag names.
+
+       flags  -  the flag values to format
+       fmt    -  a sequence of bit numbers and descriptions as a string
+
+       Compatible with bprintf() from BSD's route(8) command sources.
+       This can be used to emulate %b from BSD's kernel printf(9)."""
+    assert isinstance(flags, int) and isinstance(fmt, str)
+    s = ""
+    i = 0
+    j = 0
+    fmtlen = len(fmt)
+    while i < fmtlen:
+        c = ord(fmt[i])
+        if c > 32:
+            i += 1
+        else:
+            for j in xrange(i+1, fmtlen):
+                if ord(fmt[j]) <= 32:
+                    break
+            if (flags & (1 << (c - 1))) != 0:
+                if len(s) > 0:
+                    s += ','
+                s += fmt[i+1:j+1]
+            i = j
+    if len(s) > 0:
+        s = '<' + s
+        s += '>'
+    return s
