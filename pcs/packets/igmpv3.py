@@ -62,7 +62,7 @@ IGMP_V3_QUERY_MINLEN = 12
 class query(pcs.Packet):
     """IGMPv3 query message."""
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an IGMPv3 query"""
@@ -172,18 +172,44 @@ class GroupRecordField(pcs.CompoundField):
                 % (self.type, self.auxdatalen, self.nsources, \
                    self.group, self.sources, self.auxdata)
 
+    def __str__(self):
+        """Walk the entire packet and pretty print the values of the fields."""
+        retval = " GroupRecord\n"
+        retval += "Type %d\n" % self.type.value
+        retval += "Auxdatalen %d\n" % self.auxdatalen.value
+        retval += "Nsources %d\n" % self.nsources.value
+        gs = inet_ntop(AF_INET, struct.pack('!L', self.group.value))
+        retval += "Group %s\n" % gs
+        retval += "Sources "
+        i = False
+        for s in self.sources._options:
+            if i is False:
+                retval += ", "
+            ss = inet_ntop(AF_INET, struct.pack('!L', s.value))
+            retval += ss
+            i = True
+        return retval
+
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
         if self.packet is not None:
             self.packet.__needencode = True
 
-    # XXX OptionList decode is funny. If you don't have the packet
+    # OptionList decode is funny. If you don't have the packet
     # contents reflected in the PCS representation already, then it will
     # not produce anything -- the OptionLists are empty.
     # This is why the TCP and IP option list decoders have to act on
     # the backing store provided. Similarly we have to do the same here.
     def decode(self, bytes, curr, byteBR):
 	start = curr
+
+        # assume ip transport parsers did this for us:
+        #if byteBR % 8 != 0:
+        #     if __debug__:
+        #         print "WARNING: IGMPv3 did not start on 8-bit boundary"
+        #    curr += 1
+        #    byteBR = 0
+
         [self.type.value, curr, byteBR] = self.type.decode(bytes,
                                                            curr, byteBR)
         [self.auxdatalen.value, curr, byteBR] = self.auxdatalen.decode(bytes,
@@ -194,15 +220,21 @@ class GroupRecordField(pcs.CompoundField):
                                                            curr, byteBR)
 
 	# The sources[] array is a variable length field. We need to
-	# parse it ourselves.
+	# parse it ourselves. Clamp to buffer size.
 	srcendp = curr + (self.nsources.value * 4)
+        remaining = len(bytes) - curr
+        srcendp = min(srcendp, remaining)
 	while curr < srcendp:
 	    src = pcs.Field("", 32)
 	    [src.value, curr, byteBR] = src.decode(bytes, curr, byteBR)
 	    self.sources.append(src)
 
-        # Consume and reflect auxiliary data.
+        # Consume and reflect auxiliary data if present.
         auxdatalen = self.auxdatalen.value * 4
+        remaining = len(bytes) - curr
+        if __debug__ and auxdatalen > remaining:
+            print "WARNING: auxdata overflows buffer by", auxdatalen - remaining
+        auxdatalen = min(srcendp, remaining)
         if auxdatalen > 0:
 	    self.auxdata.append(pcs.StringField("", auxdatalen*8, \
 	                        default=bytes[curr:curr+auxdatalen]))
@@ -212,7 +244,7 @@ class GroupRecordField(pcs.CompoundField):
 	self.width = 8 * delta
 	#print "consumed %d bytes" % delta
 
-        return [None, curr, byteBR]
+        return [bytes, curr, byteBR]
 
     def encode(self, bytearray, value, byte, byteBR):
         """Encode an IGMPv3 group record."""
@@ -260,6 +292,36 @@ class GroupRecordField(pcs.CompoundField):
 	if self.width < minwidth or self.width > maxwidth:
             raise FieldBoundsError, "GroupRecordField must be between %d " \
                                     "and %d bytes wide" % (minwidth, maxwidth)
+    def __eq__(self, other):
+        """Test two group records lists for equality."""
+        if other is None:
+            return False
+        if self.type.value == other.type.value and \
+           self.auxdatalen.value == other.auxdatalen.value and \
+           self.nsources.value == other.nsources.value and \
+           self.group.value == other.group.value:
+            # TODO: Do a dictionary style comparison, sources shouldn't
+            # need to appear in same order.
+            #print "other fields compare ok, trying to match sources"
+            for i in xrange(len(self.sources)):
+                if self.sources[i].value != other.sources[i].value:
+                    #print "no match"
+                    return False
+            #print "match"
+            return True
+        #print "no match"
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method.
+           Compare all fields except auxdata. Source list must match
+           exactly -- we can't treat it as a dictionary, yet."""
+        return lf.__eq__(rf)
+
+    default_compare = staticmethod(default_compare)
 
 class report(pcs.Packet):
     """IGMPv3 Report"""
@@ -269,7 +331,7 @@ class report(pcs.Packet):
     #At least one group record SHOULD exist in the variable-length
     #section at the end of each datagram.
 
-    layout = pcs.Layout()
+    _layout = pcs.Layout()
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an IGMPv3 report header"""
@@ -286,16 +348,21 @@ class report(pcs.Packet):
             self.timestamp = timestamp
 
         # Decode additional bytes into group records, if provided.
-        # Group records are variable length structures, so we
-        # have no way of bounds checking upfront -- we have to
-        # attempt to parse the entire payload. This gets interesting.
+        # Group records are variable length structures.
+        # Some IGMPv3 implementations re-use the same buffers which
+        # may contain junk, so don't try to parse the entire packet
+        # as a set of group record fields.
 	if bytes is not None:
             curr = self.sizeof()
             byteBR = 8
-            while curr < len(bytes):
+            found = 0
+            expected = self._fieldnames['nrecords'].value
+            while len(self.records) < expected and curr < len(bytes):
 		rec = GroupRecordField("")
                 [dummy, curr, byteBR] = rec.decode(bytes, curr, byteBR)
 		self.records.append(rec)
+            #print len(self.records), "records parsed"
+            #print "remaining after grouprecs: ", curr - len(bytes)
 	    self.data = payload.payload(bytes[curr:len(bytes)])
         else:
             self.data = None
