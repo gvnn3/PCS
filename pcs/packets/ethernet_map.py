@@ -42,7 +42,10 @@ import ipv4, ipv6, arp
 
 ETHERTYPE_IP		= 0x0800	# IP protocol 
 ETHERTYPE_ARP		= 0x0806	# Addr. resolution protocol
+ETHERTYPE_VLAN		= 0x8100	# 802.1q header
 ETHERTYPE_IPV6		= 0x86dd	# IPv6
+ETHERTYPE_MPLS		= 0x8847	# unicast
+ETHERTYPE_MPLS_M	= 0x8848	# multicast
 
 map = {ETHERTYPE_IP: ipv4.ipv4,
        ETHERTYPE_ARP: arp.arp,
