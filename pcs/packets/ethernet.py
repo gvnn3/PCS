@@ -43,6 +43,9 @@ from pcs.packets.arp import arp
 import inspect
 import time
 
+def ETHER_IS_MULTICAST(e):
+    return (e[0] & 0x01) == 0x01
+
 def ETHER_MAP_IP_MULTICAST(i):
     import struct
     return '\x01\x00\x5e' + struct.pack("!I", i)[1:4]

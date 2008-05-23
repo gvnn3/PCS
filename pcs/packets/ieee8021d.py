@@ -42,19 +42,42 @@ import time
 import pcs
 import pcs.packets.payload
 
+#
+# How you tell GMRP and GVRP apart.
+#
+ETHER_DEST_GMRP = "\x01\x80\xc2\x00\x00\x20"
+ETHER_DEST_GVRP = "\x01\x80\xc2\x00\x00\x21"
+
 PROTO_STP = 0x0000
 PROTO_GARP = 0x0001
 
 # TODO: GARP, GMRP and GVRP TLVs.
 
+ATTR_END = 0
+ATTR_GROUP = 1
+ATTR_VID = ATTR_GROUP		# Alias for GVRP
+ATTR_REQUIREMENT = 2
+
+# GARP attribute event types
+EVENT_LEAVE_ALL = 0
+EVENT_JOIN_EMPTY = 1
+EVENT_JOIN_IN = 2
+EVENT_LEAVE_EMPTY = 3
+EVENT_LEAVE_IN = 4 
+EVENT_EMPTY = 5
+
+# GARP message: 1byte attribute type + 1..N attribute + end mark
+# lengths are inclusive:
+# GARP attribute TLV: 1/1/n length/event/value
+# GVRP attribute TLV: 1/1/2 length/event/vlanid
+
 class garp(pcs.Packet):
     """IEEE 802.1d GARP PDU"""
 
     def __init__(self, bytes = None, timestamp = None, **kv):
-        messages = pcs.OptionListField("messages")
-        end = pcs.Field("end", 8, default=0)
+        attributes = pcs.OptionListField("attributes")
 
-        pcs.Packet.__init__(self, [ messages, end ] bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ attributes ] bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
 
         if timestamp is None:
@@ -65,7 +88,7 @@ class garp(pcs.Packet):
             offset = self.sizeof()
             curr = offset
             remaining = len(bytes) - offset
-            # TODO parse GARP messages.
+            # TODO parse GARP attribute list..
             if self.data is None:
                 self.data = payload.payload(bytes[curr:remaining], \
                                             timestamp=timestamp)
