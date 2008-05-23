@@ -242,10 +242,10 @@ class if_link_msg(pcs.Packet):
             f = self._fieldnames[fn.name]
             if fn.name == "flags":
                 bs = bsprintf(f.value, self._flagbits)
-                retval += "%s %s\n" % (fn.name, bs)
+                s += "%s %s\n" % (fn.name, bs)
             else:
-                retval += "%s %s\n" % (fn.name, f.value)
-        return retval
+                s += "%s %s\n" % (fn.name, f.value)
+        return s
 
 class if_addr_msg(pcs.Packet):
     """BSD Routing socket -- protocol address message (ifa_msghdr) """
@@ -516,12 +516,6 @@ class rt_msg(pcs.Packet):
         else:
             self.data = None
 
-        """Walk the entire packet and pretty print the values of the fields."""
-        for field in self._layout:
-
-            retval += "%s %s\n" % (field.name, field.value)
-        return retval
-
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""
         s = self._descr[self.type] + "\n"
@@ -529,10 +523,10 @@ class rt_msg(pcs.Packet):
             f = self._fieldnames[fn.name]
             if fn.name == "flags":
                 bs = bsprintf(f.value, self._flagbits)
-                retval += "%s %s\n" % (fn.name, bs)
+                s += "%s %s\n" % (fn.name, bs)
             else:
-                retval += "%s %s\n" % (fn.name, f.value)
-        return retval
+                s += "%s %s\n" % (fn.name, f.value)
+        return s
 
 # What "route -nv monitor" knows about.
 rtmsg_map = {
@@ -622,7 +616,7 @@ class rtmsghdr(pcs.Packet):
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""
-        retval = self._descr[self.type] + "\n"
+        s = self._descr[self.type] + "\n"
         for field in self._layout:
-            retval += "%s %s\n" % (field.name, field.value)
-        return retval
+            s += "%s %s\n" % (field.name, field.value)
+        return s
