@@ -103,24 +103,26 @@ class llc(pcs.Packet):
             offset = self.sizeof()
             curr = offset
             remaining = len(bytes) - offset
-
             # TODO: Decode other fields.
-            # For now, just do the minimum to parse 802.11 frames.
-            oui = None
-            if self.ssnap == LLC_SNAP_LSAP and \
+            # For now, just do the minimum to parse 802.11 and 802.1d frames.
+            if self.ssnap == LLC_8021D_LSAP and \
+               self.dsnap == LLC_8021D_LSAP and \
+               self.control == LLC_UI:
+                from ieee8021d import bpdu
+                self.data = bpdu(bytes[curr:remaining], timestamp = timestamp)
+            elif self.ssnap == LLC_SNAP_LSAP and \
                self.dsnap == LLC_SNAP_LSAP and \
                self.control == LLC_UI and remaining <= 3:
                 oui = pcs.StringField("oui", 24, default=bytes[curr:curr+3])
                 curr += 3
                 remaining -= 3
-            if oui is not None and oui.value == "\x00\x00\x00" and \
-               remaining <= 2:
-                etype = pcs.Field("etype", 16, bytes[curr:curr+2],
-                                  discriminator=True) # XXX
-                curr += 2
-                remaining -= 2
-                self.data = self.next(bytes[curr:remaining], \
-                                      timestamp = timestamp)
+                if oui.value == "\x00\x00\x00" and remaining <= 2:
+                    etype = pcs.Field("etype", 16, bytes[curr:curr+2],
+                                      discriminator=True) # XXX
+                    curr += 2
+                    remaining -= 2
+                    self.data = self.next(bytes[curr:remaining], \
+                                          timestamp = timestamp)
             if self.data is None:
                self.data = payload.payload(bytes[curr:remaining], \
                                            timestamp = timestamp)

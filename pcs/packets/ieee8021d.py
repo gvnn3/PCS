@@ -32,7 +32,7 @@
 #
 # Author: Bruce M. Simpson
 #
-# Description: Classes which describe IEEE 802.11 headers.
+# Description: Classes which describe IEEE 802.1d and GARP headers.
 #
 
 import inspect
@@ -42,15 +42,44 @@ import time
 import pcs
 import pcs.packets.payload
 
-class bpdu(pcs.Packet):
-    """IEEE 802.1d bridge PDU"""
+PROTO_STP = 0x0000
+PROTO_GARP = 0x0001
+
+# TODO: GARP, GMRP and GVRP TLVs.
+
+class garp(pcs.Packet):
+    """IEEE 802.1d GARP PDU"""
+
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        messages = pcs.OptionListField("messages")
+        end = pcs.Field("end", 8, default=0)
+
+        pcs.Packet.__init__(self, [ messages, end ] bytes = bytes, **kv)
+        self.description = inspect.getdoc(self)
+
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+        if bytes is not None:
+            offset = self.sizeof()
+            curr = offset
+            remaining = len(bytes) - offset
+            # TODO parse GARP messages.
+            if self.data is None:
+                self.data = payload.payload(bytes[curr:remaining], \
+                                            timestamp=timestamp)
+        else:
+            self.data = None
+
+class stp(pcs.Packet):
+    """IEEE 802.1d STP PDU"""
 
     _layout = pcs.Layout()
     _flagbits = "\x01ACK\x02AGREE\x03FORWARDING\x04LEARNING\x05BACKUP" \
                 "\x06ROOT\x07PROPOSAL\x08CHANGED"
 
     def __init__(self, bytes = None, timestamp = None, **kv):
-        protocol = pcs.Field("protocol", 16)
         version = pcs.Field("version", 8)
         type = pcs.Field("type", 8)
         flags = pcs.Field("flags", 8)
@@ -64,7 +93,7 @@ class bpdu(pcs.Packet):
         delay = pcs.Field("delay", 16)
         #opt = pcs.OptionListField("opt")
 
-        pcs.Packet.__init__(self, [ protocol, version, type, flags, root, \
+        pcs.Packet.__init__(self, [ version, type, flags, root, \
                                     cost, src, pid, age, maxage, interval, \
                                     delay ], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
@@ -95,3 +124,36 @@ class bpdu(pcs.Packet):
             else:
                 s += "%s %s\n" % (fn.name, f.value)
         return s
+
+map = {
+	PROTO_STP: stp,
+	PROTO_GARP: garp
+}
+
+class bpdu(pcs.Packet):
+    """IEEE 802.1d bridge PDU header"""
+
+    _layout = pcs.Layout()
+    _map = map
+
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        protocol = pcs.Field("protocol", 16, discriminator=True)
+
+        pcs.Packet.__init__(self, [ protocol ], bytes = bytes, **kv)
+        self.description = inspect.getdoc(self)
+
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if bytes is not None:
+            offset = self.sizeof()
+            curr = offset
+            remaining = len(bytes) - offset
+            self.data = self.next(bytes[curr:remaining], timestamp=timestamp)
+            if self.data is None:
+                self.data = payload.payload(bytes[curr:remaining], \
+                                            timestamp=timestamp)
+        else:
+            self.data = None
