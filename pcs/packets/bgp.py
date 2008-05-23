@@ -48,7 +48,7 @@ import pcs.packets.payload
 # TODO: Add error subcodes.
 # TODO: Add AS-path parser.
 # TODO: Add 32-bit AS support.
-# TODO: Add MPLS label support to NLRI.
+# TODO: Add MPLS label support to NLRI. (RFC 3107)
 
 OPEN = 1
 UPDATE = 2
