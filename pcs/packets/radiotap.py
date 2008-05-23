@@ -111,18 +111,20 @@ flag_bits = "\x01CFP\x02SHORTPRE\x03WEP"\
             "\x04FRAG\x05FCS\x06DATAPAD"\
             "\x07BADFCS\x08SHORTGI"
 
-def _channel(x):
+def _channel(n, x):
     """Given a tuple returned by struct.unpack(), produce a list
        of decoded fields for a CHANNEL TLV."""
+    assert isinstance(n, str)
     assert isinstance(x, tuple)
     ret = []
     ret += pcs.Field("chan_mhz", 8, default=x[0])
     ret += pcs.Field("chan_flags", 8, default=x[1])
     return ret
 
-def _xchannel(x):
+def _xchannel(n, x):
     """Given a tuple returned by struct.unpack(), produce a list
        of decoded fields for an XCHANNEL TLV."""
+    assert isinstance(n, str)
     assert isinstance(x, tuple)
     ret = []
     ret += pcs.Field("xchan_flags", 32, default=x[0])
