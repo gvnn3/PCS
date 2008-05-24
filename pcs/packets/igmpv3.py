@@ -72,10 +72,23 @@ class query(pcs.Packet):
 	qrv = pcs.Field("qrv", 3)
 	qqic = pcs.Field("qqic", 8)
 	nsrc = pcs.Field("nsrc", 16)
-	sources = pcs.OptionListField("sources")
+	srcs = pcs.OptionListField("sources")
+
+        # If keyword initializers are present, deal with the syntactic sugar.
+        # query's constructor accepts a list of IP addresses. These need
+        # to be turned into Fields for encoding to work, as they are going
+        # to be stashed into the "sources" OptionListField defined above.
+        if kv is not None:
+            for kw in kv.iteritems():
+                if kw[0] == 'sources':
+                    assert isinstance(kw[1], list)
+                    for src in kw[1]:
+                        assert isinstance(src, int)
+                        srcs.append(pcs.Field("", 32, default=src))
+            kv.pop('sources')
 
         pcs.Packet.__init__(self, [group, reserved00, sbit, qrv, qqic,
-				   nsrc, sources], bytes = bytes, **kv)
+				   nsrc, srcs], bytes = bytes, **kv)
 
 	self.description = inspect.getdoc(self)
 
