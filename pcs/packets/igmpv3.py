@@ -203,13 +203,6 @@ class GroupRecordField(pcs.CompoundField):
     def decode(self, bytes, curr, byteBR):
 	start = curr
 
-        # assume ip transport parsers did this for us:
-        #if byteBR % 8 != 0:
-        #     if __debug__:
-        #         print "WARNING: IGMPv3 did not start on 8-bit boundary"
-        #    curr += 1
-        #    byteBR = 0
-
         [self.type.value, curr, byteBR] = self.type.decode(bytes,
                                                            curr, byteBR)
         [self.auxdatalen.value, curr, byteBR] = self.auxdatalen.decode(bytes,
@@ -219,26 +212,21 @@ class GroupRecordField(pcs.CompoundField):
         [self.group.value, curr, byteBR] = self.group.decode(bytes,
                                                            curr, byteBR)
 
-	# The sources[] array is a variable length field. We need to
-	# parse it ourselves. Clamp to buffer size.
-	srcendp = curr + (self.nsources.value * 4)
-        remaining = len(bytes) - curr
-        srcendp = min(srcendp, remaining)
-	while curr < srcendp:
-	    src = pcs.Field("", 32)
-	    [src.value, curr, byteBR] = src.decode(bytes, curr, byteBR)
-	    self.sources.append(src)
+        srclen = self.nsources.value << 2
+        if srclen != 0:
+            srclen = min(srclen, len(bytes))
+            endp = curr + srclen
+	    while curr < endp:
+	        src = pcs.Field("", 32)
+	        [src.value, curr, byteBR] = src.decode(bytes, curr, byteBR)
+	        self.sources.append(src)
 
-        # Consume and reflect auxiliary data if present.
-        auxdatalen = self.auxdatalen.value * 4
-        remaining = len(bytes) - curr
-        if __debug__ and auxdatalen > remaining:
-            print "WARNING: auxdata overflows buffer by", auxdatalen - remaining
-        auxdatalen = min(srcendp, remaining)
-        if auxdatalen > 0:
+        auxdatalen = self.auxdatalen.value << 2
+        if auxdatalen != 0:
+            auxdatalen = min(auxdatalen, len(bytes))
 	    self.auxdata.append(pcs.StringField("", auxdatalen*8, \
 	                        default=bytes[curr:curr+auxdatalen]))
-	curr += auxdatalen
+            curr += auxdatalen
 
 	delta = curr - start
 	self.width = 8 * delta
@@ -359,10 +347,10 @@ class report(pcs.Packet):
             expected = self._fieldnames['nrecords'].value
             while len(self.records) < expected and curr < len(bytes):
 		rec = GroupRecordField("")
+                oldcurr = curr
                 [dummy, curr, byteBR] = rec.decode(bytes, curr, byteBR)
 		self.records.append(rec)
             #print len(self.records), "records parsed"
-            #print "remaining after grouprecs: ", curr - len(bytes)
 	    self.data = payload.payload(bytes[curr:len(bytes)])
         else:
             self.data = None
