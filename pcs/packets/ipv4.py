@@ -59,6 +59,13 @@ INADDR_ALLRPTS_GROUP	= 0xe0000016	# 224.0.0.22, IGMPv3
 INADDR_MAX_LOCAL_GROUP	= 0xe00000ff	# 224.0.0.255
 
 #
+# IPv4 header flags.
+#
+IP_MF = 1	# More fragments
+IP_DF = 2	# Don't fragment
+IP_RF = 4	# Reserved; always set to 0.
+
+#
 # IPv4 options.
 #
 IPOPT_EOL = 0
@@ -88,22 +95,32 @@ def IN_PRIVATE(i):
             (((i) & 0xfff00000) == 0xac100000) or \
             (((i) & 0xffff0000) == 0xc0a80000))
 
+class ipv4opt(pcs.TypeLengthValueField):
+    """Syntactic sugar for IPv4 option use in constructors.
+       XXX Currently only Router Alert is supported properly. """
+
+    def __init__(self, type, **kv):
+        pcs.TypeLengthValueField.__init__(self, "", \
+                                          pcs.Field("", 8, default = type), \
+                                          pcs.Field("", 8), \
+                                          pcs.Field("", 16)) # XXX
+
 class ipv4(pcs.Packet):
     """IPv4"""
 
     _layout = pcs.Layout()
     _map = ipv4_map.map
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """ define the fields of an IPv4 packet, from RFC 791."""
-        version = pcs.Field("version", 4, default = 4)
-        hlen = pcs.Field("hlen", 4)
+        version = pcs.Field("version", 4, default=4)
+        hlen = pcs.Field("hlen", 4, default=5)
         tos = pcs.Field("tos", 8)
-        length = pcs.Field("length", 16)
+        length = pcs.Field("length", 16, default=20)
         id = pcs.Field("id", 16)
         flags = pcs.Field("flags", 3)
-        offset = pcs.Field("offset", 13)
-        ttl = pcs.Field("ttl", 8, default = 64)
+        offset = pcs.Field("offset", 13, default=0)
+        ttl = pcs.Field("ttl", 8, default=64)
         protocol = pcs.Field("protocol", 8, discriminator=True)
         checksum = pcs.Field("checksum", 16)
         src = pcs.Field("src", 32)
@@ -112,7 +129,7 @@ class ipv4(pcs.Packet):
         pcs.Packet.__init__(self,
                             [version, hlen, tos, length, id, flags, offset,
                              ttl, protocol, checksum, src, dst, options],
-                            bytes = bytes)
+                            bytes = bytes, **kv)
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
 
@@ -194,22 +211,35 @@ class ipv4(pcs.Packet):
                 return inet_ntop(AF_INET,
                                  struct.pack('!L', getattr(self,attr)))
 
-    def cksum(self):
-        """calculate the IPv4 checksum over a packet
+    def calc_checksum(self):
+        """Calculate and store the checksum for this packet."""
+        #print "ipv4.calc_checksum()"
+        self.checksum = 0
+        self.checksum = ipv4.ipv4_cksum(self.getbytes())
 
-        returns the calculated checksum
-        """
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet."""
+        tmpbytes = self.getbytes()
+        self.hlen = (len(tmpbytes) >> 2)
+        self.length = len(tmpbytes)
+        if self._head is not None:
+            self.length += len(self._head.collate_following(self))
+
+    def ipv4_cksum(bytes):
+        """Static method to: Calculate and return the IPv4 header checksum
+           over the string of bytes provided."""
+
+        tmpbytes = bytes
         total = 0
-        packet = ipv4(self.bytes)
-        packet.checksum = 0
-        bytes = packet.bytes
-        if len(bytes) % 2 == 1:
-            bytes += "\0"
-        for i in range(len(bytes)/2):
-            total += (struct.unpack("!H", bytes[2*i:2*i+2])[0])
+        if len(tmpbytes) % 2 == 1:
+            tmpbytes += "\0"
+        for i in range(len(tmpbytes)/2):
+            total += (struct.unpack("!H", tmpbytes[2*i:2*i+2])[0])
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16
         return ~total & 0xffff
+
+    ipv4_cksum = staticmethod(ipv4_cksum)
 
 #
 # Convenience object for higher level protocols that need a fake IPv4

@@ -37,9 +37,9 @@
 import sys
 
 import pcs
+import tcp_map
 from pcs import UnpackError
 from pcs.packets import payload
-import tcp_map
 
 import inspect
 import time
@@ -50,7 +50,7 @@ class tcp(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a TCP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
@@ -71,7 +71,7 @@ class tcp(pcs.Packet):
         pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
                                    urg, ack, psh, rst, syn, fin, window,
                                    checksum, urgp, options],
-                            bytes = bytes)
+                            bytes = bytes,  **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()
@@ -130,7 +130,7 @@ class tcp(pcs.Packet):
 		    #print "\t(optlen %d)" % (optlen)
 
                     if option == 2:        # mss
-			# XXX this is being thrown dont know hwy
+			# XXX This is being thrown, not sure why.
                         #if optlen != 4:
 			#    print options
                         #    raise UnpackError, \
@@ -218,12 +218,12 @@ class tcp(pcs.Packet):
     # XXX TCP MUST have it's own next() function so that it can discrimnate
     # on either sport or dport.
 
-    def next(self, bytes):
+    def next(self, bytes, timestamp):
         """Decode higher layer packets contained in TCP."""
         if (self.dport in tcp_map.map):
-            return tcp_map.map[self.dport](bytes)
+            return tcp_map.map[self.dport](bytes, timestamp = timestamp)
         if (self.sport in tcp_map.map):
-            return tcp_map.map[self.sport](bytes)
+            return tcp_map.map[self.sport](bytes, timestamp = timestamp)
         return None
     
     def __str__(self):
@@ -238,19 +238,88 @@ class tcp(pcs.Packet):
         pass
 
     def cksum(self, ip, data = ""):
-        """return tcpv4 checksum"""
+        """Calculate the TCP segment checksum outside of a chain."""
+        from pcs.packets.ipv4 import ipv4
         from pcs.packets.ipv4 import pseudoipv4
-        import struct
-        total = 0
-        tmpip = pseudoipv4()
+        from socket import IPPROTO_TCP
+        tmpip = ipv4.pseudoipv4()
         tmpip.src = ip.src
         tmpip.dst = ip.dst
+        tmpip.protocol = IPPROTO_TCP
         tmpip.length = len(self.getbytes()) + len(data)
         pkt = tmpip.getbytes() + self.getbytes() + data
-        if len(pkt) % 2 == 1:
-            pkt += "\0"
-        for i in range(len(pkt)/2):
-            total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return  ~total & 0xffff
+        return ipv4.ipv4_cksum(pkt)
+
+    # XXX The following code is common to both the TCP and UDP modules,
+    # and could be moved into another module or class.
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this TCP segment.
+           The packet must be part of a chain.
+           We attempt to infer whether IPv4 or IPv6 encapsulation
+           is in use for the payload. The closest header wins the match.
+           The network layer header must immediately precede the TCP
+           segment (for now)."""
+        from pcs.packets.ipv4 import ipv4
+        ip = None
+        ip6 = None
+        if self._head is not None:
+            (ip, iip) = self._head.find_preceding(self, pcs.packets.ipv4.ipv4)
+            (ip6, iip6) = self._head.find_preceding(self, pcs.packets.ipv6.ipv6)
+        # Either this TCP header is not in a chain, or no IPv4/IPv6
+        # outer header was found.
+        if ip is None and ip6 is None:
+            self.checksum = 0
+            self.checksum = ipv4.ipv4_cksum(self.getbytes())
+            return
+        # If we found both IPv4 and IPv6 headers then we must break the tie.
+        # The closest outer header wins and is used for checksum calculation.
+        if ip is not None and ip6 is not None:
+            assert iip != iip6, "ipv4 and ipv6 cannot be at same index"
+            if iip6 > iip:
+                ip = None	# ip6 is nearest outer header, ignore ip
+            else:
+                ip6 = None	# ip is nearest outer header, ignore ip6
+        if ip is not None:
+            self.calc_checksum_v4(ip)
+        else:
+            self.calc_checksum_v6(ip6)
+
+    def calc_checksum_v4(self, ip):
+        """Calculate and store the checksum for the TCP segment
+           when encapsulated as an IPv4 payload with the given header."""
+        from pcs.packets.ipv4 import ipv4
+        from pcs.packets.ipv4 import pseudoipv4
+        from socket import IPPROTO_TCP
+        self.checksum = 0
+        payload = self._head.collate_following(self)
+        pip = pseudoipv4()
+        pip.src = ip.src
+        pip.dst = ip.dst
+        pip.protocol = IPPROTO_TCP
+        pip.length = len(self.getbytes()) + len(payload)
+        tmpbytes = pip.getbytes() + self.getbytes() + payload
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+
+    def calc_checksum_v6(self, ip6):
+        """Calculate and store the checksum for the TCP segment
+           when encapsulated as an IPv6 payload with the given header."""
+        from pcs.packets.ipv4 import ipv4
+        from pcs.packets.pseudoipv6 import pseudoipv6
+        self.checksum = 0
+        payload = self._head.collate_following(self)
+        pip6 = pseudoipv6()
+        pip6.src = ip6.src
+        pip6.dst = ip6.dst
+        pip6.next_header = ip6.next_header
+        pip6.length = len(self.getbytes()) + len(payload)
+        tmpbytes = pip6.getbytes() + self.getbytes() + payload
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet.
+           For TCP, we need only calculate the length of the header and
+           any appended options; the length of the TCP payload is
+           calculated from the length field in the outer IP/IP6 header."""
+        tmpoff = len(self.getbytes())
+        self.off = (tmpoff >> 2)

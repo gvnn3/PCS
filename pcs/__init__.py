@@ -82,6 +82,8 @@ class FieldBoundsError(Exception):
     def __str__(self):
         return repr(self.message)
     
+# XXX Should really be named IntegerField and the common methods shuffled
+# off into a base class.
 class Field(object):
     """A field is a name, a type, a width in bits, possibly a default
 value and can be marked as a dicriminator for higher level packet
@@ -89,14 +91,16 @@ demultiplexing .  These classes are used by the packet to define the
 layout of the data and how it is addressed."""
     
     def __init__(self, name = "", width = 1, default = None,
-                 discriminator = False, is_wildcard=False):
+                 discriminator = False, compare=None):
         """initialize a field
 
         name - a string name
         width - a width in bits
         default - a default value
         discriminator - is this field used to demultiplex packets
+        match - a match function used to compare this field with another.
         """
+        self.packet = None
         ## the name of the Field
         self.name = name
         ## the width, in bites, of the field's data
@@ -105,8 +109,8 @@ layout of the data and how it is addressed."""
         self.default = default
         ## Is this field used to demultiplex higher layer packets?
         self.discriminator = discriminator
-        ## Should this field be ignored by the Packet.matches() method?
-        self.is_wildcard = is_wildcard
+        ## the comparison function for this field
+        self.compare = compare
         ## Fields store the values
         if default == None:
             self.value = 0
@@ -115,10 +119,8 @@ layout of the data and how it is addressed."""
         
     def __repr__(self):
         """return an appropriate representation for the Field object"""
-        return "<pcs.Field  name %s, %d bits, default %s, discriminator %d, " \
-               "wildcard %d>" % \
-               (self.name, self.width, self.default, self.discriminator, \
-                self.is_wildcard)
+        return "<pcs.Field  name %s, %d bits, default %s, discriminator %d>" %\
+               (self.name, self.width, self.default, self.discriminator)
 
     def decode(self, bytes, curr, byteBR):
         """Decode a field and return the value and the updated current
@@ -216,7 +218,46 @@ layout of the data and how it is addressed."""
             (value < 0) or
             (value > (2 ** self.width) - 1)):
             raise FieldBoundsError, "Value must be between 0 and %d but is %d" % ((2 ** self.width - 1), value)
-        
+
+    def __copy__(self):
+        """Return a shallow copy of a Field; used by copy module.
+           Fields may be copied, they are not immutable."""
+        return self.__deepcopy__()
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a Field; used by copy module.
+           Fields may be copied, they are not immutable; however they
+           always contain integer types which *are* immutable."""
+        result = self.__class__()
+        memo[id(self)] = result
+        result.__init__(name=self.name, width=self.width, \
+                        default=self.default, \
+                        discriminator=self.discriminator, \
+                        compare=self.compare)
+        # Copy value, we can do so here with impunity -- no __setattr__.
+        result.value = self.value
+        assert result.value == self.value, "value not copied"
+        # The new copy MUST NOT be associated with a Packet.
+        assert result.packet == None, "dangling reference to Packet"
+        return result
+
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method.
+
+           lp - packet on left hand side of comparison
+           lf - field in lp being compared
+           rp - packet on right hand side of comparison
+           rf - field in rp being compared
+
+           This function is installed in Field.compare on assignment.
+           It is declared static to allow folk to override it with lambda
+           functions. The packets are passed so that back-references
+           to other fields in the packet are possible during the match."""
+        return lf.value == rf.value
+
+    default_compare = staticmethod(default_compare)
+
+
 class FieldAlignmentError(Exception):
     """When a programmer tries to decode a field that is not
     on a byte boundary this exception is raised."""
@@ -226,6 +267,9 @@ class FieldAlignmentError(Exception):
         ## the message that will be output when this error is raised
         self.message = message
 
+# Both StringField and Field contain only immutable data types, therefore
+# they share copy semantics through inheritance.
+
 class StringField(Field):
     """A string field is a name, a width in bits, and possibly a
 default value.  The data is to be interpreted as a string, but does
@@ -233,16 +277,17 @@ not encode the length into the packet.  Length encoded values are
 handled by the LengthValueField."""
     
     def __init__(self, name = "", width = 1, default = None, \
-                 is_wildcard = False ):
+                 compare = None ):
         """initialtize a StringField"""
+        self.packet = None
         ## the name of the StringField
         self.name = name
         ## the width, in bits, of the StringField
         self.width = width
         ## the default value, if any, of the StringField
         self.default = default
-        ## if this field is a wildcard field in a filter
-        self.is_wildcard = is_wildcard
+        ## the comparison function
+        self.compare = compare
         ## Fields store the values
         if default == None:
             self.value = ""
@@ -251,9 +296,8 @@ handled by the LengthValueField."""
         
     def __repr__(self):
         """return a human readable form of a StringFeild object"""
-        return "<pcs.StringField  name %s, %d bits, default %s, " \
-               "wildcard %d>" % \
-               (self.name, self.width, self.default, self.is_wildcard) # 
+        return "<pcs.StringField  name %s, %d bits, default %s>" % \
+               (self.name, self.width, self.default)
 
     def decode(self, bytes, curr, byteBR):
         """Decode the field and return the value as well as the new
@@ -301,10 +345,10 @@ class LengthValueField(object):
     packets.
     """
 
-    def __init__(self, name, length, value, is_wildcard=False):
+    def __init__(self, name, length, value, compare=None):
         self.packet = None
         self.name = name
-        self.is_wildcard = is_wildcard
+        self.compare = compare
         if not isinstance(length, Field):
             raise LengthValueFieldError, "Length must be of type Field but is %s" % type(length)
         object.__setattr__(self, 'length', length)
@@ -317,8 +361,8 @@ class LengthValueField(object):
 
     def __repr__(self):
         return "<pcs.LengthValueField name %s, length %s, value %s, " \
-               "wildcard %d" \
-               % (self.name, self.length, self.value, self.is_wildcard)
+               "compare %d" \
+               % (self.name, self.length, self.value, self.compare)
 
     def __len__(self):
         return self.length.width + self.value.width
@@ -363,11 +407,38 @@ class LengthValueField(object):
         """Check the bounds of this field."""
         self.value.bounds(value)
 
+    # There is no __setattr__ to stomp on us here.
+    def __copy__(self):
+        """Return a shallow copy of a LengthValueField; used by copy module.
+           A shallow copy just makes references to these Fields in the copy."""
+        result = self.__class__(name=self.name, \
+                                length=self.length, \
+                                value=self.value, \
+                                compare=self.compare)
+        return result
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a LengthValueField; used by copy module.
+           A deep copy copies all of the embedded Fields."""
+        from copy import deepcopy
+        result = self.__class__(name=self.name, \
+                        length=deepcopy(self.length, memo), \
+                        value=deepcopy(self.value, memo), \
+                        compare=self.compare)
+        memo[id(self)] = result
+        return result
+
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method."""
+        return lf.value == rf.value
+
+    default_compare = staticmethod(default_compare)
+
 class TypeValueField(object):
     """A type-value field handles parts of packets where a type
     is encoded before a value.  """
 
-    def __init__(self, name, type, value, is_wildcard=False):
+    def __init__(self, name, type, value, compare=None):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
@@ -378,9 +449,10 @@ class TypeValueField(object):
         else:
             raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
         self.width = type.width + value.width
+        self.compare = compare
 
     def __repr__(self):
-        return "<pcs.TypeValueField name %s, type %s, value %s, wildcard %d" % (self.name, self.type, self.value, self.is_wildcard)
+        return "<pcs.TypeValueField name %s, type %s, value %s>" % (self.name, self.type, self.value)
 
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
@@ -407,13 +479,40 @@ class TypeValueField(object):
             (len (value) > (((2 ** self.valuewidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
+    # There is no __setattr__ to stomp on us here.
+    def __copy__(self):
+        """Return a shallow copy of a TypeValueField; used by copy module.
+           A shallow copy just makes references to these Fields in the copy."""
+        result = self.__class__(name=self.name, \
+                                type=self.type, \
+                                value=self.value, \
+                                compare=self.compare)
+        return result
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a TypeValueField; used by copy module.
+           A deep copy copies all of the embedded Fields."""
+        from copy import deepcopy
+        result = self.__class__(name=self.name, \
+                        type=deepcopy(self.type, memo), \
+                        value=deepcopy(self.value, memo), \
+                        compare=self.compare)
+        memo[id(self)] = result
+        return result
+
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method."""
+        return lf.value == rf.value
+
+    default_compare = staticmethod(default_compare)
+
 
 class TypeLengthValueField(object):
     """A type-length-value field handles parts of packets where a type
     is encoded before a length and value.  """
 
     def __init__(self, name, type, length, value,
-                 inclusive = True, bytewise = True):
+                 inclusive = True, bytewise = True, compare = None):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
@@ -429,6 +528,7 @@ class TypeLengthValueField(object):
         self.width = type.width + length.width + value.width
         self.inclusive = inclusive
         self.bytewise = bytewise
+        self.compare = compare
 
     def __repr__(self):
         return "<pcs.TypeLengthValueField type %s, length %s, value %s>" \
@@ -478,6 +578,43 @@ class TypeLengthValueField(object):
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
             raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
 
+    # There is no __setattr__ to stomp on us here.
+    def __copy__(self):
+        """Return a shallow copy of a TypeLengthValueField;
+           used by copy module.
+           A shallow copy just makes references to these
+           Fields in the copy."""
+        result = self.__class__(name=self.name, \
+                                type=self.type, \
+                                length=self.length, \
+                                value=self.value, \
+                                inclusive=self.inclusive, \
+                                bytewise=self.bytewise, \
+                                compare=self.compare)
+        return result
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a TypeLengthValueField;
+           used by copy module.
+           A deep copy copies all of the embedded Fields."""
+        from copy import deepcopy
+        result = self.__class__(name=self.name, \
+                                type=deepcopy(self.type, memo), \
+                                length=deepcopy(self.length, memo), \
+                                value=deepcopy(self.value, memo), \
+                                inclusive=self.inclusive, \
+                                bytewise=self.bytewise, \
+                                compare=self.compare)
+        memo[id(self)] = result
+        return result
+
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method."""
+        return lf.value == rf.value
+
+    default_compare = staticmethod(default_compare)
+
+
 class CompoundField(object):
     """A compound field may contain other fields."""
 
@@ -494,9 +631,10 @@ class OptionListField(CompoundField, list):
     """A option list is a list of Fields.
        Option lists inhabit many protocols, including IP and TCP."""
 
-    def __init__(self, name, width = 0, option_list = [], is_wildcard = False):
+    def __init__(self, name, width = 0, option_list = [], compare = None):
         """Iniitialize an OptionListField."""
         list.__init__(self)
+        self.packet = None
         self.name = name
         self.width = width
         self._options = []
@@ -504,7 +642,7 @@ class OptionListField(CompoundField, list):
             for option in option_list:
                 self._options.append(option)
         
-        self.is_wildcard = is_wildcard
+        self.compare = compare
         self.default = self
         self.value = self
         
@@ -592,6 +730,13 @@ class OptionListField(CompoundField, list):
         else:
             return self._options[index].value
 
+    def bounds(self, value):
+        pass
+
+    def set_value(self, value):
+        """Set the value of a field."""
+        self._options = value
+
     def __add__(self, other):
         if isinstance(other, _fieldlist):
             self._options += other
@@ -632,6 +777,36 @@ class OptionListField(CompoundField, list):
     def reset(self):
         print self._options
 
+    # There is no __setattr__ to stomp on us here.
+    def __copy__(self):
+        """Return a shallow copy of an OptionListField; used by copy module.
+           A shallow copy just makes references to these Fields in the copy."""
+        result = self.__class__(name=self.name, \
+                                width=self.width, \
+                                option_list=self._options, \
+                                compare=self.compare)
+        return result
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of an OptionListField; used by copy module.
+           A deep copy copies all of the embedded Fields."""
+        from copy import deepcopy
+        optcopy = []
+        for opt in self._options:
+            optcopy.append(deepcopy(opt, memo))
+        result = self.__class__(name=self.name, \
+                                width=self.width, \
+                                option_list=optcopy, \
+                                compare=self.compare)
+        memo[id(self)] = result
+        return result
+
+    def default_compare(lp, lf, rp, rf):
+        """Default comparison method."""
+        return lf == rf			# Will use __eq__ defined above.
+
+    default_compare = staticmethod(default_compare)
+
 # Types which implement Field's interface, even if not directly
 # inherited from Field. User types may inherit from these types.
 _fieldlist = (Field, StringField, LengthValueField, TypeValueField, TypeLengthValueField, CompoundField)
@@ -650,6 +825,10 @@ class Layout(list):
     the layout of the packet on the wire.  It is actually a list of
     Fields and is implemented as a descriptor.  A layout can only be
     set or get, but never deleted."""
+
+    # No need to implement __deepcopy__, as Layout is a descriptor
+    # modeled on the built-in type 'list' and will propagate deep-copies
+    # to the objects it contains.
 
     def __get__(self, obj, typ=None): 
         """return the Layout"""
@@ -689,7 +868,13 @@ class FieldError(Exception):
 reserved_names = ["_layout", "_discriminator", "_map", "_head"]
 
 class Packet(object):
-    """A Packet is a base class for building real packets."""
+    """A Packet is a base class for building real packets.
+
+       Assigning a value to any field of a Packet, whether by
+       keyword argument passed to a constructor, or by using the
+       assignment operator, will cause a default comparison function
+       to be installed. This is to make it easy to specify match
+       filters for Connector.expect().  """
 
     # The layout is a list of fields without values that indicate how
     # the data in the packet is to be layed in terms of ordering and
@@ -752,11 +937,15 @@ class Packet(object):
 
         self._bytes = ''.join(bytearray) # Install the new value
 
-    def __init__(self, layout = None, bytes = None):
+    def __init__(self, layout = None, bytes = None, **kv):
         """initialize a Packet object
 
         layout - the layout of the packet, a list of Field objects
         bytes - if the packet is being set up now the bytes to set in it
+        kv - if the packet is being set up now, the initial values of
+             each named field, specified as keyword arguments. These
+             are always passed as a dict from classes which inherit
+             from Packet.
         """
         self._layout = layout
         self._fieldnames = {}
@@ -768,6 +957,8 @@ class Packet(object):
             self.decode(bytes)
 
         self._discriminator = None
+        self._discriminator_inited = False
+
         # The layout of the Packet, a list of Field objects.
         for field in layout:
             field.packet = self
@@ -778,7 +969,15 @@ class Packet(object):
                 raise LayoutDiscriminatorError, "Layout can only have one field marked as a discriminator, but there are at least two %s %s" % (field, self._discriminator)
             if (field.discriminator == True):
                 self._discriminator = field
-                
+
+        # Set initial values of Fields using keyword arguments.
+        # Ignore any keyword arguments which do not correspond to
+        # packet fields in the Layout.
+        if kv != None:
+            for kw in kv.iteritems():
+                if kw[0] in self._fieldnames:
+                    self.__setattr__(kw[0], kw[1])
+
     def __add__(self, layout = None):
         """add two packets together
 
@@ -802,8 +1001,18 @@ class Packet(object):
             return
 
         if (hasattr(self, '_fieldnames') and (name in self._fieldnames)):
-            self._fieldnames[name].bounds(value)
-            self._fieldnames[name].set_value(value)
+            field = self._fieldnames[name]
+            if hasattr(field, 'bounds'):
+                field.bounds(value)
+            field.set_value(value)
+            if field.compare != None:
+                field.compare = field.default_compare
+            # If the field we're initializing is the discriminator field,
+            # record that we have initialized it, so that the / operator
+            # will not clobber its value.
+            if self._discriminator != None and \
+               name == self._discriminator.name:
+                self._discriminator_inited = True
             self._needencode = True
         else:
             object.__setattr__(self, name, value)
@@ -843,33 +1052,34 @@ class Packet(object):
         return not self.__eq__(other)
 
     def matches(self, other):
-        """Return True if the packets match. A wildcard match is performed.
+        """Return True if the packets match.
 
-           This packet is assumed to contain fields which have the
-           'is_wildcard' flag set, and they will be ignored for the
-           comparison. Byte-wise comparison is NOT performed. """
+           Each contains a reference to a comparison function. If the
+           reference is None, we assume no comparison need be performed.
+           This allows full flexibility in performing matches."""
+
         if (type(self) != type(other)):
             return False
-        # TODO: Push logic into per-field match for richer filters.
-        for field in self._layout:
-            wild = self._fieldnames[field.name].is_wildcard
-            if not wild:
-                if self._fieldnames[field.name].value != \
-                   other._fieldnames[field.name].value:
+        for i in self._fieldnames.iteritems():
+            if i[1].compare != None:
+                if i[1].compare(self, i[1], \
+                                other, other._fieldnames[i[0]]) != True:
                     return False
         return True
 
-    def wildcard_mask(self, fieldnames=[], is_wildcard=True):
+    def wildcard_mask(self, fieldnames=[], unmask=True):
         """Mark or unmark a list of fields in this Packet as
-           wildcard for match().
-           If an empty list is passed, apply is_wildcard to all fields."""
-        if fieldnames != []:
-            for i in fieldnames:
-                field = self._fieldnames[i]
-                field.is_wildcard = is_wildcard
-        else:
-            for f in self._fieldnames.iteritems():
-                f[1].is_wildcard = is_wildcard
+           wildcard for match(). If unmask is false, then apply a
+           default comparison function specific to the class of the Field.
+           If an empty list is passed, apply the mask to all fields."""
+        if fieldnames == []:
+            fieldnames = self._fieldnames.keys()
+        for i in fieldnames:
+            field = self._fieldnames[i]
+            if unmask is True:
+                field.compare = None
+            else:
+                field.compare = field.default_compare
 
     def __repr__(self):
         """Walk the entire packet and return the values of the fields."""
@@ -900,37 +1110,69 @@ class Packet(object):
     def __div__(self, packet):
         """/ operator: Insert a packet after this packet in a chain.
            If I am not already part of a chain, build one.
-           The default behaviour is to attempt to initialize any
-           discriminator fields based on the type of the packet
-           being appended.
+           If the discriminator field in this packet has not been
+           explicitly initialized, either by assignment or by constructor
+           keyword arguments, then attempt to initialize it based on the
+           type of the packet being appended.
+           The packet being appended will have its head pointer overwritten
+           to point to the chain it is being appended to.
            The head of the chain is always returned."""
         if not isinstance(packet, Packet):
             raise exceptions.TypeError
         if self._head is None:
             head = self.chain()
-            self.rdiscriminate(packet)
+            if self._discriminator_inited != True:
+                self.rdiscriminate(packet)
             head.append(packet)
             self._head = head
+            packet._head = head
         else:
             head = self._head
             if not isinstance(head, Chain):
                 raise exceptions.TypeError
             if head.insert_after(self, packet) == False:
                 raise exceptions.IndexError
+            packet._head = head
         return head
+
+    def __copy__(self):
+        """Return a shallow copy of a Packet; used by copy module.
+           This is always implemented as a deep copy."""
+        return self.__deepcopy__()
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a Packet; used by copy module.
+
+           All derived classes of Packet create a new instance of Layout
+           and what it contains every time they are constructed. We need
+           to preserve that API contract down here in the lower layers;
+           and we need to return an instance of the derived class, so we
+           call its default constructor, and make a deep copy of all the
+           field values here.
+           The backing store in self.bytes is an immutable buffer
+           which is dynamically reallocated when changed, so we can
+           either copy it or forget about it."""
+        from copy import deepcopy
+        newp = self.__class__()
+        for field in newp._layout:
+            newp._fieldnames[field.name] = \
+                deepcopy(self._fieldnames[field.name], memo)
+        memo[id(self)] = newp
+        return newp
 
     def chain(self):
         """Return the packet and its next packets as a chain."""
-        packet_list = []
-        done = False
+        chain = Chain([])
         packet = self
+        done = False
         while not done:
-            packet_list.append(packet)
+            packet._head = chain
+            chain.append(packet)
             if (packet.data != None):
                 packet = packet.data
             else:
                 done = True
-        return Chain(packet_list)
+        return chain
         
     def next(self, bytes, discriminator = None, timestamp = None):
         """Demultiplex higher layer protocols based on a supplied map and
@@ -967,6 +1209,11 @@ class Packet(object):
            need to return a particular flavour of an encapsulated packet,
            or force a lookup against a map which isn't part of the class.
            This is provided as syntactic sugar, used only by the / operator.
+
+           If we find a match, and set the discriminator field, we will
+           also set its compare function to the default for the field's
+           class if a comparison function was not already specified.
+
            Return True if we made any changes to self."""
 
         if (not isinstance(packet, Packet)):
@@ -975,9 +1222,9 @@ class Packet(object):
         # If we were not passed discriminator field name and map, try
         # to infer it from what's inside the instance.
         if map == None:
-           map = self._map
-           if map == None:
+           if not hasattr(self, '_map') or self._map is None:
                return False
+           map = self._map
         if discfieldname == None:
            if self._discriminator == None:
                 return False
@@ -985,10 +1232,24 @@ class Packet(object):
 
         for i in map.iteritems():
             if isinstance(packet, i[1]):
-                self._fieldnames[discfieldname].value = i[0]
+                field = self._fieldnames[discfieldname]
+                field.value = i[0]
+                if field.compare != None:
+                    field.compare = field.default_compare
                 return True
 
         return False
+
+    def calc_checksum(self):
+        """Compute checksum for this packet.
+           The base class does nothing, it has no notion of checksum."""
+        #print "Packet.calc_checksum()"
+        pass
+
+    def calc_length(self):
+        """Compute length field for this packet.
+           The base class does nothing, it has no notion of a length field."""
+        pass
 
     def sizeof(self):
         """Return the size, in bytes, of the packet."""
@@ -1017,10 +1278,13 @@ class Chain(list):
     def __init__(self, packets = None):
         """initialize a Chain object
 
-        packets - an optionl array of packets to add to the new Chain
+        packets - an optional list of packets to add to the new Chain
         """
         list.__init__(self)
         self.packets = packets
+        # XXX We may clobber packets which belong to an existing Chain.
+        for p in self.packets:
+            p._head = self
         self.encode()
 
     def __eq__(self, other):
@@ -1048,14 +1312,49 @@ class Chain(list):
 
     def __div__(self, packet, rdiscriminate=True):
         """/ operator: Append a packet to the end of a chain.
+           The packet's head pointer will be overwritten to point to
+           this chain.
            The default behaviour is to fill out the discriminator field
            of the packet in front of the new tail packet."""
         if not isinstance(packet, Packet):
             raise exceptions.TypeError
         if rdiscriminate is True:
-            self.packets[-1].rdiscriminate(packet)
+            # Don't clobber a previously initialized field.
+            if self.packets[-1]._discriminator_inited != True:
+                self.packets[-1].rdiscriminate(packet)
         self.append(packet)
+        packet._head = self
         return self
+
+    def __copy__(self):
+        """Return a shallow copy of a Chain; used by copy module.
+           This is always implemented as a deep copy."""
+        return self.__deepcopy__()
+
+    def __deepcopy__(self, memo={}):
+        """Return a deep copy of a Chain; used by copy module.
+
+           Chain is derived from list. We can't rely on the default deepcopy
+           handler for list, as it doesn't know our representation.
+
+           Chain may contain Packets, and Packets may refer back to their
+           parent Chain. Because of this, we need to make deep copies of
+           all Packets contained within a Chain to avoid clobbering
+           the contents of existing Chains, and set their head pointer
+           to point to the newly created Chain.
+
+           Also, the constructor for Chain needs a list of Packet, so we
+           pass it an empty list and then append each copied Packet to
+           its internal list."""
+        from copy import deepcopy
+        newchain = self.__class__([])
+        memo[id(self)] = newchain
+        for p in self.packets:
+            newp = deepcopy(p, memo)
+            newp._head = newchain
+            newchain.packets.append(newp)
+        newchain.encode()
+        return newchain
 
     def append(self, packet):
         """Append a packet to a chain.  Appending a packet requires
@@ -1095,21 +1394,23 @@ class Chain(list):
     def matches(self, chain):
         """Return True if this chain matches the chain provided.
 
-           It is assumed that this chain contains any wildcard patterns.
+           It is assumed that *this* chain contains any wildcard patterns.
+           A strict size comparison is not performed.
            A bitwise comparison is not performed; a structural match
            using the match() function is used instead."""
-        if len(self.packets) != len(chain.packets):
+        if len(self.packets) > len(chain.packets):
+            #print "lengths don't match"
             return False
         for i in range(len(self.packets)):
             if not self.packets[i].matches(chain.packets[i]):
                 return False
         return True
 
-    def wildcard_mask(self, is_wildcard=True):
+    def wildcard_mask(self, unmask=True):
         """Mark or unmark all of the fields in each Packet in this Chain
            as a wildcard for match() or contains()."""
         for i in range(len(self.packets)):
-            self.packets[i].wildcard_mask([], is_wildcard)
+            self.packets[i].wildcard_mask([], unmask)
 
     def encode(self):
         """Encode all the packets in a chain into a set of bytes for the Chain"""
@@ -1122,26 +1423,79 @@ class Chain(list):
         for packet in self.packets:
             packet.decode(packet.bytes)
 
-    def calc_checksum(self):
-        """Calculate a checksum for the whole chain based on RFC 792
+    def index_of(self, packet):
+        """Return the index of 'packet' in this chain."""
+        n = 0
+        for i in self.packets:
+            if i is packet:
+                pseen = True
+                break
+            n += 1
+        #print "index of %s is %d" % (type(packet), n)
+        assert pseen == True, "Chain inconsistent: packet not found"
+        return n
 
-        In this calculation any packet that specifically calls out a
-        checksum field will have that field zeroed first before the
-        checksum is calculated.
-        """
-        total = 0
-        bytes = ""
-        for packet in self.packets:
-            if (hasattr(packet, 'checksum')):
-                packet.checksum = 0
-            bytes = bytes + packet.bytes
-        if len(bytes) % 2 == 1:
-            bytes += "\0"
-        for i in range(len(bytes)/2):
-            total += (struct.unpack("!H", bytes[2*i:2*i+2])[0])
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return ~total & 0xffff
+    def collate_following(self, packet):
+        """Given a packet which is part of this chain, return a string
+           containing the bytes of all packets following it in this chain.
+           Helper method used by Internet transport protocols."""
+        tmpbytes = ""
+        n = self.index_of(packet)
+        if n == len(self.packets)-1:
+            return tmpbytes
+        for p in self.packets[n+1:]:
+            #print "collating %s" % (type(p))
+            tmpbytes += p.getbytes()
+        return tmpbytes
+
+    def find_first_of(self, ptype):
+        """Find the first packet of type 'ptype' in this chain.
+           Return a tuple (packet, index)."""
+        n = 0
+        for p in self.packets:
+            if isinstance(p, ptype):
+                return (p, n)
+            n += 1
+        return (None, None)
+
+    def find_preceding(self, packet, ptype, adjacent=True):
+        """Given a packet which is part of this chain, return a reference
+           to a packet of the given type which precedes this packet,
+           and its index in the chain, as a tuple.
+
+           If the 'adjacent' argument is True, then the packet
+           immediately preceding 'packet' must be an instance of type.
+           Helper method used by Internet transport protocols."""
+        n = self.index_of(packet)
+        if n == 0:
+            return (None, None)
+        lower = 0
+        if adjacent is True:
+            lower = max(n - 2, 0)
+        for p in reversed(self.packets[lower:n]):
+            n -= 1
+            if isinstance(p, ptype):
+                return (p, n)
+        return (None, None)
+
+    def calc_checksums(self):
+        """Compute and store checksums for all packets in this chain,
+           taking encapsulation into account.
+
+           By default the packets are enumerated in reverse order
+           to how they appear on the wire. This is how IETF-style
+           protocols are normally dealt with; ITU-style protocols
+           may require other quirks."""
+        #print "Chain.calc_checksum()"
+        for packet in reversed(self.packets):
+            packet.calc_checksum()
+
+    def calc_lengths(self):
+        """Compute and store length fields for all packets in this chain,
+           taking encapsulation into account. """
+        for packet in reversed(self.packets):
+            packet.calc_length()
+
 
 class ConnNotImpError(Exception):
     """Calling a method that is not implemented raises this exception.
@@ -1307,9 +1661,6 @@ class Connector(object):
                 delta = now - then
                 then = now
 
-            c = self.read_chain()    # XXX Should check for EOF.
-            count += 1
-
             # Check if the user tried to match exceptional conditions
             # as patterns. We need to check for timer expiry upfront.
             if timeout != None and (now - start) > timeout:
@@ -1323,7 +1674,10 @@ class Connector(object):
                 if delta > 0:
                     continue   # Early wakeup.
 
-            elif isinstance(result, EOF):
+            c = self.read_chain()    # XXX Should check for EOF.
+            count += 1
+
+            if isinstance(result, EOF):
                 for i in range(len(patterns)):
                     if isinstance(patterns[i], EOF):
                         self.match = p
@@ -1343,6 +1697,8 @@ class Connector(object):
             for i in range(len(patterns)):
                 p = patterns[i]
                 if isinstance(p, Chain):
+                    #print "trying to match:" p
+                    #print "with: " c
                     if p.matches(c):
                         self.match = c
                         self.match_index = i
@@ -1537,91 +1893,6 @@ class TapConnector(Connector):
         """recvfrom a packet from a tap interface"""
         return self.blocking_read()
 
-    def readpkt(self):
-        """read a packet from a pcap file or interfaces returning an
-        appropriate packet object """
-        bytes = self.blocking_read()
-        return packets.ethernet.ethernet(bytes)
-
-    def write(self, packet, bytes):
-        """Write a packet to a pcap file or network interface.
-        bytes - the bytes of the packet, and not the packet object
-        """
-        return self.blocking_write(packet)
-
-    def send(self, packet, bytes):
-        """Write a packet to a pcap file or network interface.
-        bytes - the bytes of the packet, and not the packet object"""
-        return self.blocking_write(packet)
-
-    def sendto(self, packet, bytes):
-        """Write a packet to a pcap file or network interface.
-        bytes - the bytes of the packet, and not the packet object"""
-        return self.blocking_write(packet)
-
-    def blocking_read(self):
-        import array
-        import fcntl
-        import os
-        from select import select
-        from termios import FIONREAD
-        try:
-            # Block until data is ready to be read.
-            select([self.fileno],[],[])
-            # Ask the kernel how many bytes are in the queued Ethernet frame.
-            buf = array.array('i', [0])
-            s = fcntl.ioctl(self.fileno, FIONREAD, buf)
-            qbytes = buf.pop()
-            return os.read(self.fileno, qbytes)
-        except:
-            raise
-        return -1
-
-    def blocking_write(self, bytes):
-        import os
-        return os.write(self.fileno, bytes)
-
-    def close(self):
-        import os
-        os.close(self.fileno)
-
-
-class TapConnector(Connector):
-    """A connector for capture and injection using the character
-       device slave node of a TAP interface.
-       Like PcapConnector, reads are always blocking, however writes
-       may always be non-blocking. The underlying I/O is non-blocking;
-       it is hard to make it work with Python's buffering strategy
-       for file(), so os-specific reads/writes are used.
-       No filtering is currently performed, it would be useful to
-       extend pcap itself to work with tap devices.
-    """
-
-    def __init__(self, name):
-        """initialize a TapConnector object
-        name - the name of a file or network interface to open
-        """
-        import os
-        from os import O_NONBLOCK, O_RDWR
-        try:
-            self.fileno = os.open(name, O_RDWR + O_NONBLOCK)
-        except:
-            raise
-
-    def read(self):
-        """read a packet from a tap interface
-        returns the packet as a bytearray
-        """
-        return self.blocking_read()
-
-    def recv(self):
-        """recv a packet from a tap interface"""
-        return self.blocking_read()
-    
-    def recvfrom(self):
-        """recvfrom a packet from a tap interface"""
-        return self.blocking_read()
-
     def read_packet(self):
         """Read a packet from a pcap file or interfaces returning an
         appropriate packet object."""
@@ -1772,75 +2043,6 @@ class TCP4Connector(IP4Connector):
                 self.file.connect((addr, port))
             except:
                 raise
-
-class UmlMcast4Connector(UDP4Connector):
-    """A connector for hooking up to a User Mode Linux virtual LAN,
-       implemented by Ethernet frames over UDP sockets in a multicast group.
-       Typically used for interworking with QEMU. See:
-          http://user-mode-linux.sourceforge.net/old/text/mcast.txt
-
-       No additional encapsulation of the frames is performed, nor is
-       any filtering performed.
-       Be aware that this encapsulation may fragment traffic if sent
-       across a real LAN. The multicast API is being somewhat abused here
-       to send and receive the session on the same socket; generally apps
-       shouldn't bind to group addresses, and it's not guaranteed to work
-       with all host IP stacks.
-    """
-
-    def __init__(self, group, port, ifaddr = None):
-        """initialize a UML Mcast v4 connector
-        group - the multicast group to join
-        port - the UDP source/destination port for the session
-        ifaddr - optionally, the interface upon which to join the group.
-        """
-        import os
-        import fcntl
-        from os import O_NONBLOCK
-        from fcntl import F_GETFL, F_SETFL
-        if ifaddr is None:
-            ifaddr = "127.0.0.1"
-        try:
-	    self.group = group
-	    self.port = int(port)
-
-            self.file = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
-
-            flags = fcntl.fcntl(self.file, F_GETFL)
-            flags |= O_NONBLOCK
-            fcntl.fcntl(self.file, F_SETFL, flags)
-
-            self.file.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            self.file.setsockopt(IPPROTO_IP, IP_MULTICAST_LOOP, 1)
-
-            gaddr = inet_atol(self.group)
-            mreq = struct.pack('!LL', gaddr, inet_atol(ifaddr))
-            self.file.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
-
-            self.file.bind((self.group, self.port))
-        except:
-            raise
-
-    def readpkt(self):
-        """read a packet from a pcap file or interfaces returning an
-        appropriate packet object """
-        bytes = self.blocking_read()
-        return packets.ethernet.ethernet(bytes)
-
-    def blocking_read(self):
-        import os
-        from select import select
-	#print "going to sleep"
-        select([self.file],[],[])
-	#print "woken up"
-	# XXX Should use recvfrom.
-	# XXX Shouldn't have to guess buffer size.
-        return os.read(self.file.fileno(), 1502)
-
-    def write(self, packet, flags = 0):
-        """write data to an IPv4 socket"""
-        return self.file.sendto(packet, flags, (self.group, self.port))
-
 
 class UmlMcast4Connector(UDP4Connector):
     """A connector for hooking up to a User Mode Linux virtual LAN,

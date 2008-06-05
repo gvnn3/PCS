@@ -36,7 +36,7 @@
 
 import pcs
 import ethernet_map
-from pcs.packets.ipv4 import ipv4
+import pcs.packets.ipv4
 from pcs.packets.ipv6 import ipv6
 from pcs.packets.arp import arp
 
@@ -55,13 +55,13 @@ class ethernet(pcs.Packet):
     _layout = pcs.Layout()
     _map = ethernet_map.map
     
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an ethernet packet"""
         src = pcs.StringField("src", 48)
         dst = pcs.StringField("dst", 48)
         type = pcs.Field("type", 16, discriminator=True)
 
-        pcs.Packet.__init__(self, [dst, src, type], bytes = bytes)
+        pcs.Packet.__init__(self, [dst, src, type], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
 
         if timestamp == None:
@@ -98,15 +98,18 @@ class ethernet(pcs.Packet):
     def __str__(self):
         """return a human readable version of an Ethernet packet"""
         retval = "Ethernet\n"
+
         retval += "dst: "
-        for byte in range(0,5):
-            retval += "%x:" % ord(self.dst[byte])
-        retval += "%x" % ord(self.dst[5])
+        if len(self.dst) >= 6:
+            for byte in range(0,5):
+                retval += "%x:" % ord(self.dst[byte])
+            retval += "%x" % ord(self.dst[5])
 
         retval += "\nsrc: "
-        for byte in range(0,5):
-            retval += "%x:" % ord(self.src[byte])
-        retval += "%x" % ord(self.src[5])
+        if len(self.dst) >= 6:
+            for byte in range(0,5):
+                retval += "%x:" % ord(self.src[byte])
+            retval += "%x" % ord(self.src[5])
 
         retval += "\ntype: 0x%x" % self.type
 

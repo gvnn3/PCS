@@ -57,7 +57,7 @@ from socket import AF_INET, inet_ntop, inet_ntoa
 class query(pcs.Packet):
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize the MTRACE query header."""
 	# (G,S) tuple to query.
 	group = pcs.Field("group", 32)
@@ -72,7 +72,7 @@ class query(pcs.Packet):
 
         pcs.Packet.__init__(self, [group, source, \
 				   receiver, response_addr, \
-				   response_hoplimit, query_id], bytes)
+				   response_hoplimit, query_id], bytes, **kv)
 
         self.description = inspect.getdoc(self)
 
@@ -90,7 +90,7 @@ class query(pcs.Packet):
 class reply(pcs.Packet):
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize the MTRACE response header."""
 	# (G,S) tuple to query.
 	group = pcs.Field("group", 32)
@@ -107,7 +107,7 @@ class reply(pcs.Packet):
 
         pcs.Packet.__init__(self, [group, source, \
 				   receiver, response_addr, \
-				   response_hoplimit, query_id], bytes)
+				   response_hoplimit, query_id], bytes, **kv)
 
         self.description = inspect.getdoc(self)
 

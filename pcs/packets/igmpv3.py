@@ -64,7 +64,7 @@ class query(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an IGMPv3 query"""
 	group = pcs.Field("group", 32)
 	reserved00 = pcs.Field("reserved00", 4)
@@ -75,7 +75,7 @@ class query(pcs.Packet):
 	sources = pcs.OptionListField("sources")
 
         pcs.Packet.__init__(self, [group, reserved00, sbit, qrv, qqic,
-				   nsrc, sources], bytes = bytes)
+				   nsrc, sources], bytes = bytes, **kv)
 
 	self.description = inspect.getdoc(self)
 
@@ -95,9 +95,11 @@ class query(pcs.Packet):
                       (query_len, len(bytes))
 
             rem = sources_len
-            while rem > 4:
-                src = struct.unpack('I', bytes[curr])[0]
+            curr = self.sizeof()
+            while rem >= 4:
+                src = struct.unpack('I', bytes[curr:curr+4])[0]
                 sources.append(pcs.Field("", 32, default = src))
+                curr += 4
                 rem -= 4
             if rem > 0:
                 print "WARNING: %d trailing bytes in query." % rem
@@ -108,11 +110,20 @@ class query(pcs.Packet):
         else:
             self.data = None
 
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet.
+           An IGMPv3 query has no auxiliary data; the query counts
+           only the number of sources being queried, which may be 0."""
+        #self.nsrc = len(self._fieldnames['sources'])
+        # OptionListFields are returned as themselves when accessed as
+        # attributes of the enclosing Packet.
+        self.nsrc = len(self.sources)
+
 class GroupRecordField(pcs.CompoundField):
     """An IGMPv3 group record contains report information about
        a single IGMPv3 group."""
 
-    def __init__(self, name):
+    def __init__(self, name, **kv):
         self.packet = None
         self.name = name
 
@@ -123,10 +134,37 @@ class GroupRecordField(pcs.CompoundField):
         self.sources = pcs.OptionListField("sources")
         self.auxdata = pcs.OptionListField("auxdata")
 
-        # XXX I actually have variable width when I am being encoded.
+        # XXX I actually have variable width when I am being encoded,
+        # OptionList deals with this.
         self.width = self.type.width + self.auxdatalen.width + \
 		     self.nsources.width + self.group.width + \
 		     self.sources.width + self.auxdata.width
+
+        # If keyword initializers are present, deal with the syntactic sugar.
+        if kv != None:
+            for kw in kv.iteritems():
+                if kw[0] in self.__dict__:
+                    if kw[0] == 'auxdata':
+                        if not isinstance(kw[1], str):
+                            if __debug__:
+                                print "argument is not a string"
+                            continue
+                        self.auxdata.append([pcs.StringField("",             \
+                                                             len(kv[1]) * 8, \
+                                                             default=kv[1])])
+                    elif kw[0] == 'sources':
+                        if not isinstance(kw[1], list):
+                            if __debug__:
+                                print "argument is not a list"
+                            continue
+                        for src in kw[1]:
+                            if not isinstance(src, int):
+                                if __debug__:
+                                    print "source is not an IPv4 address"
+                                continue
+                            self.sources.append(pcs.Field("", 32, default=src))
+                    else:
+                        self.__dict__[kw[0]].value = kw[1]
 
     def __repr__(self):
         return "<igmpv3.GroupRecordField type %s, auxdatalen %s, " \
@@ -163,8 +201,12 @@ class GroupRecordField(pcs.CompoundField):
 	    [src.value, curr, byteBR] = src.decode(bytes, curr, byteBR)
 	    self.sources.append(src)
 
-	# Attempt to consume any auxiliary data. TODO: Reflect it.
-	curr += (self.auxdatalen.value * 4)
+        # Consume and reflect auxiliary data.
+        auxdatalen = self.auxdatalen.value * 4
+        if auxdatalen > 0:
+	    self.auxdata.append(pcs.StringField("", auxdatalen*8, \
+	                        default=bytes[curr:curr+auxdatalen]))
+	curr += auxdatalen
 
 	delta = curr - start
 	self.width = 8 * delta
@@ -229,13 +271,13 @@ class report(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an IGMPv3 report header"""
 	reserved00 = pcs.Field("reserved00", 16)
 	nrecords = pcs.Field("nrecords", 16)
 	records = pcs.OptionListField("records")
 
-        pcs.Packet.__init__(self, [reserved00, nrecords, records], bytes)
+        pcs.Packet.__init__(self, [reserved00, nrecords, records], bytes, **kv)
         self.description = inspect.getdoc(self)
 
         if timestamp == None:
@@ -257,3 +299,19 @@ class report(pcs.Packet):
 	    self.data = payload.payload(bytes[curr:len(bytes)])
         else:
             self.data = None
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet.
+           An IGMPv3 report itself has no auxiliary data; the report header
+           counts only the number of records it contains."""
+        # For each record I contain, set nsources to the number of source
+        # entries, and set auxdatalen to the size of the auxiliary data
+        # in 32-bit words. auxdata is an OptionListField of StringFields.
+        record_list = self._fieldnames['records']._options
+        for rec in record_list:
+            rec.nsources.value = len(rec.sources)
+            auxdatalen = 0
+            for aux in rec.auxdata._options:
+                auxdatalen += aux.width / 8
+            rec.auxdatalen.value = auxdatalen >> 2
+        self.nrecords = len(record_list)

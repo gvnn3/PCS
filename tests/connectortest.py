@@ -114,13 +114,11 @@ class pcapTestCase(unittest.TestCase):
         echo.id = 54321
         echo.seq = 12345
 
-	icmp_packet = Chain([icmp, echo])
-        icmp.checksum = icmp_packet.calc_checksum()
-
         ip.length = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
-        ip.checksum = ip.cksum()
 
         packet = Chain([e, ip, icmp, echo])
+
+        packet.calc_checksums()
 	packet.encode()
 
 	import os

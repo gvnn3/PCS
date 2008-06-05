@@ -38,12 +38,25 @@ import struct
 from socket import AF_INET, inet_ntop, inet_ntoa
 import time, inspect
 
+ARPHRD_ETHER = 1	# ethernet hardware format
+ARPHRD_IEEE802 = 6	# token-ring hardware format
+ARPHRD_ARCNET = 7	# arcnet hardware format
+ARPHRD_FRELAY = 15	# frame relay hardware format
+ARPHRD_IEEE1394 = 24	# firewire hardware format
+
+ARPOP_REQUEST = 1	# request to resolve address
+ARPOP_REPLY = 2		# response to previous request
+ARPOP_REVREQUEST = 3	# request protocol address given hardware
+ARPOP_REVREPLY = 4	# response giving protocol address
+ARPOP_INVREQUEST = 8	# request to identify peer
+ARPOP_INVREPLY = 9	# response identifying peer
+
 class arp(pcs.Packet):
     """ARP"""
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an ARP packet"""
         hrd = pcs.Field("hrd", 16, default = 1)
         pro = pcs.Field("pro", 16, default = 0x800)
@@ -56,7 +69,7 @@ class arp(pcs.Packet):
         tpa = pcs.Field("tpa", 32)
         
         pcs.Packet.__init__(self, [hrd, pro, hln, pln, op,
-                                   sha, spa, tha, tpa], bytes = bytes)
+                                   sha, spa, tha, tpa], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

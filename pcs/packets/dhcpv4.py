@@ -73,7 +73,7 @@ class dhcpv4(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """Initialize a DHCPv4 packet. """
 
         op = pcs.Field("op", 8)
@@ -99,7 +99,7 @@ class dhcpv4(pcs.Packet):
                                    secs, flags, \
                                    ciaddr, yiaddr, siaddr, giaddr, \
                                    chaddr, sname, file, options], \
-			    bytes = bytes)
+			    bytes = bytes, **kv)
 	self.description = inspect.getdoc(self)
 
         if timestamp == None:

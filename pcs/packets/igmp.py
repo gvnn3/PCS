@@ -5,10 +5,11 @@ import struct
 import inspect
 import time
 
-import igmpv2
-import igmpv3
-#import dvmrp
-#import mtrace
+import pcs.packets.ipv4
+import pcs.packets.igmpv2 as igmpv2
+import pcs.packets.igmpv3 as igmpv3
+#import pcs.packets.dvmrp
+#import pcs.packets.mtrace
 
 IGMP_HOST_MEMBERSHIP_QUERY = 0x11
 IGMP_v1_HOST_MEMBERSHIP_REPORT = 0x12
@@ -19,7 +20,7 @@ IGMP_v3_HOST_MEMBERSHIP_REPORT = 0x22
 IGMP_MTRACE_REPLY = 0x1e
 IGMP_MTRACE_QUERY = 0x1f
 
-map = {
+igmp_map = {
 	IGMP_HOST_MEMBERSHIP_QUERY:	igmpv2.igmpv2,
 	IGMP_v1_HOST_MEMBERSHIP_REPORT:	igmpv2.igmpv2,
 	#IGMP_DVMRP:			dvmrp.dvmrp,
@@ -45,15 +46,15 @@ class igmp(pcs.Packet):
     """IGMP"""
 
     _layout = pcs.Layout()
-    _map = map
+    _map = igmp_map
     _descr = descr
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """ Define the common IGMP encapsulation; see RFC 2236. """
         type = pcs.Field("type", 8, discriminator=True)
         code = pcs.Field("code", 8)
         checksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [type, code, checksum], bytes = bytes)
+        pcs.Packet.__init__(self, [type, code, checksum], bytes = bytes, **kv)
         # Description MUST be set after the PCS layer init
         self.description = inspect.getdoc(self)
 
@@ -73,6 +74,22 @@ class igmp(pcs.Packet):
                                       timestamp = timestamp)
         else:
             self.data = None
+
+    def rdiscriminate(self, packet, discfieldname = None, map = igmp_map):
+        """Reverse-map an encapsulated packet back to a discriminator
+           field value. Like next() only the first match is used."""
+        #print "reverse discriminating %s" % type(packet)
+        return pcs.Packet.rdiscriminate(self, packet, "type", map)
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this IGMP header.
+           IGMP checksums are computed over payloads too."""
+        from pcs.packets.ipv4 import ipv4
+        self.checksum = 0
+        tmpbytes = self.bytes
+        if not self._head is None:
+            tmpbytes += self._head.collate_following(self)
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""

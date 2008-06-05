@@ -38,36 +38,44 @@ import sys
 sys.path.append("../src")
 
 import pcs
-from pseudoipv6 import *
+import pcs.packets.udp
 
-class udpv6(pcs.Packet):
+class udpv6(pcs.packets.udp.udp):
 
     _layout = pcs.Layout()
+    _map = None
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """Initialize a UDP packet for IPv6"""
-        sport = pcs.Field("sport", 16)
-        dport = pcs.Field("dport", 16)
-        length = pcs.Field("length", 16)
-        checksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [sport, dport, length, checksum], bytes)
-        
+        pcs.packets.udp.udp.__init__(self, bytes, timestamp, **kv)
+
     def cksum(self, ip, data = "", nx = 0):
-        """return udpv6 checksum"""
-        total = 0
+        """Calculate the checksum for this UDPv6 header, outside
+           of any existing chain."""
+        from pcs.packets.ipv4 import ipv4
+        from pcs.packets.pseudoipv6 import pseudoipv6
         p6 = pseudoipv6()
         p6.src = ip.src
         p6.dst = ip.dst
-        p6.length = len(self.getbytes()) + len (data)
+        p6.length = len(self.getbytes()) + len(data)
         if nx:
             p6.next_header = nx
         else:
             p6.next_header = ip.next_header
-        pkt = p6.getbytes() + self.getbytes() + data
-        if len(pkt) % 2 == 1:
-            pkt += "\0"
-        for i in range(len(pkt)/2):
-            total += (struct.unpack("!H", pkt[2*i:2*i+2])[0])
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return  ~total
+        tmpbytes = p6.getbytes() + self.getbytes() + data
+        return ipv4.ipv4_cksum(tmpbytes)
+
+    def calc_checksum(self):
+        """Calculate and store the checksum for this UDPv6 datagram.
+           The packet SHOULD be part of a chain, and have an IPv6 header.
+           udpv6 is a specialization of udp whose outer header must
+           always be ipv4, therefore we enforce this."""
+        from pcs.packets.ipv4 import ipv4
+        ip6 = None
+        if self._head is not None:
+            ip6 = self._head.find_preceding(self, pcs.packets.ipv6.ipv6)
+        if ip6 is None:
+            self.checksum = 0
+            self.checksum = ipv4.ipv4_cksum(self.getbytes())
+            return
+        pcs.packets.udp.udp.calc_checksum_v6(self, ip6)

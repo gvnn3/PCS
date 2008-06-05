@@ -59,7 +59,7 @@ class ipv6(pcs.Packet):
     _layout = pcs.Layout()
     _map = ipv6_map.map
     
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """IPv6 Packet from RFC 2460"""
         version = pcs.Field("version", 4, default = 6)
         traffic = pcs.Field("traffic_class", 8)
@@ -71,7 +71,7 @@ class ipv6(pcs.Packet):
         dst = pcs.StringField("dst", 16 * 8)
         pcs.Packet.__init__(self,
                             [version, traffic, flow, length, next_header, hop,
-                             src, dst], bytes)
+                             src, dst], bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

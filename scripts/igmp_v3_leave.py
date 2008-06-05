@@ -9,23 +9,6 @@ from pcs.packets.payload import *
 from pcs import *
 from time import sleep
 
-# This hack by: Raymond Hettinger
-class hexdumper:
-    """Given a byte array, turn it into a string. hex bytes to stdout."""
-    def __init__(self):
-	self.FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' \
-						    for x in range(256)])
-
-    def dump(self, src, length=8):
-	result=[]
-	for i in xrange(0, len(src), length):
-	    s = src[i:i+length]
-	    hexa = ' '.join(["%02X"%ord(x) for x in s])
-	    printable = s.translate(self.FILTER)
-	    result.append("%04X   %-*s   %s\n" % \
-			  (i, length*3, hexa, printable))
-	return ''.join(result)
-
 # Send a spoof IGMPv3 report which says we've left the given group.
 
 def main():
@@ -59,60 +42,31 @@ def main():
 	print "Non-optional argument missing."
 	return
 
-    # Set up the vanilla packet
-    ether = ethernet()
-    ether.type = 0x0800
-    ether.src = ether_atob(options.ether_source)
-    ether.dst = "\x01\x00\x5e\x00\x00\x16"
-
+    # Create an IGMPv3 change-to-include report for the given group
+    # with no sources, which means we're leaving the group.
     # IGMPv3 Host Reports are always sent to IGMP.MCAST.NET (224.0.0.22),
     # and must always contain the Router Alert option.
 
-    ip = ipv4()
-    ip.version = 4
-    ip.hlen = 5
-    ip.tos = 0
-    ip.id = 0
-    ip.flags = 0x02		# DF (yes, it's byte swapped here).
-    ip.offset = 0
-    ip.ttl = 1
-    ip.protocol = IPPROTO_IGMP
-    ip.src = inet_atol(options.ip_source)
-    ip.dst = INADDR_ALLRPTS_GROUP
+    c = ethernet(src=ether_atob(options.ether_source),                    \
+                 dst=ETHER_MAP_IP_MULTICAST(INADDR_ALLRPTS_GROUP)) /      \
+        ipv4(src=inet_atol(options.ip_source), dst=INADDR_ALLRPTS_GROUP,  \
+             ttl=1, flags=IP_DF) /                                         \
+        igmp(type=IGMP_v3_HOST_MEMBERSHIP_REPORT) /                       \
+        igmpv3.report(records=[GroupRecordField("",                       \
+                                group=inet_atol(options.igmp_group),      \
+                                type=IGMP_CHANGE_TO_INCLUDE)])
 
-    # Create an IGMPv3 change-to-include report for the given group
-    # with no sources, which means we're leaving the group.
-    ig = igmp()
-    ig.type = IGMP_v3_HOST_MEMBERSHIP_REPORT
+    # Add Router Alert option.
+    # TODO: Add sugar for IP options too.
+    ip = c.packets[1]
+    ip.options.append(ipv4opt(IPOPT_RA))
 
-    rep = igmpv3.report()
-
-    rec0 = GroupRecordField("rec0")
-    rec0.type.value = IGMP_CHANGE_TO_INCLUDE
-    rec0.group.value = inet_atol(options.igmp_group)
-
-    rep.records.append(rec0)
-    rep.nrecords = len(rep.records)
-
-    igmp_packet = Chain([ig, rep])
-    ig.checksum = igmp_packet.calc_checksum()
-
-    # Prepend IP Router Alert option to IP header.
-    ra = pcs.TypeLengthValueField("ra",
-			          pcs.Field("", 8, default = IPOPT_RA),
-			          pcs.Field("", 8),
-			          pcs.Field("", 16))
-    ip.options.append(ra)
-
-    # Compute outer IP header length and checksum.
-    ip.hlen = len(ip.bytes) >> 2
-    ip.length = len(ip.bytes) + len(igmp_packet.bytes)
-    ip.checksum = ip.cksum()
+    c.calc_lengths()
+    c.calc_checksums()
+    c.encode()
 
     # Send it.
-    packet = Chain([ether, ip, ig, rep])
-    packet.encode()
     output = PcapConnector(options.ether_iface)
-    out = output.write(packet.bytes, len(packet.bytes))
+    out = output.write(c.bytes, len(c.bytes))
 
 main()

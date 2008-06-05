@@ -43,7 +43,7 @@ class dnsheader(pcs.Packet):
     """DNS Header"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, tcp = None):
+    def __init__(self, bytes = None, timestamp = None, tcp = None, **kv):
         """Define the fields of a DNS (RFC 1035) header"""
         id = pcs.Field("id", 16)
         query = pcs.Field("query", 1)
@@ -60,23 +60,39 @@ class dnsheader(pcs.Packet):
         arcount = pcs.Field("arcount", 16)
         
         # DNS Headers on TCP require a length but when encoded in UDP do not.
+        # TODO: Add chain support to figure out dynamically if this
+        # dnsheader is being encapsulated in TCP or UDP using find_preceding(),
+        # and modify the layout accordingly.
+        self.is_tcp = False
         if (tcp != None):
+            self.is_tcp = True
             length = pcs.Field("length", 16)
             pcs.Packet.__init__(self,
                                 [length, id, query, opcode, aa, tc, rd, ra, z,
                                  rcode, qdcount, ancount, nscount, arcount],
-                                bytes = bytes)
+                                bytes = bytes, **kv)
         else:
             pcs.Packet.__init__(self,
                             [id, query, opcode, aa, tc, rd, ra, z,
                              rcode, qdcount, ancount, nscount, arcount],
-                            bytes = bytes)
+                            bytes = bytes, **kv)
 
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
+
+    def calc_length(self):
+        """Calculate and store the length field(s) for this packet.
+           DNS headers are prepended with a length field iff they are
+           encapsulated in TCP. The length is non-inclusive, it does not
+           include the length of the length field, however it does include
+           the length of any following payload."""
+        if self.is_tcp is True:
+            self.length = len(self.getbytes()) - 2
+            if self._head is not None:
+                self.length += len(self._head.collate_following(self))
 
 class dnslabel(pcs.Packet):
     """DNS Label""" 

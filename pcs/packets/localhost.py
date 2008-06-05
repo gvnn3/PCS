@@ -49,12 +49,12 @@ class localhost(pcs.Packet):
     _layout = pcs.Layout()
     _map = localhost_map.map
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a localhost header, needed to read or write to lo0"""
         type = pcs.Field("type", 32, discriminator=True)
         lolen = 4
 
-        pcs.Packet.__init__(self, [type], bytes = bytes)
+        pcs.Packet.__init__(self, [type], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
         if timestamp == None:
             self.timestamp = time.time()

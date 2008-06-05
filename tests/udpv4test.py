@@ -47,8 +47,10 @@ if __name__ == '__main__':
         sys.argv.remove("-l") # Needed because unittest has issues
                               # with extra arguments.
 
+    from pcs.packets.ethernet import *
     from pcs.packets.ipv4 import *
     from pcs.packets.udp import *
+    #from pcs.packets.udpv4 import *
 
 class udpTestCase(unittest.TestCase):
     def test_udpv4(self):
@@ -123,6 +125,34 @@ class udpTestCase(unittest.TestCase):
         self.assertEqual(string, test_string,
                          "strings are not equal \nexpected %s \ngot %s " %
                          (test_string, string))
+
+    def test_udpv4_raw(self):
+        # Create a packet for raw injection and verify it meets criteria.
+        from pcs import inet_atol
+        from pcs.packets.payload import payload
+
+        c = ethernet(src="\x01\x02\x03\x04\x05\x06",		\
+                     dst="\xff\xff\xff\xff\xff\xff") /		\
+            ipv4(src=inet_atol("192.168.123.17"),		\
+                 dst=inet_atol("192.0.2.2"), id=5235) /		\
+            udp(sport=67, dport=68) /				\
+            payload("foobar\n")
+
+        c.calc_lengths()
+        c.calc_checksums()
+        c.encode()
+
+        expected = \
+        "\xFF\xFF\xFF\xFF\xFF\xFF\x01\x02" \
+        "\x03\x04\x05\x06\x08\x00\x45\x00" \
+        "\x00\x23\x14\x73\x00\x00\x40\x11" \
+        "\x68\x9B\xC0\xA8\x7B\x11\xC0\x00" \
+        "\x02\x02\x00\x43\x00\x44\x00\x0F" \
+        "\xC0\x48\x66\x6F\x6F\x62\x61\x72" \
+        "\x0A"
+
+        gotttted = c.bytes
+        self.assertEqual(expected, gotttted, "test raw encoding")
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# TODO: Rationalize igmpv2/v3/dvmrp/mtrace and 
-
 import unittest
 import sys
 
@@ -22,12 +20,8 @@ class igmpv3TestCase(unittest.TestCase):
 
     def test_igmpv3_encode(self):
         # create one packet, copy its bytes, then compare their fields.
-        igh = igmp()
-        assert (igh != None)
-        igh.type = IGMP_v3_HOST_MEMBERSHIP_REPORT
-
-        rep = igmpv3.report()
-        assert (rep != None)
+        c = igmp(type=IGMP_v3_HOST_MEMBERSHIP_REPORT) / igmpv3.report()
+        rep = c.packets[1]
 
         # An ASM/SSM leave.
         rec0 = GroupRecordField("rec0")
@@ -63,14 +57,12 @@ class igmpv3TestCase(unittest.TestCase):
         rep.records.append(rec3)
 
         rep.nrecords = len(rep.records)
-        igmp_packet = Chain([igh, rep])
-        igh.checksum = igmp_packet.calc_checksum()
 
-        # make sure checksum is reflected in byte array representation.
-        igmp_packet.encode()
+        c.calc_checksums()
+        c.encode()
 
 	#hd = hexdumper()
-	#print hd.dump2(igmp_packet.bytes)
+	#print hd.dump2(c.bytes)
 	expected = "\x22\x00\xC5\xA5\x00\x00\x00\x04" \
 		   "\x03\x00\x00\x00\xEF\x00\x01\x02" \
 		   "\x03\x00\x00\x01\xEF\x03\x02\x01" \
@@ -79,7 +71,7 @@ class igmpv3TestCase(unittest.TestCase):
 		   "\xE1\x04\x03\x02\xC0\x00\x02\x63"
  
 	#print hd.dump2(expected)
-	gotttted = igmp_packet.bytes
+	gotttted = c.bytes
 	self.assertEqual(expected, gotttted, "test encoding")
 
     def test_igmpv3_decode(self):
@@ -93,6 +85,42 @@ class igmpv3TestCase(unittest.TestCase):
 
 	igh = igmp(input)
 	self.assertEqual(input, igh.chain().bytes, "test decoding")
+
+    def test_igmpv3_encode_kv(self):
+        # Create reports using the new syntax.
+        #c = igmp(type=IGMP_v3_HOST_MEMBERSHIP_REPORT) /                    \
+        c = igmp() / \
+            igmpv3.report(records=[GroupRecordField("",                    \
+                                    group=inet_atol("239.0.1.2"),          \
+                                    type=IGMP_CHANGE_TO_INCLUDE),
+                                   GroupRecordField("",                    \
+                                    group=inet_atol("239.3.2.1"),          \
+                                    type=IGMP_CHANGE_TO_INCLUDE,           \
+                                    sources=[inet_atol("192.0.2.1")]),     \
+                                   GroupRecordField("",                    \
+                                    group=inet_atol("224.111.222.111"),    \
+                                    type=IGMP_CHANGE_TO_EXCLUDE),          \
+                                   GroupRecordField("",                    \
+                                    group=inet_atol("225.4.3.2"),          \
+                                    type=IGMP_BLOCK_OLD_SOURCES,           \
+                                    sources=[inet_atol("192.0.2.99")])])
+
+        c.calc_lengths()
+        c.calc_checksums()
+        c.encode()
+
+	#hd = hexdumper()
+	#print hd.dump2(c.bytes)
+	expected = "\x22\x00\xC5\xA5\x00\x00\x00\x04" \
+		   "\x03\x00\x00\x00\xEF\x00\x01\x02" \
+		   "\x03\x00\x00\x01\xEF\x03\x02\x01" \
+		   "\xC0\x00\x02\x01\x04\x00\x00\x00" \
+		   "\xE0\x6F\xDE\x6F\x06\x00\x00\x01" \
+		   "\xE1\x04\x03\x02\xC0\x00\x02\x63"
+ 
+	#print hd.dump2(expected)
+	gotttted = c.bytes
+	self.assertEqual(expected, gotttted, "test encoding")
 
 if __name__ == '__main__':
     unittest.main()

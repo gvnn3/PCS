@@ -1,4 +1,4 @@
-# Copyright (c) 2005, Neville-Neil Consulting
+# Copyright (c) 2007, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,31 +28,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: nd6.py,v 1.4 2006/06/27 14:45:43 gnn Exp $
+# File: $Id: $
 #
 # Author: George V. Neville-Neil
 #
-# Description: A set of classes for working with neighbor discovery
+# Description: A mapping of SCTP port numbers to higher level protocols
 
-import pcs
-
-import icmpv6 # All neighbor discovery messages are inserted in ICMPv6 packets
-
-import time
-
-class nd6_solicit(pcs.Packet):
-    """Neighbor Discovery"""
-
-    _layout = pcs.Layout()
-
-    def __init__(self, bytes = None, timestamp = None, **kv):
-        """initialize a Neighbor Solicitaion header"""
-        reserved = pcs.Field("reserved", 32)
-        target = pcs.Field("target", 128)
-        pcs.Packet.__init__(self, [reserved, target], bytes, **kv)
-        self.description = inspect.getdoc(self)
-        if timestamp == None:
-            self.timestamp = time.time()
-        else:
-            self.timestamp = timestamp
-
+map = {}
