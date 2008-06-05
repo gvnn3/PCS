@@ -35,7 +35,12 @@
 # Description: 
 
 DNS = 53
+BOOTPS = 67
+BOOTPC = 68
 
 import dns
+import dhcpv4
 
-map = {DNS: dns.dnsheader}
+map = {	DNS:	dns.dnsheader,
+	BOOTPS: dhcpv4.dhcpv4,
+	BOOTPC: dhcpv4.dhcpv4 }
