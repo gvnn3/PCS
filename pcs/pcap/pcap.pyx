@@ -74,6 +74,9 @@ cdef extern from "pcap.h":
     int     pcap_inject(pcap_t *p, char *buf, int size)
     void    pcap_dump(pcap_dumper_t *p, pcap_pkthdr *h, char *sp)
     int     bpf_filter(bpf_insn *insns, char *buf, int len, int caplen)
+    int     pcap_get_selectable_fd(pcap_t *)
+    int     pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+    int     pcap_getnonblock(pcap_t *p, char *errbuf)
 
 cdef extern from "pcap_ex.h":
     # XXX - hrr, sync with libdnet and libevent
@@ -240,11 +243,13 @@ cdef class pcap:
     property fd:
         """File descriptor (or Win32 HANDLE) for capture handle."""
         def __get__(self):
-            return pcap_ex_fileno(self.__pcap)
+            #return pcap_ex_fileno(self.__pcap)
+            return pcap_get_selectable_fd(self.__pcap)
         
     def fileno(self):
         """Return file descriptor (or Win32 HANDLE) for capture handle."""
-        return pcap_ex_fileno(self.__pcap)
+        #return pcap_ex_fileno(self.__pcap)
+        return pcap_get_selectable_fd(self.__pcap)
     
     def setfilter(self, value, optimize=1):
         """Set BPF-format packet capture filter."""
@@ -259,11 +264,13 @@ cdef class pcap:
 
     def setnonblock(self, nonblock=True):
         """Set non-blocking capture mode."""
-        pcap_ex_setnonblock(self.__pcap, nonblock, self.__ebuf)
+        #pcap_ex_setnonblock(self.__pcap, nonblock, self.__ebuf)
+        pcap_setnonblock(self.__pcap, nonblock, self.__ebuf)
     
     def getnonblock(self):
         """Return non-blocking capture mode as boolean."""
-        ret = pcap_ex_getnonblock(self.__pcap, self.__ebuf)
+        #ret = pcap_ex_getnonblock(self.__pcap, self.__ebuf)
+        ret = pcap_getnonblock(self.__pcap, self.__ebuf)
         if ret < 0:
             raise OSError, self.__ebuf
         elif ret:
