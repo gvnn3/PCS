@@ -132,7 +132,8 @@ layout of the data and how it is addressed."""
         """
         real_value = 0
         fieldBR = self.width
-        while fieldBR > 0 and curr < len(bytes):
+        length = len(bytes)
+        while (fieldBR > 0 and curr < length):
             if fieldBR < byteBR:
                 shift = byteBR - fieldBR
                 value = ord(bytes[curr]) >> shift
@@ -655,9 +656,10 @@ class OptionListField(CompoundField, list):
 
     def next(self):
         """Option lists return a pair of (value, option) when iterated"""
-        if len(self._options) <= 0:
+        length = len(self._options)
+        if length <= 0:
             raise StopIteration
-        if self.index > len(self._options):
+        if self.index > length:
             raise StopIteration
         retval =  (self._options[self.index].value)
         self.index += 1
@@ -669,10 +671,11 @@ class OptionListField(CompoundField, list):
            same options and values."""
         if (other is None):
             return False
-        if len(self._options) != len(other._options):
+        length = len(self._options)
+        if length != len(other._options):
             #print "option list lengths differ"
             return False
-        for i in xrange(len(self._options)):
+        for i in xrange(length):
             #print "comparing option list field"
             f = self._options[i]
             if isinstance(f, Field):
@@ -916,13 +919,14 @@ class Packet(object):
         self._bytes = bytes
         curr = 0
         byteBR = 8
+        length = len(bytes)
         for field in self._layout:
-            if curr > len(bytes):
+            if curr > length:
                 break
             [value, curr, byteBR]  = field.decode(bytes, curr, byteBR)
 
     bytes = property(getbytes, decode)
-
+ 
     def encode(self):
         """Update the internal bytes representing the packet.  This
         function ought to be considered private to the class."""
@@ -1325,7 +1329,8 @@ class Chain(list):
         packets have the same data in them."""
         if len(self.packets) != len(other.packets):
             return False
-        for i in xrange(len(self.packets)):
+        length = len(self.packets)
+        for i in xrange(length):
             if self.packets[i] != other.packets[i]:
                 return False
         return True
@@ -1403,7 +1408,8 @@ class Chain(list):
         """Insert a packet into a chain after a given packet instance.
            Used only by the div operator. The default behaviour is to
            set discriminator fields in p1 based on p2."""
-        for i in xrange(len(self.packets)):
+        length = len(self.packets)
+        for i in xrange(length):
             if self.packets[i] is p1:
                 if rdiscriminate is True:
                     p1.rdiscriminate(p2)
@@ -1446,7 +1452,8 @@ class Chain(list):
     def wildcard_mask(self, unmask=True):
         """Mark or unmark all of the fields in each Packet in this Chain
            as a wildcard for match() or contains()."""
-        for i in xrange(len(self.packets)):
+        length = len(self.packets)
+        for i in xrange(length):
             self.packets[i].wildcard_mask([], unmask)
 
     def encode(self):
@@ -1725,8 +1732,9 @@ class Connector(object):
 
             # Check if the user tried to match exceptional conditions
             # as patterns. We need to check for timer expiry upfront.
+            length = len(patterns)
             if timeout is not None and (now - start) > timeout:
-                for i in xrange(len(patterns)):
+                for i in xrange(length):
                     if isinstance(patterns[i], TIMEOUT):
                         self.matches = [patterns[i]]
                         self.match_index = i
@@ -1739,7 +1747,7 @@ class Connector(object):
                     continue
 
             if isinstance(result, EOF):
-                for i in xrange(len(patterns)):
+                for i in xrange(length):
                     if isinstance(patterns[i], EOF):
                         self.matches = [patterns[i]]
                         self.match_index = i
@@ -1763,7 +1771,7 @@ class Connector(object):
                 #print "expect() firstpass: saw", str(type(c.packets[2]))[:-2].split('.')[-1]
                 if limit is not None:
                     remaining -= 1
-                for j in xrange(len(patterns)):
+                for j in xrange(length):
                     filter = patterns[j]
                     if isinstance(filter, Chain) and filter.matches(c):
                         #print "matched at index", i
@@ -1799,7 +1807,7 @@ class Connector(object):
             # If we never got a match, and we reached our limit,
             # return an error.
             if limit is not None and remaining == 0:
-                for i in xrange(len(patterns)):
+                for i in xrange(length):
                     if isinstance(patterns[i], LIMIT):
                         self.matches = [patterns[i]]
                         self.match_index = i

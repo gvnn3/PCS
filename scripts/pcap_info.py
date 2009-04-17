@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python26
 # Copyright (c) 2006, Neville-Neil Consulting
 # All rights reserved.
 #
@@ -36,77 +36,178 @@
 # Description: Walk through an entire pcap dump file and give out
 # information along the lines of netstat(1) on FreeBSD.
 
-import pcs
-from pcs.packets.udp import *
-from pcs.packets.tcp import *
-from pcs.packets.ipv4 import *
-from pcs.packets.ethernet import *
-from pcs.packets.arp import *
+import cProfile
+import time
+import datetime
 from socket import inet_ntoa
+
+import sys
+
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+    import pcs
+    from pcs import PcapConnector
+    from pcs.packets.udp import *
+    from pcs.packets.tcp import *
+    from pcs.packets.ipv4 import *
+    from pcs.packets.icmpv4 import *
+    from pcs.packets.ethernet import *
+    from pcs.packets.arp import *
+
 def main():
 
     from optparse import OptionParser
 
     parser = OptionParser()
-    parser.add_option("-f", "--file",
-                      dest="file", default=None,
-                      help="tcpdump file to read from")
-
+    parser.add_option("-p", "--per-second",
+                      dest="ps", default=None,
+                      help="generate a graph of packets and bytes per second")
+    parser.add_option("-m", "--per-millisecond",
+                      dest="ppm", default=None,
+                      help="generate a graph of packets and bytes per millisecond")
+    parser.add_option("-u", "--per-microsecond",
+                      dest="ppu", default=None,
+                      help="generate a graph of packets and bytes per microsecond")
     (options, args) = parser.parse_args()
 
-    file = pcs.PcapConnector(options.file)
+    # Files are specified as the remaining arguments.
+    for dump_file in args:
+        file = pcs.PcapConnector(dump_file)
 
-    srcmap = {}
-    packets = 0
-    ip_cnt = 0
-    non_ip_cnt = 0
-    tcp_cnt = 0
-    udp_cnt = 0
-    icmp_cnt = 0
-    arp_cnt = 0
+        srcmap = {}
+        packets_per = {}
+        packets = 0
+        ip_cnt = 0
+        non_ip_cnt = 0
+        tcp_cnt = 0
+        udp_cnt = 0
+        icmp_cnt = 0
+        arp_cnt = 0
+        
+        done = False
+        while not done:
+            try:
+                packet = file.readpkt()
+            except:
+                done = True
 
-    done = False
-    while not done:
-        ip = None
-        try:
-            packet = file.readpkt()
-        except:
-            done = True
-        packets += 1
-        if type(packet.data) == pcs.packets.ipv4.ipv4:
-            ip_cnt += 1
-            ip = packet.data
-        else:
-            non_ip_cnt += 1
-        if type(packet.data) == pcs.packets.arp.arp:
-            arp_cnt += 1
+            packets += 1
 
-        if ip is not None:
-            if type(ip.data) == pcs.packets.icmpv4.icmpv4:
+            network = packet.data
+
+            try:
+                transport = network.data
+            except:
+                pass
+
+            if type(network) == ipv4:
+                ip_cnt += 1
+                ip = network
+            else:
+                non_ip_cnt += 1
+            if type(packet) == arp:
+                arp_cnt += 1
+
+            if type(transport) == icmpv4:
                 icmp_cnt += 1
-            if type(ip.data) == pcs.packets.udp.udp:
+            if type(transport) == udp:
                 udp_cnt += 1
-            if type(ip.data) == pcs.packets.tcp.tcp:
+            if type(transport) == tcp:
                 tcp_cnt += 1
 
-            if ip.src in srcmap:
+            try:
                 srcmap[ip.src] += 1
-            else:
+            except KeyError:
                 srcmap[ip.src] = 1
 
-    print "%d packets in dumpfile" % packets
-    print "%d unique source IPs" % len(srcmap)
-    print "%d ARP packets" % arp_cnt
-    print "%d IPv4 packets" % ip_cnt
-    print "%d ICMPv4 packets" % icmp_cnt
-    print "%d UDP packets" % udp_cnt
-    print "%d TCP packets" % tcp_cnt
+            if options.ps is not None:
+                second = int(packet.timestamp)
+                try:
+                    (count, length) = packets_per[second]
+                    count += 1
+                    length += len(packet.bytes)
+                    packets_per[second] = (count, length)
+                except KeyError:
+                    packets_per[second] = (1, len(packet.bytes))
+            elif options.ppm is not None:
+                ts = datetime.datetime.fromtimestamp(packet.timestamp)
+                ms = ts.microsecond / 1000
+                msecond = ts.strftime("%H:%M:%S")
+                msecond += (".%d") % ms
+                while (len(msecond) < 12):
+                    msecond += '0'
+                try:
+                    (count, length) = packets_per[msecond]
+                    count += 1
+                    length += len(packet.bytes)
+                    packets_per[msecond] = (count, length)
+                except KeyError:
+                    packets_per[msecond] = (1, len(packet.bytes))
+            elif options.ppu is not None:
+                try:
+                    (count, length) = packets_per[packet.timestamp]
+                    count += 1
+                    length += len(packet.bytes)
+                    packets_per[packet.timestamp] = (count, length)
+                except KeyError:
+                    packets_per[packet.timestamp] = (1, len(packet.bytes))
+                    
 
-    print "Top source addresses were"
-    hit_list = sorted(srcmap.itervalues(), reverse = True)
-    for i in range(1,len(hit_list)):
-        for addr in srcmap.items():
-            if addr[1] == hit_list[i]:
-                print "Address %s\t Count %s\t Percentage %f" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), addr[1], (float(addr[1]) / float(packets)) * float(100))
+        print "%d packets in dumpfile" % packets
+        print "%d unique source IPs" % len(srcmap)
+        print "%d ARP packets" % arp_cnt
+        print "%d IPv4 packets" % ip_cnt
+        print "%d ICMPv4 packets" % icmp_cnt
+        print "%d UDP packets" % udp_cnt
+        print "%d TCP packets" % tcp_cnt
 
+        print "Top source addresses were"
+        hit_list = sorted(srcmap.itervalues(), reverse = True)
+        length = len(hit_list)
+        for i in xrange(length):
+            for addr in srcmap.items():
+                if addr[1] == hit_list[i]:
+                    print "Address %s\t Count %s\t Percentage %f" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), addr[1], (float(addr[1]) / float(packets)) * float(100))
+
+        if options.ps is not None:
+            try:
+                file = open(options.ps, "w")
+            except:
+                print "Could not open file %s for writing." % options.ps
+                        
+            for seconds in sorted(packets_per.keys()):
+                hms = time.strftime("%H:%M:%S",time.localtime(seconds))
+                data = ("%s, %d, %d\n" % (hms, packets_per[seconds][0], packets_per[seconds][1]))
+                file.write(data)
+        elif options.ppm is not None:
+            try:
+                file = open(options.ppm, "w")
+            except:
+                print "Could not open file %s for writing." % options.ppm
+                        
+            for mseconds in sorted(packets_per.keys()):
+                data = ("%s, %d, %d\n" % (mseconds,
+                                          packets_per[mseconds][0],
+                                          packets_per[mseconds][1]))
+                file.write(data)
+        elif options.ppu is not None:
+            try:
+                file = open(options.ppu, "w")
+            except:
+                print "Could not open file %s for writing." % options.ppu
+                        
+            for useconds in sorted(packets_per.keys()):
+                dt = datetime.datetime.fromtimestamp(useconds)
+                data = ("%s, %d, %d\n" % (dt.strftime("%H:%M:%S.%f"),
+                                          packets_per[useconds][0],
+                                          packets_per[useconds][1]))
+                file.write(data)
+            
+
+
+#cProfile.run('main()', "foo.prof")
 main()
