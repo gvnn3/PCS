@@ -39,7 +39,8 @@
 
 from distutils.core import setup
 from distutils.command import config, clean
-from Pyrex.Distutils import build_ext, Extension
+from distutils.extension import Extension
+from Cython.Distutils import build_ext
 import cPickle, glob, os, sys
 
 pcap_config = {}
@@ -82,6 +83,7 @@ class config_pcap(config.config):
                 incdirs = [ os.path.join(d, sd) ]
                 if os.path.exists(os.path.join(d, sd, 'pcap.h')):
                     cfg['include_dirs'] = [ os.path.join(d, sd) ]
+                    cfg['include_dirs'] += ["pcs/bpf"]
                     for sd in ('lib64', 'lib', ''):
                         for lib in (('pcap', 'libpcap.a'),
                                     ('pcap', 'libpcap.dylib'),
@@ -139,7 +141,6 @@ if len(sys.argv) > 1 and sys.argv[1] == 'build':
 
 pcap = Extension(name='pcs.pcap',
                  sources=[ 'pcs/pcap/pcap.pyx', 'pcs/pcap/pcap_ex.c' ],
-                 pyrex_include_dirs=[ 'pcs/bpf' ],
                  include_dirs=pcap_config.get('include_dirs', ''),
                  library_dirs=pcap_config.get('library_dirs', ''),
                  libraries=pcap_config.get('libraries', ''),
@@ -148,7 +149,6 @@ pcap = Extension(name='pcs.pcap',
 
 bpf = Extension(name='pcs.bpf',
                  sources=[ 'pcs/bpf/bpf.pyx' ],
-                 pyrex_include_dirs=[ 'pcs/bpf' ],
                  include_dirs=pcap_config.get('include_dirs', ''),
                  library_dirs=pcap_config.get('library_dirs', ''),
                  libraries=pcap_config.get('libraries', ''),
@@ -157,7 +157,6 @@ bpf = Extension(name='pcs.bpf',
 
 clock = Extension(name='pcs.clock',
                   sources=[ 'pcs/clock/clock.pyx' ],
-                  pyrex_include_dirs=[ 'pcs/clock' ],
                   library_dirs=pcap_config.get('rt_library_dirs', ''),
                   libraries=pcap_config.get('rt_libraries', '')
 	)
@@ -174,5 +173,5 @@ setup(name='pcs',
       url='http://pcs.sf.net',
       packages = ['pcs', 'pcs.packets'],
       cmdclass=pcs_cmds,
-      ext_modules = [ pcap, bpf, clock ],
+      ext_modules = [ bpf, clock, pcap ],
       )
