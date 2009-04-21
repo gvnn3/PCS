@@ -242,7 +242,7 @@ class tcp(pcs.Packet):
         from pcs.packets.ipv4 import ipv4
         from pcs.packets.ipv4 import pseudoipv4
         from socket import IPPROTO_TCP
-        tmpip = ipv4.pseudoipv4()
+        tmpip = pseudoipv4()
         tmpip.src = ip.src
         tmpip.dst = ip.dst
         tmpip.protocol = IPPROTO_TCP

@@ -77,7 +77,7 @@ class garp(pcs.Packet):
     def __init__(self, bytes = None, timestamp = None, **kv):
         attributes = pcs.OptionListField("attributes")
 
-        pcs.Packet.__init__(self, [ attributes ] bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ attributes ], bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
 
         if timestamp is None:

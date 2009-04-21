@@ -70,6 +70,8 @@ import pcs.pcap as pcap
 import exceptions
 import itertools
 
+# import fast
+
 def attribreprlist(obj, attrs):
     return map(lambda x, y = obj: '%s: %s' % (x.name, repr(getattr(y, x.name))), itertools.ifilter(lambda x, y = obj: hasattr(y, x.name), attrs))
 
@@ -130,6 +132,10 @@ layout of the data and how it is addressed."""
         curr - the current byte position in the bytes array
         byteBR - the number of Bits Remaining in the current byte
         """
+#         [ real_value, curr, byteBR ] = fast.decode(self.width, len(bytes), bytes, curr, byteBR)
+#         self.value = real_value
+#         return [ real_value, curr, byteBR ]
+
         real_value = 0
         fieldBR = self.width
         length = len(bytes)
@@ -173,6 +179,7 @@ layout of the data and how it is addressed."""
         # fieldBR is the bits remaining in the field to be encoded
         # byteBR is the bits remaining in the current byte being encoded
         
+#         return fast.encode(self.width, bytearray, value, byte, byteBR)
         fieldBR = self.width
         while byteBR > 0:
             if fieldBR < byteBR:

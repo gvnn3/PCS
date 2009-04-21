@@ -101,17 +101,18 @@ class tcpv6(pcs.Packet):
            The packet must be part of a chain.
            To do this we need to use an overlay, and copy some
            header fields from the encapsulating IPv6 header."""
-         self.checksum = 0
-         if self._head is not None:
-             payload = self._head.collate_following(self)
-             ip6 = self._head.find_preceding(self, pcs.packets.ipv6)
-             assert ip6 is not None, "No preceding IPv6 header."
-             pip6 = pseudoipv6()
-             pip6.src = ip.src
-             pip6.dst = ip.dst
-             pip6.next_header = ip6.next_header
-             pip6.length = len(self.getbytes()) + len(payload)
-             tmpbytes = pip6.getbytes() + self.getbytes() + payload
-         else:
-             tmpbytes = self.bytes
-         self.checksum = ipv4.ipv4_cksum(tmpbytes)
+        self.checksum = 0
+        if self._head is not None:
+            payload = self._head.collate_following(self)
+            ip6 = self._head.find_preceding(self, pcs.packets.ipv6)
+            assert ip6 is not None, "No preceding IPv6 header."
+            pip6 = pseudoipv6()
+            pip6.src = ip.src
+            pip6.dst = ip.dst
+            pip6.next_header = ip6.next_header
+            pip6.length = len(self.getbytes()) + len(payload)
+            tmpbytes = pip6.getbytes() + self.getbytes() + payload
+        else:
+            tmpbytes = self.bytes
+        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+            

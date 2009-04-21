@@ -161,6 +161,11 @@ clock = Extension(name='pcs.clock',
                   libraries=pcap_config.get('rt_libraries', '')
 	)
 
+#fast = Extension(name='pcs.fast',
+#                  sources=[ 'pcs/fast.pyx' ],
+#	)
+
+
 # XXX Distutils only allows a single command class, direct everything
 # to the configuration wrapper for pcap.
 pcs_cmds = { 'config':config_pcap, 'clean':clean_pcap, 'build_ext':build_ext }
@@ -173,5 +178,6 @@ setup(name='pcs',
       url='http://pcs.sf.net',
       packages = ['pcs', 'pcs.packets'],
       cmdclass=pcs_cmds,
+#      ext_modules = [ fast, bpf, clock, pcap ],
       ext_modules = [ bpf, clock, pcap ],
       )

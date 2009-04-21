@@ -17,7 +17,7 @@ TESTS:= $(wildcard *test.py)
 test: 
 	for file in $(TESTS); do\
 		echo Running test $$file; \
-		sudo PYTHONPATH=${PYTHONPATH} $(PYTHON) $$file; \
+		sudo $(PYTHON) $$file; \
 	done
 
 test-local: 

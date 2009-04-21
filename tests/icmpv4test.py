@@ -124,8 +124,10 @@ class icmpTestCase(unittest.TestCase):
 	    devname = "edsc0"
 	elif uname == "Linux":
 	    devname = "lo"
+        elif uname == "Darwin":
+            devname = "en0"
 	else:
-	    print "unknown host os %d" % uname
+	    print "unknown host os %s" % uname
 	    return
 
 	e = ethernet()
