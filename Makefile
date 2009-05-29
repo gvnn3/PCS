@@ -8,12 +8,9 @@
 
 PYTHON	= python
 
-all: pcap.c
+all: 
 	$(PYTHON) setup.py config $(CONFIG_ARGS)
 	$(PYTHON) setup.py build
-
-pcap.c: pcs/pcap/pcap.pyx
-	pyrexc pcs/pcap/pcap.pyx
 
 install: all
 	$(PYTHON) setup.py install
@@ -24,6 +21,7 @@ dist:
 clean:
 	$(PYTHON) setup.py clean
 	rm -rf build dist MANIFEST \
+		pcs/pcap/pcap.c \
 		pcs/pcap/config.h \
 		pcs/pcap/config.pkl
 

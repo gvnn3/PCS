@@ -62,6 +62,7 @@ class config_pcap(config.config):
         d = {}
         if os.path.exists(os.path.join(cfg['include_dirs'][0], 'pcap-int.h')):
             d['HAVE_PCAP_INT_H'] = 1
+	print cfg['include_dirs']
         buf = open(os.path.join(cfg['include_dirs'][0], 'pcap.h')).read()
         if buf.find('pcap_file(') != -1:
             d['HAVE_PCAP_FILE'] = 1
@@ -79,7 +80,7 @@ class config_pcap(config.config):
             dirs = [ '/usr', sys.prefix ] + glob.glob('/opt/libpcap*') + \
                    glob.glob('../libpcap*') + glob.glob('../wpdpack*')
         for d in dirs:
-            for sd in ('include', 'include/pcap', ''):
+            for sd in ('include/pcap', 'include', ''):
                 incdirs = [ os.path.join(d, sd) ]
                 if os.path.exists(os.path.join(d, sd, 'pcap.h')):
                     cfg['include_dirs'] = [ os.path.join(d, sd) ]
@@ -115,7 +116,7 @@ class config_pcap(config.config):
                         return cfg
 
     def run(self):
-        #config.log.set_verbosity(0)
+        config.log.set_verbosity(10)
         pfile = open(pcap_cache, 'wb')
         cPickle.dump(self._pcap_config([ self.with_pcap ]), pfile)
         cPickle.dump(self._rt_config(), pfile)
