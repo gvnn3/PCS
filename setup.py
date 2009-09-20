@@ -111,7 +111,7 @@ pcap = Extension(name='pcs.pcap',
                  libraries=["pcap"]
 	)
 
-bpf = Extension(name='pcs.bpf',
+bpf = Extension(name='bpf',
                  sources=[ 'pcs/bpf/bpf.pyx' ],
                  include_dirs=["/usr/include/pcap"],
                  library_dirs=["/usr/lib"],
