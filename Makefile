@@ -11,9 +11,6 @@ CYTHON  = cython
 
 all: 
 	$(PYTHON) setup.py config
-	$(CYTHON) pcs/bpf/bpf.pyx
-	$(CYTHON) -I pcs/bpf pcs/pcap/pcap.pyx
-	$(CYTHON) pcs/clock/clock.pyx
 	$(PYTHON) setup.py build
 
 install: all
