@@ -78,7 +78,6 @@ setup(name='pcs',
       url='http://pcs.sf.net',
       packages = ['pcs', 'pcs.packets'],
       cmdclass=pcs_cmds,
-#      ext_modules = [ fast, bpf, clock, pcap ],
       ext_modules = [ bpf, clock, pcap ],
       )
 
