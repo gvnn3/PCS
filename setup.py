@@ -61,16 +61,12 @@ class config_pcap(config.config):
             d['HAVE_PCAP_INT_H'] = 1
         buf = open(os.path.join(cfg['include_dirs'][0], 'pcap.h')).read()
         if buf.find('pcap_file(') != -1:
-            print "F"
             d['HAVE_PCAP_FILE'] = 1
         if buf.find('pcap_compile_nopcap(') != -1:
-            print "C"
             d['HAVE_PCAP_COMPILE_NOPCAP'] = 1
         if buf.find('pcap_setnonblock(') != -1:
-            print "S"
             d['HAVE_PCAP_SETNONBLOCK'] = 1
         f = open('pcs/pcap/config.h', 'w')
-        print d
         for k, v in d.iteritems():
             f.write('#define %s %s\n' % (k, v))
         f.close()
