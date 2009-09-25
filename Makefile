@@ -10,6 +10,7 @@ PYTHON	= python
 CYTHON  = cython
 
 all: 
+	$(PYTHON) setup.py config
 	$(CYTHON) pcs/bpf/bpf.pyx
 	$(CYTHON) -I pcs/bpf pcs/pcap/pcap.pyx
 	$(CYTHON) pcs/clock/clock.pyx
