@@ -1,15 +1,18 @@
 #
-#
-# File: $Id: Makefile,v 1.2 2006/06/15 07:52:02 gnn Exp $
-#
 # Author: George V. Neville-Neil
 #
 # Makefile for building distributions of PCS.  
 
+#PYTHON	= python2.6    #
+#CYTHON  = cython-2.6   # These versions are set for Mac OS Only
+
 PYTHON	= python
+CYTHON  = cython
 
 all: 
-	$(PYTHON) setup.py config $(CONFIG_ARGS)
+	$(CYTHON) pcs/bpf/bpf.pyx
+	$(CYTHON) -I pcs/bpf pcs/pcap/pcap.pyx
+	$(CYTHON) pcs/clock/clock.pyx
 	$(PYTHON) setup.py build
 
 install: all
@@ -22,6 +25,5 @@ clean:
 	$(PYTHON) setup.py clean
 	rm -rf build dist MANIFEST \
 		pcs/pcap/pcap.c \
-		pcs/pcap/config.h \
-		pcs/pcap/config.pkl
-
+		pcs/bpf/bpf.c \
+		pcs/clock/clock.c
