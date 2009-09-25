@@ -43,6 +43,66 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 import glob, os, sys
 
+class config_pcap(config.config):
+    description = 'configure pcap paths'
+    user_options = [ ('with-pcap=', None,
+                      'path to pcap build or installation directory') ]
+    
+    def initialize_options(self):
+        config.config.initialize_options(self)
+        self.dump_source = 0
+        self.noisy = 1
+        self.with_pcap = None
+
+    def _write_config_h(self, cfg):
+        # XXX - write out config.h for pcap_ex.c
+        d = {}
+        if os.path.exists(os.path.join(cfg['include_dirs'][0], 'pcap-int.h')):
+            d['HAVE_PCAP_INT_H'] = 1
+        buf = open(os.path.join(cfg['include_dirs'][0], 'pcap.h')).read()
+        if buf.find('pcap_file(') != -1:
+            print "F"
+            d['HAVE_PCAP_FILE'] = 1
+        if buf.find('pcap_compile_nopcap(') != -1:
+            print "C"
+            d['HAVE_PCAP_COMPILE_NOPCAP'] = 1
+        if buf.find('pcap_setnonblock(') != -1:
+            print "S"
+            d['HAVE_PCAP_SETNONBLOCK'] = 1
+        f = open('pcs/pcap/config.h', 'w')
+        print d
+        for k, v in d.iteritems():
+            f.write('#define %s %s\n' % (k, v))
+        f.close()
+    
+    def _pcap_config(self, dirs=[ None ]):
+        cfg = {}
+        if not dirs[0]:
+            dirs = [ '/usr', sys.prefix ] + glob.glob('/opt/libpcap*') + \
+                   glob.glob('../libpcap*') + glob.glob('../wpdpack*')
+        for d in dirs:
+            for sd in ('include/pcap', 'include', ''):
+                incdirs = [ os.path.join(d, sd) ]
+                if os.path.exists(os.path.join(d, sd, 'pcap.h')):
+                    cfg['include_dirs'] = [ os.path.join(d, sd) ]
+                    for sd in ('lib', ''):
+                        for lib in (('pcap', 'libpcap.a'),
+                                    ('pcap', 'libpcap.dylib'),
+                                    ('wpcap', 'wpcap.lib')):
+                            if os.path.exists(os.path.join(d, sd, lib[1])):
+                                cfg['library_dirs'] = [ os.path.join(d, sd) ]
+                                cfg['libraries'] = [ lib[0] ]
+                                if lib[0] == 'wpcap':
+                                    cfg['libraries'].append('iphlpapi')
+                                    cfg['extra_compile_args'] = \
+                                        [ '-DWIN32', '-DWPCAP' ]
+                                print 'found', cfg
+                                self._write_config_h(cfg)
+                                return cfg
+        raise "couldn't find pcap build or installation directory"
+    
+    def run(self):
+        self._pcap_config([ self.with_pcap ])
 
 # XXX The Pyrex Distutils extension is currently unable to propagate
 # dependencies on *.pxd files. If you change them you SHOULD rebuild from
@@ -50,14 +110,14 @@ import glob, os, sys
 
 pcap = Extension(name='pcs.pcap',
                  sources=[ 'pcs/pcap/pcap.pyx', 'pcs/pcap/pcap_ex.c' ],
-                 include_dirs=["/usr/include"],
+                 include_dirs=["/usr/include/pcap"],
                  library_dirs=["/usr/lib"],
                  libraries=["pcap"]
 	)
 
 bpf = Extension(name='pcs.bpf',
                  sources=[ 'pcs/bpf/bpf.pyx' ],
-                 include_dirs=["/usr/include"],
+                 include_dirs=["/usr/include/pcap"],
                  library_dirs=["/usr/lib"],
                  libraries=["pcap"]
 	)
@@ -68,7 +128,7 @@ clock = Extension(name='pcs.clock',
                   libraries=[],
 	)
 
-pcs_cmds = { 'build_ext':build_ext }
+pcs_cmds = { 'config': config_pcap, 'build_ext':build_ext }
 
 setup(name='pcs',
       version='0.6',
