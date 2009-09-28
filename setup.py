@@ -106,16 +106,16 @@ class config_pcap(config.config):
 
 pcap = Extension(name='pcs.pcap',
                  sources=[ 'pcs/pcap/pcap.pyx', 'pcs/pcap/pcap_ex.c' ],
-                 include_dirs=["/usr/include/pcap"],
-                 library_dirs=["/usr/lib"],
-                 libraries=["pcap"]
+                 include_dirs=['/usr/include/pcap', './pcs/bpf/', '.'],
+                 library_dirs=['/usr/lib'],
+                 libraries=['pcap']
 	)
 
-bpf = Extension(name='pcs.bpf',
+bpf = Extension(name='bpf',
                  sources=[ 'pcs/bpf/bpf.pyx' ],
-                 include_dirs=["/usr/include/pcap"],
-                 library_dirs=["/usr/lib"],
-                 libraries=["pcap"]
+                 include_dirs=['/usr/include/pcap'],
+                 library_dirs=['/usr/lib'],
+                 libraries=['pcap']
 	)
 
 clock = Extension(name='pcs.clock',
