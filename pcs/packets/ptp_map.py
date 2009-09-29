@@ -1,4 +1,4 @@
-# Copyright (c) 2007, Neville-Neil Consulting
+# Copyright (c) 2009, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,23 +28,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id: $
-#
 # Author: George V. Neville-Neil
 #
-# Description: 
+# Description: A file for mapping various PTP (IEEE-1588) headers
+# 
 
-DNS = 53
-BOOTPS = 67
-BOOTPC = 68
-PTP    = 319
-PTP_GENERAL = 320
-import dns
-import dhcpv4
-import ptp_common
+import ptp
 
-map = {	DNS:	dns.dnsheader,
-	BOOTPS: dhcpv4.dhcpv4,
-	BOOTPC: dhcpv4.dhcpv4,
-        PTP: ptp_common.Common,
-        PTP_GENERAL: ptp_common.Common}
+PTP_SYNC = 0
+PTP_DELAY_REQUEST = 1
+PTP_FOLLOWUP = 2
+PPT_DELAY_RESPONSE = 3
+
+map = { PTP_SYNC: ptp.Sync,
+        PTP_DELAY_REQUEST: ptp.Sync,
+        PTP_FOLLOWUP: ptp.Followup,
+        PPT_DELAY_RESPONSE: ptp.DelayResponse}
