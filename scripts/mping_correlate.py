@@ -87,8 +87,12 @@ def main():
         files.append(trace)
 
     for i in range(0,len(files[0])):
-        if files[0][i] == files[1][i]:
-            print "0:00:00.000000"
+        try:
+            if files[0][i] == files[1][i]:
+                print "0:00:00.000000"
+                continue
+        except KeyError:
+            print "missing packet %d" % i
             continue
         if files[0][i] < files[1][i]:
             print files[1][i] - files[0][i]
