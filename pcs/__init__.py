@@ -2463,7 +2463,7 @@ class IP6Connector(Connector):
     def __init__(self, name = None):
         """initialize an IPPConnector class for raw IPv6 access"""
         try:
-            self.file = socket(AF_INET6, SOCK_RAW, IPPROTO_IP)
+            self.file = socket(AF_INET6, SOCK_RAW, IPPROTO_IPV6)
         except:
             raise
 
