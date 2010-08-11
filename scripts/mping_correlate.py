@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 # Copyright (c) 2009, Neville-Neil Consulting
 # All rights reserved.
 #
@@ -33,13 +33,17 @@
 #
 # Description: This program reads a set of N pcap files and attempts
 # to correlate multicast ping packet arrival times as way of measuring
-# inter machien clock offsets.  Since the kernel timestamps a packet
+# inter machine clock offsets.  Since the kernel timestamps a packet
 # relatively close to the hardware it should give us a reasonably
 # accurate measurement.  This is ONLY valid on a single subnet.
 
 
 import sys
 import datetime
+
+from numpy import *
+
+import Gnuplot, Gnuplot.funcutils
 
 import pcs
 from pcs.clock import TimeSpec
@@ -49,12 +53,23 @@ from pcs.packets.icmpv4 import icmpv4echo
 
 def main():
 
-    # Right now there are no command line arguments
-    # we just open every file we're given
-    # and read the packets from it.
-
+    from optparse import OptionParser
+    
+    parser = OptionParser()
+    parser.add_option("-y", "--ymin", dest="ymin", default="0",
+                      help="minimum y value")
+    parser.add_option("-Y", "--ymax", dest="ymax", default="10",
+                      help="maximum y value")
+    parser.add_option("-N", "--Names", dest="hosts", nargs=2, default=None,
+                      help="host list for sync graph")
+    parser.add_option("-s", "--start", dest="start", type="int", default=0,
+                      help="starting sequence number")
+    parser.add_option("-d", "--debug", dest="debug", type="int", default=0,
+                      help="print debugging info (verbose)")
+    (options, args) = parser.parse_args()
+    
     files = []
-    for filename in sys.argv[1:]:
+    for filename in options.hosts:
         pcap = pcs.PcapConnector(filename)
         
         trace = {}
@@ -82,23 +97,36 @@ def main():
             if icmp.type != ICMP_ECHO:
                 continue
 
+            if ((icmp.data.sequence != 0) and
+                (icmp.data.sequence < options.start)):
+                continue
+                
             trace[icmp.data.sequence] = datetime.datetime.fromtimestamp(packet.timestamp)
 
         files.append(trace)
 
-    for i in range(0,len(files[0])):
+    # Set up the plotter so that either the sync or the other types
+    # of graphs can use it.
+    plotter = Gnuplot.Gnuplot(debug=1)
+#    plotter('set data style dots')
+    plotter.set_range('yrange', [options.ymin, options.ymax])
+    graph = []
+
+    for i in range(options.start,options.start + len(files[0])):
         try:
-            if files[0][i] == files[1][i]:
-                print "0:00:00.000000"
-                continue
+            delta = abs(files[1][i] - files[0][i])
         except KeyError:
+            print "9:99:99.000900"
             print "missing packet %d" % i
             continue
-        if files[0][i] < files[1][i]:
-            print files[1][i] - files[0][i]
-        else:
-            print files[0][i] - files[1][i]
             
+        if (options.debug != 0):
+            print delta
+        graph.append(delta.microseconds)
+
+    plotter.plot(graph)
+
+    raw_input('Press return to exit')
 
 # The canonical way to make a python module into a script.
 # Remove if unnecessary.
