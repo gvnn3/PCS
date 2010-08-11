@@ -64,6 +64,8 @@ def main():
                       help="host list for sync graph")
     parser.add_option("-s", "--start", dest="start", type="int", default=0,
                       help="starting sequence number")
+    parser.add_option("-p", "--print", dest="png", default=None,
+                      help="print the graph to a file")
     parser.add_option("-d", "--debug", dest="debug", type="int", default=0,
                       help="print debugging info (verbose)")
     (options, args) = parser.parse_args()
@@ -124,9 +126,15 @@ def main():
             print delta
         graph.append(delta.microseconds)
 
+    plotter.ylabel('Time Offset\\nMicroseconds')
+    plotter.xlabel('Sample Number')
     plotter.plot(graph)
 
-    raw_input('Press return to exit')
+    if (options.png != None):
+        plotter.hardcopy(options.png + ".png", terminal='png')
+        raw_input('Press return to exit')
+    else:
+        raw_input('Press return to exit')
 
 # The canonical way to make a python module into a script.
 # Remove if unnecessary.
