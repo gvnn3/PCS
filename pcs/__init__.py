@@ -1971,6 +1971,8 @@ class PcapConnector(Connector):
             return packets.ethernet.ethernet(packet, timestamp)
         elif dlink == pcap.DLT_NULL:
             return packets.localhost.localhost(packet, timestamp)
+        elif dlink == pcap.DLT_RAW:
+            return packets.ipv4.ipv4(packet, timestamp)
         else:
             raise UnpackError, "Could not interpret packet"
                 
