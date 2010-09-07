@@ -183,8 +183,7 @@ def main():
             print delta
         graph.append(delta.microseconds)
 
-    avg = 0
-    print "min %s, max %s, average %d" % (minimum, maximum, avg)
+    print "min %s, max %s" % (minimum, maximum)
 
     if (minimum.seconds > 1):
         print "Time difference exceeded one second maximum, " \
