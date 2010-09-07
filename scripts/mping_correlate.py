@@ -47,6 +47,8 @@ import Gnuplot, Gnuplot.funcutils
 
 import pcs
 from pcs.clock import TimeSpec
+from pcs.packets.ethernet import ethernet
+from pcs.packets.ipv4 import ipv4
 from pcs.packets.icmpv4 import ICMP_ECHO
 from pcs.packets.icmpv4 import icmpv4
 from pcs.packets.icmpv4 import icmpv4echo
@@ -79,19 +81,32 @@ def main():
         while not done:
             try:
                 packet = pcap.readpkt()
-            except:
+            except StopIteration:
                 done = True
+            except:
+                raise
+                
+            # We only handle pcap files with Ethernet or RAW IP
+            if type(packet) == ethernet:
+                if packet.data == None:
+                    continue
 
-            if packet.data == None:
+                if packet.data.data == None:
+                    continue
+
+                if type(packet.data.data) != icmpv4:
+                    continue
+
+                icmp = packet.data.data
+            
+            elif type(packet) == ipv4:
+                if type(packet.data) != icmpv4:
+                    continue
+
+                icmp = packet.data
+
+            else:
                 continue
-
-            if packet.data.data == None:
-                continue
-
-            if type(packet.data.data) != icmpv4:
-                continue
-
-            icmp = packet.data.data
             
             if type(icmp.data) != icmpv4echo:
                 continue
@@ -107,13 +122,50 @@ def main():
 
         files.append(trace)
 
-    # Set up the plotter so that either the sync or the other types
-    # of graphs can use it.
-    plotter = Gnuplot.Gnuplot(debug=1)
-#    plotter('set data style dots')
-    plotter.set_range('yrange', [options.ymin, options.ymax])
+    sequences = []
+    sequences.append(sorted(files[0].keys()))
+    sequences.append(sorted(files[1].keys()))
+    
+    if ((min(sequences[0]) > max(sequences[1])) or
+        (min(sequences[1]) > max(sequences[1]))):
+        print "sequences do not overlap"
+        sys.exit(1)
+    
+    # Trim the dictionaries of non overlapping elements
+
+    index = 0
+    if ((min(sequences[0]) < min(sequences[1]))):
+        start = min(sequences[0])
+        end = min(sequences[1])
+        index = 0
+    else:
+        start = min(sequences[1])
+        end = min(sequences[0])
+        index = 1
+        
+    for i in range(start, end):
+        del files[index][i]
+
+    if ((max(sequences[0]) > max(sequences[1]))):
+        start = max(sequences[1])
+        end = max(sequences[0])
+        index = 0
+    else:
+        start = max(sequences[0])
+        end = max(sequences[1])
+        index = 1
+        
+    for i in range(start, end):
+        del files[index][i]
+
+    if options.start == 0:
+        options.start = min(files[0].keys())
+
     graph = []
 
+    minimum = datetime.timedelta.max
+    maximum = datetime.timedelta.min
+    
     for i in range(options.start,options.start + len(files[0])):
         try:
             delta = abs(files[1][i] - files[0][i])
@@ -122,9 +174,27 @@ def main():
             print "missing packet %d" % i
             continue
             
+        if delta > maximum:
+            maximum = delta
+        if delta < minimum:
+            minimum = delta
+
         if (options.debug != 0):
             print delta
         graph.append(delta.microseconds)
+
+    avg = 0
+    print "min %s, max %s, average %d" % (minimum, maximum, avg)
+
+    if (minimum.seconds > 1):
+        print "Time difference exceeded one second maximum, " \
+              "cannot graph differences"
+        sys.exit(1)
+        
+    plotter = Gnuplot.Gnuplot(debug=1)
+
+    # if ((options.ymin != 0) or (options.ymax != 10)):
+    #     plotter.set_range('yrange', [options.ymin, options.ymax])
 
     plotter.ylabel('Time Offset\\nMicroseconds')
     plotter.xlabel('Sample Number')
