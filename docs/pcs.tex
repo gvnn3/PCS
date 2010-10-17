@@ -304,6 +304,10 @@ three arguments.  The \class+self+ object, an array of the fields, in
 the order in which they will appear in a packet, and the \field+bytes+
 variable that was passed to the packet object's \method+init+ method.
 Once the packet is initalized we set its description, on line 20.
+The description comes from the Python docstring which is defined at
+the beginning of the \method+__init__+ method, in this case, ``IPv6
+Packet from RFC2460''.  Although the docstring may be left blank this
+is not advised.
 
 Any packet that may contain data at a higher layer, such as a network
 packet will then use its \method+next+ method to unencapsulate any
@@ -460,7 +464,7 @@ this.
 
 \begin{figure}
   \lstinputlisting [firstline=41,lastline=55]{/Volumes/exported/hg/PCS/pcs/packets/ethernet_map.py}
-  \caption{Ethernet Mapping Class from pcs/packets/ethernet_map.py}
+  \caption{Ethernet Mapping Class from pcs/packets/ethernet\_map.py}
   \label{fig:ethernet-mapping-class}
 \end{figure}
 
