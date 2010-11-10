@@ -60,13 +60,14 @@ class rtp(pcs.Packet):
         p = pcs.Field("p", 1)		# padded
         x = pcs.Field("x", 1)		# extended
         cc = pcs.Field("cc", 4)		# csrc count
-        m = pcs.Field("m", 4)		# m-bit
+        m = pcs.Field("m", 1)		# m-bit
         pt = pcs.Field("pt", 7, discriminator=True)	# payload type
         seq = pcs.Field("seq", 16)	# sequence
+        ts = pcs.Field("ts", 32)        # timestamp
         ssrc = pcs.Field("ssrc", 32)	# source
         opt = pcs.OptionListField("opt")	# optional fields
 
-        pcs.Packet.__init__(self, [v, p, x, cc, m, pt, seq, ssrc, opt], \
+        pcs.Packet.__init__(self, [v, p, x, cc, m, pt, seq, ts, ssrc, opt], \
                             bytes = bytes, **kv)
         self.description = inspect.getdoc(self)
 
