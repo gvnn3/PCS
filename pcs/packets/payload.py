@@ -38,7 +38,6 @@
 import pcs
 
 from pprint import pformat
-import inspect
 import time
 
 class payload(pcs.Packet):
@@ -55,7 +54,7 @@ class payload(pcs.Packet):
         else:
             payload = pcs.StringField("payload", len(bytes) * 8)
         pcs.Packet.__init__(self, [payload], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "Payload"
         if timestamp is None:
             self.timestamp = time.time()
         else:

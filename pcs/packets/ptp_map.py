@@ -1,4 +1,4 @@
-# Copyright (c) 2008, Bruce M. Simpson.
+# Copyright (c) 2009, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -12,7 +12,7 @@
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 #
-# Neither the name of the author nor the names of other
+# Neither the name of Neville-Neil Consulting nor the names of its 
 # contributors may be used to endorse or promote products derived from 
 # this software without specific prior written permission.
 #
@@ -28,47 +28,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# File: $Id$
+# Author: George V. Neville-Neil
 #
-# Author: Bruce M. Simpson
-#
-# Description: A class which describe IGMPv1/v2 messages.
-#
+# Description: A file for mapping various PTP (IEEE-1588) headers
+# 
 
-import pcs
-import struct
-import time
+import ptp
 
-from pcs.packets import payload
-from socket import AF_INET, inet_ntop, inet_ntoa
+PTP_SYNC = 0
+PTP_DELAY_REQUEST = 1
+PTP_FOLLOWUP = 2
+PPT_DELAY_RESPONSE = 3
 
-#
-# IGMP protocol defaults.
-#
-IGMP_MAX_HOST_REPORT_DELAY = 10
-
-class igmpv2(pcs.Packet):
-    """IGMPv1/v2 message."""
-
-    layout = pcs.Layout()
-
-    def __init__(self, bytes = None, timestamp = None, **kv):
-        """initialize an IGMPv1/v2 header"""
-	group = pcs.Field("group", 32)
-        pcs.Packet.__init__(self, [group], bytes, **kv)
-        self.description = "initialize an IGMPv1/v2 header"
-
-        if timestamp is None:
-            self.timestamp = time.time()
-        else:
-            self.timestamp = timestamp
-
-        if bytes is not None:
-            offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
-        else:
-            self.data = None
-
-    def __str__(self):
-        """Walk the entire packet and pretty print the values of the fields."""
-        return "group %s\n" % inet_ntop(AF_INET, struct.pack('!L', self.group))
+map = { PTP_SYNC: ptp.Sync,
+        PTP_DELAY_REQUEST: ptp.DelayRequest,
+        PTP_FOLLOWUP: ptp.Followup,
+        PPT_DELAY_RESPONSE: ptp.DelayResponse}

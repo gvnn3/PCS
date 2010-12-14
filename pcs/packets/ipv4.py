@@ -40,7 +40,6 @@ from socket import AF_INET, inet_ntop
 import ipv4_map
 
 import struct
-import inspect
 import time
 
 #
@@ -131,7 +130,7 @@ class ipv4(pcs.Packet):
                              ttl, protocol, checksum, src, dst, options],
                             bytes = bytes, **kv)
         # Description MUST be set after the PCS layer init
-        self.description = inspect.getdoc(self)
+        self.description = "IPv4"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -268,8 +267,8 @@ class pseudoipv4(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [src, dst, reserved, protocol, length],
                             bytes = bytes)
-        # Description MUST be set after the PCS layer init
-        self.description = inspect.getdoc(self)
+        # Description MUST be set after the PCS layer init"For a pseudo header we only need the source and destination ddresses."
+        self.description = "IPv4 Pseudo Header"
         if timestamp is None:
             self.timestamp = time.time()
         else:

@@ -2,7 +2,6 @@ import pcs
 from socket import AF_INET, inet_ntop
 
 import struct
-import inspect
 import time
 
 import pcs.packets.ipv4
@@ -55,8 +54,7 @@ class igmp(pcs.Packet):
         code = pcs.Field("code", 8)
         checksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [type, code, checksum], bytes = bytes, **kv)
-        # Description MUST be set after the PCS layer init
-        self.description = inspect.getdoc(self)
+        self.description = "IGMP"
 
         if timestamp is None:
             self.timestamp = time.time()

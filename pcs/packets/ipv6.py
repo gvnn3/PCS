@@ -41,7 +41,6 @@ import ipv6_map
 
 import os
 from socket import AF_INET6, inet_ntop
-import inspect
 import time
 
 # extension header next header field.
@@ -72,7 +71,7 @@ class ipv6(pcs.Packet):
         pcs.Packet.__init__(self,
                             [version, traffic, flow, length, next_header, hop,
                              src, dst], bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IPv6"
         if timestamp is None:
             self.timestamp = time.time()
         else:

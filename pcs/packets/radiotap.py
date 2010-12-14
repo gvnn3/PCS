@@ -38,7 +38,6 @@ import pcs
 import pcs.packets.payload
 #import pcs.packets.ieee80211	#notyet
 
-import inspect
 import struct
 import time
 
@@ -204,7 +203,7 @@ class radiotap(pcs.Packet):
 
         pcs.Packet.__init__(self, [version, pad, len, present, tlvs], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "initialize an ethernet packet"
 
         if timestamp is None:
             self.timestamp = time.time()

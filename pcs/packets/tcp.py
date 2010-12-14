@@ -41,7 +41,6 @@ import tcp_map
 from pcs import UnpackError
 from pcs.packets import payload
 
-import inspect
 import time
 import struct
 
@@ -72,7 +71,7 @@ class tcp(pcs.Packet):
                                    urg, ack, psh, rst, syn, fin, window,
                                    checksum, urgp, options],
                             bytes = bytes,  **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "TCP"
         if timestamp is None:
             self.timestamp = time.time()
         else:

@@ -41,7 +41,6 @@ from pcs.packets import ipv6
 
 import localhost_map
 
-import inspect
 import time
 
 class localhost(pcs.Packet):
@@ -55,7 +54,7 @@ class localhost(pcs.Packet):
         lolen = 4
 
         pcs.Packet.__init__(self, [type], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "Localhost"
         if timestamp is None:
             self.timestamp = time.time()
         else:

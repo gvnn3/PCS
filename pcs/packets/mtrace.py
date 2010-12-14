@@ -46,7 +46,6 @@
 # tool in intent and use.
 #
 
-import inspect
 import pcs
 import struct
 import time
@@ -74,7 +73,7 @@ class query(pcs.Packet):
 				   receiver, response_addr, \
 				   response_hoplimit, query_id], bytes, **kv)
 
-        self.description = inspect.getdoc(self)
+        self.description = "initialize the MTRACE query header."
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -109,7 +108,7 @@ class reply(pcs.Packet):
 				   receiver, response_addr, \
 				   response_hoplimit, query_id], bytes, **kv)
 
-        self.description = inspect.getdoc(self)
+        self.description = "initialize the MTRACE response header."
 
         if timestamp is None:
             self.timestamp = time.time()

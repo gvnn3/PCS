@@ -36,7 +36,6 @@
 
 import pcs
 
-import inspect
 import time
 
 class null(pcs.Packet):
@@ -48,7 +47,7 @@ class null(pcs.Packet):
         null = pcs.StringField("null", 80*8)
         pcs.Packet.__init__(self, [null],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "NULL"
         if timestamp is None:
             self.timestamp = time.time()
         else:

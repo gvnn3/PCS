@@ -35,7 +35,6 @@
 # Description: Classes which describe IEEE 802.1q VLAN headers.
 #
 
-import inspect
 import struct
 import time
 
@@ -56,7 +55,7 @@ class vlan(pcs.Packet):
         vlan = pcs.Field("vlan", 12)
 
         pcs.Packet.__init__(self, [ type, p, cfi, vlan ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.1q VLAN header"
 
         if timestamp is None:
             self.timestamp = time.time()

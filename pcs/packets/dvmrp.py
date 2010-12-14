@@ -36,7 +36,6 @@
 # inside the payload of an IGMP type 0x13 message.
 #
 
-import inspect
 import pcs
 import struct
 import time
@@ -90,7 +89,7 @@ class dvmrp(pcs.Packet):
         pcs.Packet.__init__(self, [reserved00, capabilities,
 				   minor, major, options], bytes, **kv)
 
-        self.description = inspect.getdoc(self)
+        self.description = "initialize a header very similar to that of IGMPv1/v2"
 
         if timestamp is None:
             self.timestamp = time.time()

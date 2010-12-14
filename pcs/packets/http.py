@@ -37,7 +37,6 @@
 import pcs
 
 import time
-import inspect
 
 class http(pcs.Packet):
     """HTTP"""
@@ -53,7 +52,7 @@ class http(pcs.Packet):
             request = pcs.StringField("request", len(bytes)*8)
         pcs.Packet.__init__(self, [request],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "initialize a TCP packet"
         if timestamp is None:
             self.timestamp = time.time()
         else:

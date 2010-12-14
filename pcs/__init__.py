@@ -1022,7 +1022,7 @@ class Packet(object):
                 self._bitlength += field.width
             return
 
-        if (hasattr(self, '_fieldnames') and (name in self._fieldnames)):
+        if (name in self._fieldnames):
             field = self._fieldnames[name]
             if hasattr(field, 'bounds'):
                 field.bounds(value)
@@ -1971,6 +1971,8 @@ class PcapConnector(Connector):
             return packets.ethernet.ethernet(packet, timestamp)
         elif dlink == pcap.DLT_NULL:
             return packets.localhost.localhost(packet, timestamp)
+        elif dlink == pcap.DLT_RAW:
+            return packets.ipv4.ipv4(packet, timestamp)
         else:
             raise UnpackError, "Could not interpret packet"
                 

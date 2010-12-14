@@ -36,7 +36,7 @@
 import pcs
 import struct
 from socket import AF_INET, inet_ntop, inet_ntoa
-import time, inspect
+import time
 
 ARPHRD_ETHER = 1	# ethernet hardware format
 ARPHRD_IEEE802 = 6	# token-ring hardware format
@@ -70,7 +70,7 @@ class arp(pcs.Packet):
         
         pcs.Packet.__init__(self, [hrd, pro, hln, pln, op,
                                    sha, spa, tha, tpa], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "ARP"
         if timestamp is None:
             self.timestamp = time.time()
         else:

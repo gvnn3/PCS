@@ -1,4 +1,4 @@
-#!/usr/bin/env python26
+#!/usr/bin/env python
 # Copyright (c) 2006, Neville-Neil Consulting
 # All rights reserved.
 #
@@ -35,6 +35,9 @@
 #
 # Description: Walk through an entire pcap dump file and give out
 # information along the lines of netstat(1) on FreeBSD.
+#
+# This is also used for performance tests on PCS itself by
+# using the profiler options.
 
 import cProfile
 import time
@@ -43,20 +46,8 @@ from socket import inet_ntoa
 
 import sys
 
-if __name__ == '__main__':
+do_profiling = False
 
-    if "-l" in sys.argv:
-        sys.path.insert(0, "../") # Look locally first
-        sys.argv.remove("-l") # Needed because unittest has issues
-                              # with extra arguments.
-    import pcs
-    from pcs import PcapConnector
-    from pcs.packets.udp import *
-    from pcs.packets.tcp import *
-    from pcs.packets.ipv4 import *
-    from pcs.packets.icmpv4 import *
-    from pcs.packets.ethernet import *
-    from pcs.packets.arp import *
 
 def main():
 
@@ -72,6 +63,10 @@ def main():
     parser.add_option("-u", "--per-microsecond",
                       dest="ppu", default=None,
                       help="generate a graph of packets and bytes per microsecond")
+    parser.add_option("-P", "--profile",
+                      dest="profile", default=False,
+                      help="run the code profiler")
+    
     (options, args) = parser.parse_args()
 
     # Files are specified as the remaining arguments.
@@ -207,7 +202,36 @@ def main():
                                           packets_per[useconds][1]))
                 file.write(data)
             
+        if do_profiling == True:
+            import pstats
+            p = pstats.Stats('pcap_info.prof')
+            p.sort_stats('name')
+            p.print_stats()
+
+            p.sort_stats('cumulative').print_stats(10)
+
+            p.sort_stats('time').print_stats(10)
 
 
-#cProfile.run('main()', "foo.prof")
-main()
+if __name__ == '__main__':
+
+    if "-l" in sys.argv:
+        sys.path.insert(0, "../") # Look locally first
+        sys.argv.remove("-l") # Needed because unittest has issues
+                              # with extra arguments.
+    import pcs
+    from pcs import PcapConnector
+    from pcs.packets.udp import *
+    from pcs.packets.tcp import *
+    from pcs.packets.ipv4 import *
+    from pcs.packets.icmpv4 import *
+    from pcs.packets.ethernet import *
+    from pcs.packets.arp import *
+
+    # Are we profiling?
+    if "-P" in sys.argv:
+        sys.argv.remove("-P") 
+        do_profiling = True
+        cProfile.run('main()', "pcap_info.prof")
+    else:
+        main()

@@ -35,7 +35,6 @@
 # Description: Classes which describe Multiprotocol Label Switching (MPLS)
 #
 
-import inspect
 import struct
 import time
 
@@ -99,7 +98,7 @@ class ldpmsg(pcs.Packet):
 
         pcs.Packet.__init__(self, [ u, type, length, id, mparams, oparams ], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 3036 LDP message header "
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -127,7 +126,7 @@ class ldphdr(pcs.Packet):
 
         pcs.Packet.__init__(self, [ version, length, id ], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 3036 LDP packet header "
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -155,7 +154,7 @@ class lse(pcs.Packet):
         ttl = pcs.Field("ttl", 8)
 
         pcs.Packet.__init__(self, [ label, exp, s, ttl ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 3032 MPLS label stack entry"
 
         if timestamp is None:
             self.timestamp = time.time()
