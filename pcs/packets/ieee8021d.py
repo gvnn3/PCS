@@ -35,7 +35,6 @@
 # Description: Classes which describe IEEE 802.1d and GARP headers.
 #
 
-import inspect
 import struct
 import time
 
@@ -78,7 +77,7 @@ class garp(pcs.Packet):
         attributes = pcs.OptionListField("attributes")
 
         pcs.Packet.__init__(self, [ attributes ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.1d GARP PDU"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -119,7 +118,7 @@ class stp(pcs.Packet):
         pcs.Packet.__init__(self, [ version, type, flags, root, \
                                     cost, src, pid, age, maxage, interval, \
                                     delay ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.1d STP PDU"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -163,7 +162,7 @@ class bpdu(pcs.Packet):
         protocol = pcs.Field("protocol", 16, discriminator=True)
 
         pcs.Packet.__init__(self, [ protocol ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.1d bridge PDU header"
 
         if timestamp is None:
             self.timestamp = time.time()

@@ -35,7 +35,6 @@
 # Description: Classes which describe BSD routing socket messages.
 #
 
-import inspect
 import struct
 import time
 
@@ -222,7 +221,7 @@ class if_link_msg(pcs.Packet):
 
         pcs.Packet.__init__(self, [addrs, flags, index, pad00, ifdata], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- link-state message (if_msghdr)"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -263,7 +262,7 @@ class if_addr_msg(pcs.Packet):
 
         pcs.Packet.__init__(self, [addrs, flags, index, pad00, metric], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- protocol address message (ifa_msghdr) "
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -289,7 +288,7 @@ class if_maddr_msg(pcs.Packet):
         index = pcs.Field("index", 16)
 
         pcs.Packet.__init__(self, [addrs, flags, index], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- multicast group message (ifma_msghdr) "
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -315,7 +314,7 @@ class if_state_msg(pcs.Packet):
         what = pcs.Field("what", 16)
 
         pcs.Packet.__init__(self, [index, name, what], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- interface-state message (if_announcemsghdr)"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -340,7 +339,7 @@ class ieee80211_join_event(pcs.Packet):
     def __init__(self, bytes = None, timestamp = None, **kv):
         address = pcs.Field("address", 6 * 8)
         pcs.Packet.__init__(self, [address], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- IEEE 802.11 join event"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -359,7 +358,7 @@ class ieee80211_leave_event(pcs.Packet):
     def __init__(self, bytes = None, timestamp = None, **kv):
         address = pcs.Field("address", 6 * 8)
         pcs.Packet.__init__(self, [address], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- IEEE 802.11 leave event"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -384,7 +383,7 @@ class ieee80211_replay_event(pcs.Packet):
         rsc = pcs.Field("rsc", 64)
         pcs.Packet.__init__(self, [src, dst, cipher, keyid, keyix, rsc], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- IEEE 802.11 replay event"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -407,7 +406,7 @@ class ieee80211_michael_event(pcs.Packet):
         keyix = pcs.Field("keyrsc", 64)
         pcs.Packet.__init__(self, [src, dst, cipher, keyix], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- IEEE 802.11 MICHAEL failure event"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -455,7 +454,7 @@ class if_ieee80211_msg(pcs.Packet):
         what = pcs.Field("what", 16, discriminator=True)
 
         pcs.Packet.__init__(self, [index, name, what], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "BSD Routing socket -- IEEE 802.11 state messages (if_announcemsghdr)"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -503,7 +502,7 @@ class rt_msg(pcs.Packet):
 
         pcs.Packet.__init__(self, [index, flags, addrs, pid, seq, errno, \
                                    fmask, inits], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = " Define the common rtmsg header; see <net/route.h>. "
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -590,7 +589,7 @@ class rtmsghdr(pcs.Packet):
 
         pcs.Packet.__init__(self, [msglen, version, type, pad0], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = " Define the common rtmsg header; see <net/route.h>. "
 
         if timestamp is None:
             self.timestamp = time.time()

@@ -39,7 +39,6 @@ import struct
 import pcs.packets.ipv4
 from pcs.packets.pseudoipv6 import *
 
-import inspect
 import time
 
 class tcpv6(pcs.Packet):
@@ -66,7 +65,7 @@ class tcpv6(pcs.Packet):
         pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
                                    urg, ack, psh, rst, syn, fin, window, cksum, urgptr],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "initialize a TCP packet for IPv6"
         if timestamp is None:
             self.timestamp = time.time()
         else:

@@ -38,7 +38,6 @@
 import pcs
 import struct
 import time
-import inspect
 
 from pcs.packets import payload
 from socket import AF_INET, inet_ntop, inet_ntoa
@@ -57,7 +56,7 @@ class igmpv2(pcs.Packet):
         """initialize an IGMPv1/v2 header"""
 	group = pcs.Field("group", 32)
         pcs.Packet.__init__(self, [group], bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "initialize an IGMPv1/v2 header"
 
         if timestamp is None:
             self.timestamp = time.time()

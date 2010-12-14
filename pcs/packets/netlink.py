@@ -35,7 +35,6 @@
 # Description: Classes which describe RFC 3549 Netlink socket messages.
 #
 
-import inspect
 import struct
 import time
 
@@ -95,7 +94,7 @@ class nlmsg_error(pcs.Packet):
         error = pcs.Field("error", 32)
 
         pcs.Packet.__init__(self, [error], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "If type is NLMSG_ERROR, original message generating error is returned as payload with error code prepended, just like ICMP."
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -151,7 +150,7 @@ class nlmsghdr(pcs.Packet):
 
         pcs.Packet.__init__(self, [len, type, flags, seq, pid], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = " Define the common Netlink message header."
 
         if timestamp is None:
             self.timestamp = time.time()

@@ -37,7 +37,6 @@
 
 import pcs
 
-import inspect
 import time
 
 class ah(pcs.Packet):
@@ -56,7 +55,7 @@ class ah(pcs.Packet):
         pcs.Packet.__init__(self,
                             [next, plen, rsvrd, spi, seq, auth],
                             bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "initialize an AH packet header"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -81,7 +80,7 @@ class esp(pcs.Packet):
                             [spi, seq, payload, padding, padlen, next_header,
                              auth],
                             bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "initialize an ESP packet header"
         if timestamp is None:
             self.timestamp = time.time()
         else:

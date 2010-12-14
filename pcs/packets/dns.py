@@ -36,7 +36,6 @@
 
 import pcs
 
-import inspect
 import time
 
 class dnsheader(pcs.Packet):
@@ -77,7 +76,7 @@ class dnsheader(pcs.Packet):
                              rcode, qdcount, ancount, nscount, arcount],
                             bytes = bytes, **kv)
 
-        self.description = inspect.getdoc(self)
+        self.description = "Define the fields of a DNS (RFC 1035) header"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -111,7 +110,7 @@ class dnslabel(pcs.Packet):
                             [name],
                             bytes = bytes)
         
-        self.description = inspect.getdoc(self)
+        self.description = "DNS Label"
 
 class dnsquery(pcs.Packet):
     """DNS Query"""
@@ -126,7 +125,7 @@ class dnsquery(pcs.Packet):
                             [type, qclass],
                             bytes = bytes)
         
-        self.description = inspect.getdoc(self)
+        self.description = "initialize a DNS query packet, which is a query for information"
 
 #
 # XXX 'name' should actually be a label-or-pointer-sequence.

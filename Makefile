@@ -3,11 +3,11 @@
 #
 # Makefile for building distributions of PCS.  
 
-#PYTHON	= python2.6    #
-#CYTHON  = cython-2.6   # These versions are set for Mac OS Only
+PYTHON	= python2.6    #
+CYTHON  = cython-2.6   # These versions are set for Mac OS Only
 
-PYTHON	= python
-CYTHON  = cython
+#PYTHON	= python
+#CYTHON  = cython
 
 all: 
 	$(PYTHON) setup.py config

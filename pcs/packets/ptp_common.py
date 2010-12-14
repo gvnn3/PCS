@@ -34,7 +34,6 @@
 
 import pcs
 import ptp_map
-import inspect
 import time
 
 PTP_SUBDOMAIN_NAME_LENGTH = 16
@@ -68,7 +67,7 @@ class Common(pcs.Packet):
                                    control, zero1, flags, zero2],
                             bytes = bytes, **kv)
 
-        self.description = inspect.getdoc(self)
+        self.description = "initialize the common header "
 
         if timestamp is None:
             self.timestamp = time.time()

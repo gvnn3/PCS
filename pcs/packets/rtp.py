@@ -35,7 +35,6 @@
 # Description: Classes which describe RFC 3550 RTP packets.
 #
 
-import inspect
 import struct
 import time
 
@@ -68,7 +67,7 @@ class rtp(pcs.Packet):
 
         pcs.Packet.__init__(self, [v, p, x, cc, m, pt, seq, ssrc, opt], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 3550 Real Time Protocol"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -125,7 +124,7 @@ class rtcp(pcs.Packet):
 
         pcs.Packet.__init__(self, [v, p, rc, pt, length, ssrc], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 3550 Real Time Control Protocol header"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -156,7 +155,7 @@ class sender(pcs.Packet):
 
         pcs.Packet.__init__(self, [ntpts, rtpts, spkts, sbytes, opt],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 3550 Real Time Control Protocol sender message portion"
 
         if timestamp is None:
             self.timestamp = time.time()

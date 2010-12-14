@@ -40,7 +40,6 @@ import pcs.packets.ipv4
 from pcs.packets.ipv6 import ipv6
 from pcs.packets.arp import arp
 
-import inspect
 import time
 
 def ETHER_IS_MULTICAST(e):
@@ -65,7 +64,7 @@ class ethernet(pcs.Packet):
         type = pcs.Field("type", 16, discriminator=True)
 
         pcs.Packet.__init__(self, [dst, src, type], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "Ethernet"
 
         if timestamp is None:
             self.timestamp = time.time()

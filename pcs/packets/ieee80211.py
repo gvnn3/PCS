@@ -35,7 +35,6 @@
 # Description: Classes which describe IEEE 802.11 headers.
 #
 
-import inspect
 import struct
 import time
 
@@ -213,7 +212,7 @@ class frame(pcs.Packet):
 
         pcs.Packet.__init__(self, [fc, dur, addr1, addr2, addr3, seq, opt], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.11 frame header"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -296,7 +295,7 @@ class plcp(pcs.Packet):
 
         pcs.Packet.__init__(self, [sfd, signal, service, length, crc], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.11 PLCP"
 
         if timestamp is None:
             self.timestamp = time.time()

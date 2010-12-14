@@ -35,7 +35,6 @@
 # Description: RFC 4271 Border Gateway Protocol version 4
 #
 
-import inspect
 import struct
 import time
 
@@ -73,7 +72,7 @@ class notification(pcs.Packet):
         opt = pcs.OptionListField("opt")
 
         pcs.Packet.__init__(self, [ code, subcode, opt ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 4271 BGP NOTIFICATION message."
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -106,7 +105,7 @@ class update(pcs.Packet):
 
         pcs.Packet.__init__(self, [ nwithdrawn, withdrawn, npathattrs, \
                                     pathattrs, nlri ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 4271 BGP UPDATE message."
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -142,7 +141,7 @@ class open(pcs.Packet):
         pcs.Packet.__init__(self, \
                             [ version, asnum, holdtime, id, optlen, opt], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 4271 BGP OPEN message."
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -185,7 +184,7 @@ class header(pcs.Packet):
         type = pcs.Field("type", 8, discriminator=True)
 
         pcs.Packet.__init__(self, [ marker, length, type ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 4271 BGP message header."
 
         if timestamp is None:
             self.timestamp = time.time()

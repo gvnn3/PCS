@@ -1022,7 +1022,7 @@ class Packet(object):
                 self._bitlength += field.width
             return
 
-        if (hasattr(self, '_fieldnames') and (name in self._fieldnames)):
+        if (name in self._fieldnames):
             field = self._fieldnames[name]
             if hasattr(field, 'bounds'):
                 field.bounds(value)

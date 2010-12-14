@@ -1,11 +1,12 @@
 #
-# bpf.pyx
+# clock.pyx
 #
 # $Id$
 
 """Clock module
 
-This module provides a Python front-end for POSIX clocks.
+This module provides a Python front-end for POSIX clocks as well
+as conversion functions for timespecs to datetime
 """
 
 __author__ = 'Bruce M. Simpson <bms@incunabulum.net>'
@@ -86,6 +87,27 @@ def getres(clockid_t clock_id):
         if rc != 0:
             return None
         result = _timespec_to_double(&t)
+        return result
+
+
+cdef class TimeSpec:
+    """timespec(seconds, nanoseconds) -> timespec object
+
+    seconds     --  seconds since the epoch
+    nanoseconds --  nanoseconds since the last second
+
+    """
+    cdef timespec ts
+    def __init__(self, seconds, nanoseconds):
+        self.ts.tv_sec = seconds
+        self.ts.tv_nsec = nanoseconds
+
+    def __repr__(self):
+        return "<TimeSpec seconds: %d, nanoseconds: %d>" % \
+               (self.ts.tv_sec, self.ts.tv_nsec)
+    
+    def toDouble(self):
+        result = _timespec_to_double(&self.ts)
         return result
 
 # This looks gnarly. We need to preserve the precision of the POSIX

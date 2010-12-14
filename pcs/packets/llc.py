@@ -35,7 +35,6 @@
 # Description: Classes which describe IEEE 802.2 LLC/SNAP headers.
 #
 
-import inspect
 import struct
 import time
 
@@ -92,7 +91,7 @@ class llc(pcs.Packet):
         opt = pcs.OptionListField("opt")
 
         pcs.Packet.__init__(self, [dsap, ssap, opt], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.2 LLC"
 
         if timestamp is None:
             self.timestamp = time.time()

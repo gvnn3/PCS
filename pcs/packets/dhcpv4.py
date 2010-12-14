@@ -39,7 +39,6 @@
 import sys
 sys.path.append("../src")
 
-import inspect
 import pcs
 import struct
 import time
@@ -100,7 +99,7 @@ class dhcpv4(pcs.Packet):
                                    ciaddr, yiaddr, siaddr, giaddr, \
                                    chaddr, sname, file, options], \
 			    bytes = bytes, **kv)
-	self.description = inspect.getdoc(self)
+	self.description = "Initialize a DHCPv4 packet. "
 
         if timestamp is None:
             self.timestamp = time.time()

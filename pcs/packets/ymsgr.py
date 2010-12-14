@@ -36,7 +36,6 @@
 
 import pcs
 
-import inspect
 import time
 
 # ymsg packet = { int magic = "YMSG", short version, short id, short
@@ -67,7 +66,7 @@ class ymsg_hdr(pcs.Packet):
         pcs.Packet.__init__(self,
                             [version, id, length, command, status, session],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "Define the fields for a Yahoo Messenger header"
         if timestamp is None:
             self.timestamp = time.time()
         else:

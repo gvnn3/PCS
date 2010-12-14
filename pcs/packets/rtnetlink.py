@@ -36,7 +36,6 @@
 #              for the NETLINK_ROUTE group.
 #
 
-import inspect
 import struct
 import time
 
@@ -474,7 +473,7 @@ class ifaddrmsg(pcs.Packet):
 
         pcs.Packet.__init__(self, [family, prefixlen, flags, scope, index],\
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 3549 interface address message."
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -518,7 +517,7 @@ class ifinfomsg(pcs.Packet):
 
         pcs.Packet.__init__(self, [family, pad00, type, index, flags, change],\
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "RFC 3549 interface information message."
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -559,7 +558,7 @@ class prefixmsg(pcs.Packet):
         pcs.Packet.__init__(self, [family, pad1, pad2, ifindex, type, \
                                    len, flags, pad3], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = " Define the common RTNetlink message header."
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -602,7 +601,7 @@ class rtmsg(pcs.Packet):
         pcs.Packet.__init__(self, [family, dst_len, src_len, tos, table, \
                                    protocol, scope, type, flags], \
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = " Define the common RTNetlink message header."
 
         if timestamp is None:
             self.timestamp = time.time()

@@ -37,7 +37,6 @@
 import pcs
 import udp_map
 
-import inspect
 import socket
 import time
 
@@ -56,7 +55,7 @@ class udp(pcs.Packet):
         checksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [sport, dport, length, checksum],
                             bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "initialize a UDP packet"
         if timestamp is None:
             self.timestamp = time.time()
         else:

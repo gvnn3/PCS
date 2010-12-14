@@ -41,6 +41,6 @@ PTP_FOLLOWUP = 2
 PPT_DELAY_RESPONSE = 3
 
 map = { PTP_SYNC: ptp.Sync,
-        PTP_DELAY_REQUEST: ptp.Sync,
+        PTP_DELAY_REQUEST: ptp.DelayRequest,
         PTP_FOLLOWUP: ptp.Followup,
         PPT_DELAY_RESPONSE: ptp.DelayResponse}

@@ -35,7 +35,6 @@
 # Description: Classes which describe IEEE 802.3ad Slow Protocols.
 #
 
-import inspect
 import struct
 import time
 
@@ -116,7 +115,7 @@ class lacp(pcs.Packet):
         tlvs = pcs.OptionListField("tlvs")
 
         pcs.Packet.__init__(self, [ tlvs ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.3ad Slow Protocols -- LACP"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -155,7 +154,7 @@ class marker(pcs.Packet):
 
         pcs.Packet.__init__(self, [ it, il, port, system, xid, pad, \
                                     tt, tl, resv ], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.3ad Slow Protocols -- Marker"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -186,7 +185,7 @@ class slowhdr(pcs.Packet):
         version = pcs.Field("version", 8)
 
         pcs.Packet.__init__(self, [subtype, version], bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "IEEE 802.3ad Slow Protocols -- common header"
 
         if timestamp is None:
             self.timestamp = time.time()

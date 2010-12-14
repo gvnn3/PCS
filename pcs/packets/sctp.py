@@ -41,7 +41,6 @@ import pcs
 import pcs.packets.crc32c
 import pcs.packets.sctp_map
 
-import inspect
 import time
 
 # TODO: Add calc_length() methods.
@@ -60,7 +59,7 @@ class common(pcs.Packet):
         checksum = pcs.Field("checksum", 32)
         pcs.Packet.__init__(self, [sport, dport, tag, checksum],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -105,7 +104,7 @@ class payload(pcs.Packet):
                             [type, reserved, unordered, beginning, ending, 
                              length, tsn, stream_im, stream_seq, ppi],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -140,7 +139,7 @@ class init(pcs.Packet):
                                    adv_recv_win_cred, outbound_streams,
                                    inbound_streams, initial_tsn],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "init or init ack chunk"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -173,7 +172,7 @@ class sack(pcs.Packet):
                                    gap_ack_blocks,
                                    duplicate_tsns],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -198,7 +197,7 @@ class heartbeat(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -224,7 +223,7 @@ class abort(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, reserved, tag, length],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -250,7 +249,7 @@ class shutdown(pcs.Packet):
         cumulative_tsn = pcs.Field("cumulative_tsn", 32)
         pcs.Packet.__init__(self, [type, flags, length, cumulative_tsn],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -275,7 +274,7 @@ class shutdown_ack(pcs.Packet):
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -300,7 +299,7 @@ class operation_error(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -325,7 +324,7 @@ class cookie_echo(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -350,7 +349,7 @@ class cookie_ack(pcs.Packet):
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -375,7 +374,7 @@ class shutdown_complete(pcs.Packet):
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, reserved, tag, length],
                             bytes = bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
         else:

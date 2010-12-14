@@ -35,7 +35,6 @@
 # Description: Classes which describe IGMPv3 messages.
 #
 
-import inspect
 import pcs
 import struct
 import time
@@ -90,7 +89,7 @@ class query(pcs.Packet):
         pcs.Packet.__init__(self, [group, reserved00, sbit, qrv, qqic,
 				   nsrc, srcs], bytes = bytes, **kv)
 
-	self.description = inspect.getdoc(self)
+	self.description = "initialize an IGMPv3 query"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -341,7 +340,7 @@ class report(pcs.Packet):
 	records = pcs.OptionListField("records")
 
         pcs.Packet.__init__(self, [reserved00, nrecords, records], bytes, **kv)
-        self.description = inspect.getdoc(self)
+        self.description = "initialize an IGMPv3 report header"
 
         if timestamp is None:
             self.timestamp = time.time()
