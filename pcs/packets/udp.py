@@ -55,7 +55,7 @@ class udp(pcs.Packet):
         checksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [sport, dport, length, checksum],
                             bytes, **kv)
-        self.description = "initialize a UDP packet"
+        self.description = "UDP"
         if timestamp is None:
             self.timestamp = time.time()
         else:

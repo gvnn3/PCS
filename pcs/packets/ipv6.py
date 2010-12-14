@@ -71,7 +71,7 @@ class ipv6(pcs.Packet):
         pcs.Packet.__init__(self,
                             [version, traffic, flow, length, next_header, hop,
                              src, dst], bytes, **kv)
-        self.description = "IPv6 Packet from RFC 2460"
+        self.description = "IPv6"
         if timestamp is None:
             self.timestamp = time.time()
         else:

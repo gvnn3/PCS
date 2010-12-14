@@ -54,7 +54,7 @@ class localhost(pcs.Packet):
         lolen = 4
 
         pcs.Packet.__init__(self, [type], bytes = bytes, **kv)
-        self.description = "initialize a localhost header, needed to read or write to lo0"
+        self.description = "Localhost"
         if timestamp is None:
             self.timestamp = time.time()
         else:

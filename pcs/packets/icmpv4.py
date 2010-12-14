@@ -111,7 +111,7 @@ class icmpv4echo(pcs.Packet):
         id = pcs.Field("id", 16)
         seq = pcs.Field("sequence", 16)
         pcs.Packet.__init__(self, [id, seq], bytes, **kv)
-        self.description = "initialize an ICMPv4 echo packet, used by ping(8) and others"
+        self.description = "ICMPv4 Echo"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -150,7 +150,7 @@ class icmpv4(pcs.Packet):
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [type, code, cksum], bytes, **kv)
-        self.description = "initialize a ICMPv4 packet"
+        self.description = "ICMPv4"
 
         if timestamp is None:
             self.timestamp = time.time()

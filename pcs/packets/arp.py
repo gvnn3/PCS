@@ -36,7 +36,7 @@
 import pcs
 import struct
 from socket import AF_INET, inet_ntop, inet_ntoa
-import time, inspect
+import time
 
 ARPHRD_ETHER = 1	# ethernet hardware format
 ARPHRD_IEEE802 = 6	# token-ring hardware format

@@ -59,7 +59,7 @@ class common(pcs.Packet):
         checksum = pcs.Field("checksum", 32)
         pcs.Packet.__init__(self, [sport, dport, tag, checksum],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP common header class"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -104,7 +104,7 @@ class payload(pcs.Packet):
                             [type, reserved, unordered, beginning, ending, 
                              length, tsn, stream_im, stream_seq, ppi],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP payload chunk class"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -139,7 +139,7 @@ class init(pcs.Packet):
                                    adv_recv_win_cred, outbound_streams,
                                    inbound_streams, initial_tsn],
                             bytes = bytes, **kv)
-        self.description = "init or init ack chunk"
+        self.description = "SCTP init or init ack chunk"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -197,7 +197,7 @@ class heartbeat(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP heartbeat chunk"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -223,7 +223,7 @@ class abort(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, reserved, tag, length],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP abort chunk"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -249,7 +249,7 @@ class shutdown(pcs.Packet):
         cumulative_tsn = pcs.Field("cumulative_tsn", 32)
         pcs.Packet.__init__(self, [type, flags, length, cumulative_tsn],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP shutdown chunk"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -274,7 +274,7 @@ class shutdown_ack(pcs.Packet):
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP Shutdown ACK Chunk"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -299,7 +299,7 @@ class operation_error(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP operation error chunk"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -324,7 +324,7 @@ class cookie_echo(pcs.Packet):
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP Cookie Echo Chunk"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -349,7 +349,7 @@ class cookie_ack(pcs.Packet):
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, flags, length],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCP Cookie ACK"
         if timestamp is None:
             self.timestamp = time.time()
         else:
@@ -362,7 +362,7 @@ class cookie_ack(pcs.Packet):
             self.data = None
 
 class shutdown_complete(pcs.Packet):
-    """SCTP Shutodwn Complete"""
+    """SCTP Shutdown Complete"""
 
     _layout = pcs.Layout()
     
@@ -374,7 +374,7 @@ class shutdown_complete(pcs.Packet):
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, reserved, tag, length],
                             bytes = bytes, **kv)
-        self.description = "common header initialization"
+        self.description = "SCTP Shutdown Complete"
         if timestamp is None:
             self.timestamp = time.time()
         else:

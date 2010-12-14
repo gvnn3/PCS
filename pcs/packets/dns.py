@@ -161,4 +161,4 @@ class dnsrr(pcs.Packet):
                             [name, type, qclass, ttl, rdata],
                             bytes = bytes)
         
-        self.description = inspect.getdoc(self)
+        self.description = "DNS Resource Record"
