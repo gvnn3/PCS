@@ -202,17 +202,6 @@ def main():
                                           packets_per[useconds][1]))
                 file.write(data)
             
-        if do_profiling == True:
-            import pstats
-            p = pstats.Stats('pcap_info.prof')
-            p.sort_stats('name')
-            p.print_stats()
-
-            p.sort_stats('cumulative').print_stats(10)
-
-            p.sort_stats('time').print_stats(10)
-
-
 if __name__ == '__main__':
 
     if "-l" in sys.argv:
