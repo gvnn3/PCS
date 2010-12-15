@@ -8,51 +8,30 @@
 %% This is a stripped version fo the original file.
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{codespelunking}
+\CustomVerbatimCommand{\class}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\constant}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\enum}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\field}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\file}{Verb}{fontfamily=helvetica}
+\CustomVerbatimCommand{\fullpath}{Verb}{fontfamily=helvetica}
+\CustomVerbatimCommand{\function}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\interface}{Verb}{fontfamily=helvetica}
+\CustomVerbatimCommand{\keyword}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\lbl}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\macro}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\method}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\object}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\parameter}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\program}{Verb}{fontfamily=helvetica}
+\CustomVerbatimCommand{\struct}{Verb}{fontfamily=courier}
+\CustomVerbatimCommand{\subsystem}{Verb}{fontfamily=helvetica}
+\CustomVerbatimCommand{\variable}{Verb}{fontfamily=courier}
 \newcommand\rtn{%
   \texttt}
 \newcommand\filertn{%
   \texttt}
 \newcommand\filelinertn{%
   \texttt}
-\newcommand\file{%
-  \texttt}
-\newcommand\program{%
-  \texttt}
-\newcommand\fullpath{%
-  \texttt}
-
-\newenvironment{class}{%
-  \textsc}
-{\textnormal}
-
-\newenvironment{object}{%
-  \textsc}
-{\textnormal}
-
-\newenvironment{method}{%
-  \textsf}
-{\textnormal}
-\newenvironment{function}{%
-  \texttt}
-{\textnormal}
-\newenvironment{macro}{%
-  \texttt}
-{\textnormal}
-\newenvironment{field}{%
-  \texttt}
-{\textnormal}
-\newenvironment{constant}{%
-  \texttt}
-{\textnormal}
-\newenvironment{variable}{%
-  \texttt}
-{\textnormal}
-\newenvironment{struct}{%
-  \texttt}
-{\textnormal}
-\newenvironment{parameter}{%
-  \texttt}
-{\textnormal}
 \newenvironment{demo}
     {\begin{alltt}\begin{small}}
     {\end{small}\end{alltt}}

@@ -1208,7 +1208,7 @@ class Packet(object):
         while not done:
             packet._head = chain
             chain.append(packet)
-            if packet.data is not None:
+            if packet.data not in [None, packet]:
                 packet = packet.data
             else:
                 done = True
@@ -2568,25 +2568,20 @@ class SCTP6Connector(IP6Connector):
 
 ###
 ### Convenience functions and adjuncts to certain probelmatic bits of Python
-### network code.
+### network code.  (These versions from Zach Riggle)
 ###
 
-def inet_atol(string):
-    """convert an ascii IPv4 address into a Long"""
-    from socket import inet_aton
-    value = 0
-    addr = inet_aton(string)
-    for i in xrange(4):
-        value += ord(addr[i]) << (3 - i) * 8
-    return value
+def inet_lton(integer):
+    return struct.pack(">L",integer)
 
-def inet_ltoa(l):
-    """convert a long IPv4 address into a string"""
-    value = ""
-    for i in xrange(4):
-        value = str(l & 0xFF) + "." + value
-        l >>= 8
-    return value[:-1]
+def inet_ltoa(integer):
+    return socket.inet_ntoa(inet_lton(integer))
+
+def inet_ntol(byteString):
+    return struct.unpack(">L",byteString)[0]
+
+def inet_atol(ipString):
+    return inet_ntol(inet_aton(ipString))
 
 def bsprintf(flags, fmt):
     """Return a formatted list of flag names.

@@ -39,8 +39,9 @@ import struct
 import time
 
 import pcs
-import pcs.packets.ethernet_map
+import pcs.packets.ethernet
 import pcs.packets.payload
+import ethernet_map
 
 class vlan(pcs.Packet):
     """IEEE 802.1q VLAN header"""
