@@ -1208,7 +1208,7 @@ class Packet(object):
         while not done:
             packet._head = chain
             chain.append(packet)
-            if packet.data is not None:
+            if packet.data not in [None, packet]:
                 packet = packet.data
             else:
                 done = True
