@@ -47,6 +47,10 @@ def main():
                       dest="file", default=None,
                       help="tcpdump file to read from")
 
+    parser.add_option("-s", "--streams",
+                      dest="streams", default=False,
+                      help="print out streams in format easily consumed by other scripts")
+
     (options, args) = parser.parse_args()
 
     file = pcs.PcapConnector(options.file)
@@ -86,7 +90,13 @@ def main():
     print "Analyzed %d packets, found %d connections:" % (packets,
                                                           len(connection_map))
     for connection in connection_map:
-        print connection
+        if (options.streams):
+            print "-s %s -S %d -d %s -D %d" % (connection[0],
+                                               connection[2],
+                                               connection[1],
+                                               connection[3])
+        else:
+            print connection
 
 
 # The canonical way to make a python module into a script.
