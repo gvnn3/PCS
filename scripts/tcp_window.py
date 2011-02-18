@@ -73,7 +73,7 @@ def main():
                       help="destination TCP port")
 
     parser.add_option("-g", "--graph",
-                      dest="graph", default="graph", 
+                      dest="graph", default=None, 
                       help="graph the window size changes over time")
 
     parser.add_option("-B", "--batch",
