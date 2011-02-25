@@ -100,9 +100,6 @@ def main():
 
         connection_map[quad].write(data)
 
-    for connection in connection_map:
-        connection.close()
-
 # The canonical way to make a python module into a script.
 # Remove if unnecessary.
  
