@@ -88,6 +88,7 @@ def main():
             try:
                 packet = file.readpkt()
             except:
+                raise
                 done = True
 
             packets += 1
