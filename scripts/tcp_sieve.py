@@ -37,7 +37,14 @@
 import pcs
 from pcs.packets.ipv4 import *
 from socket import inet_ntoa, inet_aton, ntohl,  IPPROTO_TCP
+import signal
 
+def progress(signum, frame):
+    """A signal handler so we can see how far we've gotten
+    through the file."""
+    global packets
+    print "Processed %d packets" % packets
+    
 def main():
 
     from optparse import OptionParser
@@ -56,10 +63,14 @@ def main():
     timestamp = None
 
     connection_map = {}
-    packets = 0
     in_network = 0
 
     win_prev = 0
+    
+    # Set up our signal handler
+    global packets
+    packets = 0
+    signal.signal(signal.SIGINFO, progress)
     
     while not done:
         try:
