@@ -87,8 +87,9 @@ def main():
         
         connection_map.append(quad)
 
-    print "Analyzed %d packets, found %d connections:" % (packets,
-                                                          len(connection_map))
+    if (options.streams == False):
+        print "Analyzed %d packets, found %d connections:" % (packets,
+                                                              len(connection_map))
     for connection in connection_map:
         if (options.streams):
             print "-s %s -S %d -d %s -D %d" % (connection[0],
