@@ -31,9 +31,45 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A program using PCS to analyze a tcpdump file and 
+# Description: A program using PCS to analyze a pcap file and 
 # split out all TCP conversations into their own file.
 
+"""
+tcp_sieve.py
+
+A program using PCS to analyze a pcap file and split out all TCP
+conversations into their own files.
+
+-f, --file: pcap file to read from
+
+Each conversation is broken out into a separate file, named with the
+IP source and destination address as well as the source and
+destination port.
+
+Example
+
+Using this command on our test file:
+
+./tcp_sieve.py  -f 10000packets.out
+
+generates the following separate files:
+
+tcp-192.168.1.119-49707-119.31.250.52-80.pcap
+tcp-93.184.216.229-80-192.168.1.119-49706.pcap
+tcp-192.168.1.119-49706-93.184.216.229-80.pcap
+tcp-72.14.204.103-80-192.168.1.119-49705.pcap
+tcp-66.102.13.100-80-192.168.1.119-49704.pcap
+tcp-192.168.1.119-49705-72.14.204.103-80.pcap
+tcp-72.14.204.104-80-192.168.1.119-49703.pcap
+tcp-192.168.1.119-49704-66.102.13.100-80.pcap
+tcp-192.168.1.119-49703-72.14.204.104-80.pcap
+
+etc.
+
+See Also
+PCS, tcp_streams.py
+
+"""
 import pcs
 from pcs.packets.ipv4 import *
 from socket import inet_ntoa, inet_aton, ntohl,  IPPROTO_TCP
@@ -52,7 +88,7 @@ def main():
     parser = OptionParser()
     parser.add_option("-f", "--file",
                       dest="file", default=None,
-                      help="tcpdump file to read from")
+                      help="pcap file to read from")
 
     (options, args) = parser.parse_args()
 

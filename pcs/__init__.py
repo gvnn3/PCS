@@ -1867,6 +1867,10 @@ class PcapConnector(Connector):
         """
         return self.file.next()[1]
 
+    def next(self):
+        """return a packet with its timestamp"""
+        return self.file.next()
+
     def recv(self):
         """recv a packet from a pcap file or interface"""
         return self.file.next()[1]

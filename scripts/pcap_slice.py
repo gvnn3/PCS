@@ -33,7 +33,7 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A program using PCS to analyze a tcpdump file and give
+# Description: A program using PCS to analyze a pcap file and give
 # data relateing to whether or not the file shows a DDOS.
 
 import pcs
