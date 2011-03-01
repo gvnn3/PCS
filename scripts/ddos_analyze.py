@@ -33,7 +33,7 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A program using PCS to analyze a tcpdump file and give
+# Description: A program using PCS to analyze a pcap file and give
 # data relateing to whether or not the file shows a DDOS.
 
 import pcs
@@ -47,7 +47,7 @@ def main():
     parser = OptionParser()
     parser.add_option("-f", "--file",
                       dest="file", default=None,
-                      help="tcpdump file to read from")
+                      help="pcap file to read from")
 
     parser.add_option("-m", "--max",
                       dest="max", default=10, type=int,

@@ -31,14 +31,14 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A program using PCS to analyze a tcpdump file and 
+# Description: A program using PCS to analyze a pcap file and 
 # list all the available TCP streams in it.
 
 """
-tcp_streams.py - A program using PCS to analyze a tcpdump file and
+tcp_streams.py - A program using PCS to analyze a pcap file and
 list all the available TCP streams in it.
 
--f, --file: tcpdump file to read from
+-f, --file: pcap file to read from
 
 -s, --streams: print out streams with arguments suitable for other
  tcp_ scripts that are a part of the PCS package, e.g. tcp_window.py.
@@ -93,7 +93,7 @@ def main():
     parser = OptionParser()
     parser.add_option("-f", "--file",
                       dest="file", default=None,
-                      help="tcpdump file to read from")
+                      help="pcap file to read from")
 
     parser.add_option("-s", "--streams",
                       dest="streams", default=False,

@@ -31,16 +31,16 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A program using PCS to analyze a tcpdump file and flag
+# Description: A program using PCS to analyze a pcap file and flag
 # when the window size changes.
 
 """
 tcp_window.py
 
-A program using PCS to analyze a tcpdump file and flag when the
+A program using PCS to analyze a pcap file and flag when the
 window size changes.
 
--f, --file: tcpdump file to read from
+-f, --file: pcap file to read from
 
 -s, --source: source IP address
 
@@ -54,7 +54,7 @@ window size changes.
 
 -B, --batch: create PNG graphs but do not display them
 
-The tcp_window.py program takes a tcpdump file as input and reads
+The tcp_window.py program takes a pcap file as input and reads
 each packet from a stream, indicated by the -s, -d, -S and -D
 flags, and either graphs or prints as text the changes in the
 window size.  Note that the program cannot tell if the window
@@ -91,7 +91,7 @@ def main():
     parser = OptionParser()
     parser.add_option("-f", "--file",
                       dest="file", default=None,
-                      help="tcpdump file to read from")
+                      help="pcap file to read from")
 
     parser.add_option("-m", "--max",
                       dest="max", default=10, type=int,

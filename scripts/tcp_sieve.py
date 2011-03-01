@@ -31,16 +31,16 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A program using PCS to analyze a tcpdump file and 
+# Description: A program using PCS to analyze a pcap file and 
 # split out all TCP conversations into their own file.
 
 """
 tcp_sieve.py
 
-A program using PCS to analyze a tcpdump file and split out all TCP
+A program using PCS to analyze a pcap file and split out all TCP
 conversations into their own files.
 
--f, --file: tcpdump file to read from
+-f, --file: pcap file to read from
 
 Each conversation is broken out into a separate file, named with the
 IP source and destination address as well as the source and
@@ -88,7 +88,7 @@ def main():
     parser = OptionParser()
     parser.add_option("-f", "--file",
                       dest="file", default=None,
-                      help="tcpdump file to read from")
+                      help="pcap file to read from")
 
     (options, args) = parser.parse_args()
 
