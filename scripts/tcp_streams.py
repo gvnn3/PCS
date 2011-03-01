@@ -34,6 +34,54 @@
 # Description: A program using PCS to analyze a tcpdump file and 
 # list all the available TCP streams in it.
 
+"""
+tcp_streams.py - A program using PCS to analyze a tcpdump file and
+list all the available TCP streams in it.
+
+-f, --file: tcpdump file to read from
+
+-s, --streams: print out streams with arguments suitable for other
+ tcp_ scripts that are a part of the PCS package, e.g. tcp_window.py.
+
+Examples
+
+* Raw output from an example pcap file.
+
+./tcp_streams.py -f 10000packets.out | head
+Analyzed 10000 packets, found 621 connections:
+('192.168.1.119', '69.147.108.30', 49395, 80)
+('69.147.108.30', '192.168.1.119', 80, 49395)
+('192.168.1.119', '69.147.108.30', 49396, 80)
+('69.147.108.30', '192.168.1.119', 80, 49396)
+('192.168.1.119', '98.137.80.33', 49397, 80)
+('192.168.1.119', '98.137.80.33', 49398, 80)
+('192.168.1.119', '98.137.80.33', 49399, 80)
+('192.168.1.119', '98.137.80.33', 49400, 80)
+('192.168.1.119', '98.137.80.33', 49401, 80)
+
+etc.
+
+* Output suitable as input to other TCP analysis programs
+
+./tcp_streams.py -s 1 -f 10000packets.out | head
+-s 192.168.1.119 -S 49395 -d 69.147.108.30 -D 80
+-s 69.147.108.30 -S 80 -d 192.168.1.119 -D 49395
+-s 192.168.1.119 -S 49396 -d 69.147.108.30 -D 80
+-s 69.147.108.30 -S 80 -d 192.168.1.119 -D 49396
+-s 192.168.1.119 -S 49397 -d 98.137.80.33 -D 80
+-s 192.168.1.119 -S 49398 -d 98.137.80.33 -D 80
+-s 192.168.1.119 -S 49399 -d 98.137.80.33 -D 80
+-s 192.168.1.119 -S 49400 -d 98.137.80.33 -D 80
+-s 192.168.1.119 -S 49401 -d 98.137.80.33 -D 80
+-s 192.168.1.119 -S 49402 -d 98.137.80.33 -D 80
+
+etc.
+
+See Also
+PCS, tcp_window.py
+
+"""
+
 import pcs
 from pcs.packets.ipv4 import *
 from socket import inet_ntoa, inet_aton, ntohl,  IPPROTO_TCP

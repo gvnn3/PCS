@@ -34,6 +34,48 @@
 # Description: A program using PCS to analyze a tcpdump file and flag
 # when the window size changes.
 
+"""
+tcp_window.py
+
+A program using PCS to analyze a tcpdump file and flag when the
+window size changes.
+
+-f, --file: tcpdump file to read from
+
+-s, --source: source IP address
+
+-d, --dest: destination IP address
+
+-S, --sport: source TCP port
+
+-D, --dport: destination TCP port
+
+-g, --graph: graph the window size changes over time
+
+-B, --batch: create PNG graphs but do not display them
+
+The tcp_window.py program takes a tcpdump file as input and reads
+each packet from a stream, indicated by the -s, -d, -S and -D
+flags, and either graphs or prints as text the changes in the
+window size.  Note that the program cannot tell if the window
+scaling option is on so the user must figure this out on their own.
+
+Example
+
+./tcp_window.py -f 10000packets.out -s 192.168.1.119 -S 49397 -d 98.137.80.33 -D 80
+Window size changed to 65522 at 148
+Window size changed to 65535 at 198
+Window size changed to 65522 at 222
+Window size changed to 65535 at 225
+Window size changed to 65522 at 279
+Window size changed to 65535 at 281
+
+See Also
+PCS, tcp_streams.py
+
+"""
+
+
 import pcs
 from pcs.packets.ipv4 import *
 from socket import inet_ntoa, inet_aton, ntohl,  IPPROTO_TCP
@@ -44,7 +86,6 @@ from numpy import *
 import Gnuplot, Gnuplot.funcutils
 
 def main():
-
     from optparse import OptionParser
 
     parser = OptionParser()
