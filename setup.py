@@ -137,7 +137,7 @@ setup(name='pcs',
       ext_modules = [ bpf, clock, pcap, ],
       scripts=['scripts/arpwhohas.py', 'scripts/dns_query.py',
       'scripts/http_get.py', 'scripts/pcap_info.py',
-      'scripts/pcap_slice.py', 'scripts/tcp_sieve.py',
+      'scripts/pcap_slice.py', 'scripts/tcp_seq.py','scripts/tcp_sieve.py',
       'scripts/tcp_streams.py', 'scripts/tcp_window.py']
       )
 
