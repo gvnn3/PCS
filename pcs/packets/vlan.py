@@ -50,12 +50,12 @@ class vlan(pcs.Packet):
     _map = ethernet_map.map
 
     def __init__(self, bytes = None, timestamp = None, **kv):
-        type = pcs.Field("type", 16)
+        type = pcs.Field("type", 16, discriminator=True)
         p = pcs.Field("p", 3)
         cfi = pcs.Field("cfi", 1)		# Canonical MAC
         vlan = pcs.Field("vlan", 12)
 
-        pcs.Packet.__init__(self, [ type, p, cfi, vlan ], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ p, cfi, vlan, type ], bytes = bytes, **kv)
         self.description = "IEEE 802.1q VLAN header"
 
         if timestamp is None:
