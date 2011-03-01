@@ -2072,7 +2072,7 @@ class PcapDumpConnector(Connector):
         """sendto a packet to the dumpfile
 
         calls the write() method"""
-        return self.file.dump(packet)
+        return self.file.dump(packet, header)
 
     def close(self):
         """close the dumpfile"""
