@@ -127,7 +127,7 @@ clock = Extension(name='pcs.clock',
 pcs_cmds = { 'config': config_pcap, 'build_ext':build_ext }
 
 setup(name='pcs',
-      version='0.6',
+      version='0.7',
       description='Packet Construction Set',
       author='George V. Neville-Neil',
       author_email='gnn@neville-neil.com',
