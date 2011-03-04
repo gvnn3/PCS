@@ -6,9 +6,7 @@ include CONTRIBUTORS
 include docs/Doxyfile
 include docs/*.tex
 include docs/*.sty
-include docs/*.pdf
 include docs/Makefile
-include docs/Web/*
 include	pcs/bpf/bpf.pxd
 include pcs/pcap/*.h
 include pcs/pcap/LICENSE
