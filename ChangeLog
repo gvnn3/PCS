@@ -1,3 +1,19 @@
+2011-03-04  George Neville-Neil  <gnn@neville-neil.com>
+
+	* Version 0.7
+
+	Add several TCP related scripts including:
+	tcp_streams: display TCP streams as dotted quads with ports
+	tcp_sieve: split a pcap file into its component TCP streams
+	tcp_seq: create a graph of the sequence numbers in a TCP stream
+	tcp_window: graph the changes in the advertised window
+
+	Fixes to several packets including vlans and rtp.
+
+	New classes for raw sockets and PTP packets
+
+	New classes for IGMPv2 and IGMPv3 (Bruce Simpson)
+
 2007-05-30  gnn  <gnn@neville-neil.com>
 
 	* Fixed a critical bug in decoding which improperly dealt with
@@ -13,7 +29,6 @@
 	package.
 	Update the Makefile to make sure that we install correctly no
 	matter what target is selected.
-		
 
 2007-01-19  gnn  <gnn@neville-neil.com>
 
@@ -30,7 +45,6 @@
 
 	Add automatic bounds checking when setting values in packets.
 	Add scripts to do DDOS analysis and to slice up dumpfiles.
-	
 
 2006-09-05  gnn  <gnn@neville-neil.com>
 
