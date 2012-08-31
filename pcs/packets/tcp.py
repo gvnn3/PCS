@@ -211,6 +211,9 @@ class tcp(pcs.Packet):
         if (bytes is not None and (self.offset * 4 < len(bytes))):
             self.data = self.next(bytes[(self.offset * 4):len(bytes)],
                                   timestamp = timestamp)
+	    if self.data is None:
+                from pcs.packets.payload import payload
+                self.data = payload(bytes[(self.offset * 4):len(bytes)])
         else:
             self.data = None
 
