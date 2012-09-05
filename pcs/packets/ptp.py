@@ -1,4 +1,4 @@
-# Copyright (c) 2009, Neville-Neil Consulting
+# Copyright (c) 2012, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,8 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: An encoding for the Precision Time Protocol (IEEE-1588)
+# Description: An encoding for the Precision Time Protocol (IEEE-1588-2008)
+# aka PTPv2.
 
 import pcs
 import time
@@ -39,91 +40,57 @@ PTP_SUBDOMAIN_NAME_LENGTH = 16
 PTP_CODE_STRING_LENGTH = 4
 PTP_UUID_LENGTH = 6
 
+class Announce(pcs.Packet):
+    """PTP Announce"""
+    _layout = pcs.Layout()
+    
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        originTimestampSeconds = pcs.Field("originTimestampSeconds", 48)
+        originTimestampNanoSeconds = pcs.Field("originTimestampNanoSeconds", 32)
+        currentUTCOffset = pcs.Field("currentUTCOffset", 16)
+        reserved0 = pcs.Field("reserved0", 8, default = 0)
+        grandmasterPriority1 = pcs.Field("grandmasterPriority1", 8)
+        grandmasterClockQuality = pcs.Field("grandmasterClockQuality", 32)
+        grandmasterPriority2 = pcs.Field("grandmasterPriority2", 8)
+        grandmasterClockIdentity = pcs.StringField("grandmasterClockIdentity", 8)
+        stepsRemoved = pcs.Field("stepsRemoved", 16)
+        timeSource = pcs.Field("timeSource", 8)
+        
+        pcs.Packet.__init__(self, [originTimestampSeconds,
+                                   originTimestampNanoSeconds,
+                                   currentUTCOffset,
+                                   reserved0,
+                                   grandmasterPriority1,
+                                   grandmasterClockQuality,
+                                   grandmasterPriority2,
+                                   grandmasterClockIdentity,
+                                   stepsRemoved,
+                                   timeSource], bytes = bytes, **kv)
+
+        self.description = "PTP Announce"
+
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if (bytes is not None):
+            self.data = self.next(bytes[self.sizeof():len(bytes)],
+                                  timestamp = timestamp)
+        else:
+            self.data = None
+
+
 class Sync(pcs.Packet):
     """PTP Sync"""
     _layout = pcs.Layout()
     
     def __init__(self, bytes = None, timestamp = None, **kv):
-        originTimestampSeconds = pcs.Field("originTimestampSeconds", 32)
-        originTimestampNanoseconds = pcs.Field("originTimestampNanoseconds", 32)
-        epochNumber = pcs.Field("epochNumber", 16)
-        currentUTCOffset = pcs.Field("currentUTCOffset", 16)
-        zero1 = pcs.Field("zero1", 8, default = 0)
-        grandmasterCommunicationTechnology = pcs.Field(
-            "grandmasterCommunicationTechnology", 8)
-        grandmasterClockUuid = pcs.StringField("grandmasterClockUuid",
-                                         PTP_UUID_LENGTH * 8)
-        grandmasterPortId = pcs.Field("grandmasterPortId", 16)
-        grandmasterSequenceId = pcs.Field("grandmasterSequenceId", 16)
-        zero2 = pcs.Field("zero2", 24, default = 0)
-        grandmasterClockStratum = pcs.Field("grandmasterClockStratum", 8)
-        grandmasterClockIdentifier = pcs.StringField(
-            "grandmasterClockIdentifier", PTP_CODE_STRING_LENGTH * 8 )
-        zero3 = pcs.Field("zero3", 16, default = 0)
-        grandmasterClockVariance = pcs.Field("grandmasterClockVariance", 16)
-        zero4 = pcs.Field("zero4", 8, default = 0)
-        grandmasterPreferred = pcs.Field("grandmasterPreferred", 8)
-        zero5 = pcs.Field("zero5", 8, default = 0)
-        grandmasterIsBoundaryClock = pcs.Field("grandmasterIsBoundaryClock", 8)
-        zero6 = pcs.Field("zero6", 24, default = 0)
-        syncInterval = pcs.Field("syncInterval", 8)
-        zero7 = pcs.Field("zero7", 16, default = 0)
-        localClockVariance = pcs.Field("localClockVariance", 16)
-        zero8 = pcs.Field("zero8", 16, default = 0)
-        localStepsRemoved = pcs.Field("localStepsRemoved", 16)
-        zero9 = pcs.Field("zero9", 24, default = 0)
-        localClockStratum = pcs.Field("localClockStratum", 8)
-        localClockIdentifer = pcs.StringField("localClockIdentifer",
-                                        PTP_CODE_STRING_LENGTH * 8)
-        zero10 = pcs.Field("zero10", 8, default = 0)
-        parentCommunicationTechnology = pcs.Field(
-            "parentCommunicationTechnology", 8)
-        parentUuid = pcs.StringField("parentUuid", PTP_UUID_LENGTH * 8)
-        zero11 = pcs.Field("zero11", 16, default = 0)
-        parentPortField = pcs.Field("parentPortField", 16)
-        zero12 = pcs.Field("zero12", 16, default = 0)
-        estimatedMasterVariance = pcs.Field("estimatedMasterVariance", 16)
-        estimatedMasterDrift = pcs.Field("estimatedMasterDrift", 32)
-        zero13 = pcs.Field("zero13", 24, default = 0)
-        utcReasonable = pcs.Field("utcReasonable", 8)
-
-                                
+        originTimestampSeconds = pcs.Field("originTimestampSeconds", 48)
+        originTimestampNanoSeconds = pcs.Field("originTimestampNanoSeconds", 32)
         pcs.Packet.__init__(self, [originTimestampSeconds,
-                                   originTimestampNanoseconds,
-                                   epochNumber,
-                                   currentUTCOffset,
-                                   zero1,
-                                   grandmasterCommunicationTechnology,
-                                   grandmasterClockUuid,
-                                   grandmasterPortId, grandmasterSequenceId,
-                                   zero2,
-                                   grandmasterClockStratum,
-                                   grandmasterClockIdentifier,
-                                   zero3,
-                                   grandmasterClockVariance,
-                                   zero4,
-                                   grandmasterPreferred,
-                                   zero5,
-                                   grandmasterIsBoundaryClock,
-                                   zero6,
-                                   syncInterval,
-                                   zero7,
-                                   localClockVariance,
-                                   zero8,
-                                   localStepsRemoved,
-                                   zero9,
-                                   localClockStratum,
-                                   localClockIdentifer,
-                                   zero10,
-                                   parentCommunicationTechnology,
-                                   parentUuid,
-                                   zero11,
-                                   parentPortField,
-                                   zero12,
-                                   estimatedMasterVariance,
-                                   estimatedMasterDrift,
-                                   zero13,
-                                   utcReasonable], bytes = bytes, **kv)
+                                   originTimestampNanoSeconds],
+                            bytes = bytes, **kv)
 
         self.description = "PTP Sync"
 
@@ -149,86 +116,11 @@ class DelayRequest(pcs.Packet):
     _layout = pcs.Layout()
     
     def __init__(self, bytes = None, timestamp = None, **kv):
-        originTimestampSeconds = pcs.Field("originTimestampSeconds", 32)
-        originTimestampNanoseconds = pcs.Field("originTimestampNanoseconds", 32)
-        epochNumber = pcs.Field("epochNumber", 16)
-        currentUTCOffset = pcs.Field("currentUTCOffset", 16)
-        zero1 = pcs.Field("zero1", 8, default = 0)
-        grandmasterCommunicationTechnology = pcs.Field(
-            "grandmasterCommunicationTechnology", 8)
-        grandmasterClockUuid = pcs.StringField("grandmasterClockUuid",
-                                         PTP_UUID_LENGTH * 8)
-        grandmasterPortId = pcs.Field("grandmasterPortId", 16)
-        grandmasterSequenceId = pcs.Field("grandmasterSequenceId", 16)
-        zero2 = pcs.Field("zero2", 24, default = 0)
-        grandmasterClockStratum = pcs.Field("grandmasterClockStratum", 8)
-        grandmasterClockIdentifier = pcs.StringField(
-            "grandmasterClockIdentifier", PTP_CODE_STRING_LENGTH * 8 )
-        zero3 = pcs.Field("zero3", 16, default = 0)
-        grandmasterClockVariance = pcs.Field("grandmasterClockVariance", 16)
-        zero4 = pcs.Field("zero4", 8, default = 0)
-        grandmasterPreferred = pcs.Field("grandmasterPreferred", 8)
-        zero5 = pcs.Field("zero5", 8, default = 0)
-        grandmasterIsBoundaryClock = pcs.Field("grandmasterIsBoundaryClock", 8)
-        zero6 = pcs.Field("zero6", 24, default = 0)
-        syncInterval = pcs.Field("syncInterval", 8)
-        zero7 = pcs.Field("zero7", 16, default = 0)
-        localClockVariance = pcs.Field("localClockVariance", 16)
-        zero8 = pcs.Field("zero8", 16, default = 0)
-        localStepsRemoved = pcs.Field("localStepsRemoved", 16)
-        zero9 = pcs.Field("zero9", 24, default = 0)
-        localClockStratum = pcs.Field("localClockStratum", 8)
-        localClockIdentifer = pcs.StringField("localClockIdentifer",
-                                        PTP_CODE_STRING_LENGTH * 8)
-        zero10 = pcs.Field("zero10", 8, default = 0)
-        parentCommunicationTechnology = pcs.Field(
-            "parentCommunicationTechnology", 8)
-        parentUuid = pcs.StringField("parentUuid", PTP_UUID_LENGTH * 8)
-        zero11 = pcs.Field("zero11", 16, default = 0)
-        parentPortField = pcs.Field("parentPortField", 16)
-        zero12 = pcs.Field("zero12", 16, default = 0)
-        estimatedMasterVariance = pcs.Field("estimatedMasterVariance", 16)
-        estimatedMasterDrift = pcs.Field("estimatedMasterDrift", 32)
-        zero13 = pcs.Field("zero13", 24, default = 0)
-        utcReasonable = pcs.Field("utcReasonable", 8)
-
-                                
+        originTimestampSeconds = pcs.Field("originTimestampSeconds", 48)
+        originTimestampNanoSeconds = pcs.Field("originTimestampNanoSeconds", 32)
         pcs.Packet.__init__(self, [originTimestampSeconds,
-                                   originTimestampNanoseconds,
-                                   epochNumber,
-                                   currentUTCOffset,
-                                   zero1,
-                                   grandmasterCommunicationTechnology,
-                                   grandmasterClockUuid,
-                                   grandmasterPortId, grandmasterSequenceId,
-                                   zero2,
-                                   grandmasterClockStratum,
-                                   grandmasterClockIdentifier,
-                                   zero3,
-                                   grandmasterClockVariance,
-                                   zero4,
-                                   grandmasterPreferred,
-                                   zero5,
-                                   grandmasterIsBoundaryClock,
-                                   zero6,
-                                   syncInterval,
-                                   zero7,
-                                   localClockVariance,
-                                   zero8,
-                                   localStepsRemoved,
-                                   zero9,
-                                   localClockStratum,
-                                   localClockIdentifer,
-                                   zero10,
-                                   parentCommunicationTechnology,
-                                   parentUuid,
-                                   zero11,
-                                   parentPortField,
-                                   zero12,
-                                   estimatedMasterVariance,
-                                   estimatedMasterDrift,
-                                   zero13,
-                                   utcReasonable], bytes = bytes, **kv)
+                                   originTimestampNanoSeconds],
+                            bytes = bytes, **kv)
 
         self.description = "PTP DelayRequest"
 
@@ -255,19 +147,16 @@ class Followup(pcs.Packet):
     
     def __init__(self, bytes = None, timestamp = None, **kv):
         """Followup Header """
-        zero1 = pcs.Field("zero1", 16, default = 0)
-        associatedSequenceId = pcs.Field("associatedSequenceId", 16)
-        preciseTimestampSeconds = pcs.Field("preciseTimestampSeconds", 32)
-        preciseTimestampNanoseconds = pcs.Field("preciseTimestampNanoseconds",
-                                                32)
+        preciseOriginTimestampSeconds = pcs.Field("preciseOriginTimestampSeconds",
+                                                  48)
+        preciseOriginTimestampNanoSeconds = pcs.Field(
+            "preciseOriginTimestampNanoSeconds", 32)
 
-        pcs.Packet.__init__(self, [zero1,
-                                   associatedSequenceId,
-                                   preciseTimestampSeconds,
-                                   preciseTimestampNanoseconds],
+        pcs.Packet.__init__(self, [preciseOriginTimestampSeconds,
+                                   preciseOriginTimestampNanoSeconds],
                             bytes = bytes, **kv)
 
-        self.description = "Followup Header "
+        self.description = "Followup"
 
         if timestamp is None:
             self.timestamp = time.time()
@@ -290,29 +179,16 @@ class DelayResponse(pcs.Packet):
     _layout = pcs.Layout()
     
     def __init__(self, bytes = None, timestamp = None, **kv):
-        """Followup Header """
-        delayReceiptTimestampSeconds = pcs.Field(
-            "delayReceiptTimestampSeconds", 32)
-        delayReceiptTimestampNanoseconds = pcs.Field(
-            "delayReceiptTimestampNanoseconds", 32)
-        zero1 = pcs.Field("zero1", 8, default = 0)
-        requestingSourceCommunicationTechnology = pcs.Field(
-            "requestingSourceCommunicationTechnology", 8)
-        requestingSourceUuid = pcs.StringField("requestingSourceUuid",
-                                               PTP_UUID_LENGTH * 8)
-        requestingSourcePortId = pcs.Field("requestingSourcePortId", 16)
-        requestingSourceSequenceId = pcs.Field("requestingSourceSequenceId", 16)
-
-        pcs.Packet.__init__(self, [delayReceiptTimestampSeconds,
-                                   delayReceiptTimestampNanoseconds,
-                                   zero1,
-                                   requestingSourceCommunicationTechnology,
-                                   requestingSourceUuid,
-                                   requestingSourcePortId,
-                                   requestingSourceSequenceId],
+        """Delay Response"""
+        receiveTimestampSeconds = pcs.Field("receiveTimestampSeconds", 48)
+        receiveTimestampNanoSeconds = pcs.Field("receiveTimestampNanoSeconds", 32)
+        requestingPortIdentity = pcs.Field("requestingPortIdentity", 80)
+        pcs.Packet.__init__(self, [receiveTimestampSeconds,
+                                   receiveTimestampNanoSeconds,
+                                   requestingPortIdentity],
                             bytes = bytes, **kv)
 
-        self.description = "Followup Header "
+        self.description = "Delay Response "
 
         if timestamp is None:
             self.timestamp = time.time()

@@ -3,8 +3,8 @@
 #
 # Makefile for building distributions of PCS.  
 
-PYTHON	= python2.6    #
-CYTHON  = cython-2.6   # These versions are set for Mac OS Only
+PYTHON	= python2.7    #
+CYTHON  = cython-2.7   # These versions are set for Mac OS Only
 
 #PYTHON	= python
 #CYTHON  = cython

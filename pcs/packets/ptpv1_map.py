@@ -30,24 +30,17 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A file for mapping various PTP (IEEE-1588-2008) aka
-# PTPv2 headers
-
+# Description: A file for mapping various PTP (IEEE-1588) headers
+# These are for PTPv1 which is being deprecated.
 
 import ptp
 
 PTP_SYNC = 0
 PTP_DELAY_REQUEST = 1
-PTP_PDELAY_REQUEST = 2
-PTP_PDELAY_RESPONSE = 3
-PTP_FOLLOWUP = 8
-PTP_DELAY_RESPONSE = 9
-PTP_PDELAY_RESPONSE_FOLLOWUP = 10
-PTP_ANNOUNCE = 11
-PTP_SIGNALING = 12
-PTP_MANAGEMENT = 13
+PTP_FOLLOWUP = 2
+PPT_DELAY_RESPONSE = 3
 
 map = { PTP_SYNC: ptp.Sync,
         PTP_DELAY_REQUEST: ptp.DelayRequest,
         PTP_FOLLOWUP: ptp.Followup,
-        PTP_DELAY_RESPONSE: ptp.DelayResponse}
+        PPT_DELAY_RESPONSE: ptp.DelayResponse}

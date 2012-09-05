@@ -55,15 +55,18 @@ if __name__ == '__main__':
 class ptpTestCase(unittest.TestCase):
     def test_ptp_header(self):
         # create one header, copy its bytes, then compare their fields
-        ptp = Common()
+        ptp = CommonV1()
         assert (ptp != None)
 
-        ptp.versionPTP = 2
-        ptp.messageLength = 44
-        ptp.flags = 0x0200
-        ptp.sourcePortIdentity = 0x000cecfffe08030f
-        ptp.sequenceId = 6630
-        ptp.controlField = 0
+        ptp.versionPTP = 1
+        ptp.versionNetwork = 1
+        ptp.subdomain = "_DFLT           "
+        ptp.messageType = 1
+        ptp.sourceCommunicationTechnology = 1
+        ptp.sourceUuid = "\x00\x0e\xfe\x00\x0f\xa2"
+        ptp.sourcePortId = 1
+        ptp.sequenceId = 40828
+        ptp.control = 0
 
         # Create a packet to compare against
         ptpnew = Common()
@@ -75,7 +78,7 @@ class ptpTestCase(unittest.TestCase):
 
     def test_ptp_sync(self):
         # create one header, copy its bytes, then compare their fields
-        ptp = Sync()
+        ptp = SyncV1()
         assert (ptp != None)
 
         ptp.originTimestampSeconds = 1253718841
@@ -114,7 +117,7 @@ class ptpTestCase(unittest.TestCase):
     
     def test_ptp_followup(self):
         # create one header, copy its bytes, then compare their fields
-        ptp = Followup()
+        ptp = FollowupV1()
         assert (ptp != None)
 
         ptp.associatedSequenceId = 40828
@@ -131,7 +134,7 @@ class ptpTestCase(unittest.TestCase):
 
     def test_ptp_delay_response(self):
         # create one header, copy its bytes, then compare their fields
-        ptp = DelayResponse()
+        ptp = DelayResponseV1()
         assert (ptp != None)
 
         ptp.delayReceiptTimestampSeconds = 1253718841

@@ -1,4 +1,4 @@
-# Copyright (c) 2009, Neville-Neil Consulting
+# Copyright (c) 2012, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 # Author: George V. Neville-Neil
 #
 # Description: An encoding for the Precision Time Protocol (IEEE-1588)
+# aka PTPv1, which is to be deprecated.
 
 import pcs
 import ptp_map
@@ -40,35 +41,31 @@ PTP_SUBDOMAIN_NAME_LENGTH = 16
 PTP_CODE_STRING_LENGTH = 4
 PTP_UUID_LENGTH = 6
 
-class Common(pcs.Packet):
-    """PTP Common Header"""
+class CommonV1(pcs.Packet):
+    """PTPv1 Common Header"""
     _layout = pcs.Layout()
     _map = ptp_map.map
     
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize the common header """
-        transportSpecific = pcs.Field("transportSpecific", 4)
-        messageType = pcs.Field("versionNetwork", 4, discriminator = True)
-        reserved0 = pcs.Field("reserved0", 4)
-        versionPTP = pcs.Field("versionPTP", 4)
-        messageLength = pcs.Field("messageLength", 16)
-        domainNumber = pcs.Field("domainNumber", 8)
-        reserved1 = pcs.Field("reserved1", 8)
-        flagField = pcs.Field("flagField", 16)
-        correctionField = pcs.Field("correctionField", 64)
-        reserved2 = pcs.Field("reserved2", 32)
-        sourcePortIdentity = pcs.Field("sourcePortIdentity", 80)
+        versionPTP = pcs.Field("versionPTP", 16)
+        versionNetwork = pcs.Field("versionNetwork", 16)
+        subdomain = pcs.StringField("subdomain", PTP_SUBDOMAIN_NAME_LENGTH * 8)
+        messageType = pcs.Field("messageType", 8)
+        sourceCommunicationTechnology = pcs.Field("sourceCommunicationTechnology", 8)
+        sourceUuid = pcs.StringField("sourceUuid", PTP_UUID_LENGTH * 8)
+        sourcePortId = pcs.Field("sourcePortId", 16)
         sequenceId = pcs.Field("sequenceId", 16)
-        controlField = pcs.Field("controlField", 8)
-        logMessageInterval = pcs.Field("logMessageInterval", 8)
-        pcs.Packet.__init__(self, [transportSpecific, messageType,
-                                   reserved0,
-                                   versionPTP, messageLength, domainNumber,
-                                   reserved1,
-                                   flagField, correctionField,
-                                   reserved2,
-                                   sourcePortIdentity, sequenceId, controlField,
-                                   logMessageInterval],
+        control = pcs.Field("control", 8, discriminator = True)
+        zero1 = pcs.Field("zero1", 8, default = 0)
+        flags = pcs.Field("flags", 16)
+        zero2 = pcs.Field("zero2", 32, default = 0)
+                                
+        pcs.Packet.__init__(self, [versionPTP, versionNetwork,
+                                   subdomain, messageType,
+                                   sourceCommunicationTechnology,
+                                   sourceUuid, sourcePortId, sequenceId,
+                                   control, zero1, flags, zero2],
                             bytes = bytes, **kv)
 
         self.description = "initialize the common header "
