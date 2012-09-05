@@ -135,8 +135,6 @@ class DelayRequest(pcs.Packet):
         else:
             self.data = None
 
-
-
 #
 # All followup messages have an associated common header.
 # See ptpCommon() at the head of this file.
