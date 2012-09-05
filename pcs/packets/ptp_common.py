@@ -71,7 +71,7 @@ class Common(pcs.Packet):
                                    logMessageInterval],
                             bytes = bytes, **kv)
 
-        self.description = "initialize the common header "
+        self.description = "PTP Common Header"
 
         if timestamp is None:
             self.timestamp = time.time()
