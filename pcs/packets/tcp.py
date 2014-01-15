@@ -198,6 +198,19 @@ class tcp(pcs.Packet):
 		    #		       pcs.Field("l", 8, default = optlen), \
 		    #		       pcs.Field("v", 64, default = value)))
                     #    curr += optlen
+                    elif option == 30:        # multipath
+                        optdatalen = optlen - 2
+                        value = struct.unpack("!" + str(optdatalen) + "B",
+                                              bytes[curr+2:curr+optlen])
+                        myval = 0
+                        for i in value:
+                             myval = myval << 8 | i
+                        value = myval
+                        options.append(pcs.TypeLengthValueField("unknown", \
+                                       pcs.Field("t", 8, default = option), \
+                                       pcs.Field("l", 8, default = optlen+2), \
+                                       pcs.Field("v", optdatalen * 8, default = value)))
+                        curr += optlen
                     else:
                         #print "warning: unknown option %d" % option
 			optdatalen = optlen - 2
