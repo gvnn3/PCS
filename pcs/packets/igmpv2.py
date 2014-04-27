@@ -54,7 +54,7 @@ class igmpv2(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an IGMPv1/v2 header"""
-	group = pcs.Field("group", 32)
+        group = pcs.Field("group", 32)
         pcs.Packet.__init__(self, [group], bytes, **kv)
         self.description = "initialize an IGMPv1/v2 header"
 

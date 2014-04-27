@@ -165,10 +165,10 @@ class open(pcs.Packet):
             self.data = None
 
 _map = {
-	OPEN:		open,
-	UPDATE:		update,
-	NOTIFICATION:	notification
-	# keepalive is just a plain header.
+        OPEN:           open,
+        UPDATE:         update,
+        NOTIFICATION:   notification
+        # keepalive is just a plain header.
 }
 
 class header(pcs.Packet):

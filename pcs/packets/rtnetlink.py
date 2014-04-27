@@ -40,7 +40,7 @@ import struct
 import time
 
 import pcs
-import payload
+from . import payload
 
 # TODO: Add a LengthTypeValue field to model the general TLV format.
 # TODO: Test all this.
@@ -71,19 +71,19 @@ RTNLGRP_ND_USEROPT = 20
 #
 # Userland backwards compatibility for rtnetlink group IDs.
 #
-RTMGRP_LINK		= (1 << (RTNLGRP_LINK - 1))
-RTMGRP_NOTIFY		= (1 << (RTNLGRP_NOTIFY - 1))
-RTMGRP_NEIGH		= (1 << (RTNLGRP_NEIGH - 1))
-RTMGRP_TC		= (1 << (RTNLGRP_TC - 1))
-RTMGRP_IPV4_IFADDR	= (1 << (RTNLGRP_IPV4_IFADDR - 1))
-RTMGRP_IPV4_MROUTE	= (1 << (RTNLGRP_IPV4_MROUTE - 1))
-RTMGRP_IPV4_ROUTE	= (1 << (RTNLGRP_IPV4_ROUTE - 1))
-RTMGRP_IPV4_RULE	= (1 << (RTNLGRP_IPV4_RULE - 1))
-RTMGRP_IPV6_IFADDR	= (1 << (RTNLGRP_IPV6_IFADDR - 1))
-RTMGRP_IPV6_MROUTE	= (1 << (RTNLGRP_IPV6_MROUTE - 1))
-RTMGRP_IPV6_ROUTE	= (1 << (RTNLGRP_IPV6_ROUTE - 1))
-RTMGRP_IPV6_IFINFO	= (1 << (RTNLGRP_IPV6_IFINFO - 1))
-RTMGRP_IPV6_PREFIX	= (1 << (RTNLGRP_IPV6_PREFIX - 1))
+RTMGRP_LINK             = (1 << (RTNLGRP_LINK - 1))
+RTMGRP_NOTIFY           = (1 << (RTNLGRP_NOTIFY - 1))
+RTMGRP_NEIGH            = (1 << (RTNLGRP_NEIGH - 1))
+RTMGRP_TC               = (1 << (RTNLGRP_TC - 1))
+RTMGRP_IPV4_IFADDR      = (1 << (RTNLGRP_IPV4_IFADDR - 1))
+RTMGRP_IPV4_MROUTE      = (1 << (RTNLGRP_IPV4_MROUTE - 1))
+RTMGRP_IPV4_ROUTE       = (1 << (RTNLGRP_IPV4_ROUTE - 1))
+RTMGRP_IPV4_RULE        = (1 << (RTNLGRP_IPV4_RULE - 1))
+RTMGRP_IPV6_IFADDR      = (1 << (RTNLGRP_IPV6_IFADDR - 1))
+RTMGRP_IPV6_MROUTE      = (1 << (RTNLGRP_IPV6_MROUTE - 1))
+RTMGRP_IPV6_ROUTE       = (1 << (RTNLGRP_IPV6_ROUTE - 1))
+RTMGRP_IPV6_IFINFO      = (1 << (RTNLGRP_IPV6_IFINFO - 1))
+RTMGRP_IPV6_PREFIX      = (1 << (RTNLGRP_IPV6_PREFIX - 1))
 
 #
 # rtnetlink message types
@@ -178,11 +178,11 @@ RTA_GATEWAY = 5
 RTA_PRIORITY = 6
 RTA_PREFSRC = 7
 RTA_METRICS = 8
-RTA_MULTIPATH = 9		# Contains 0..N NexthopFields
+RTA_MULTIPATH = 9               # Contains 0..N NexthopFields
 RTA_PROTOINFO = 10
-RTA_FLOW = 11			# TODO
-RTA_CACHEINFO = 12		# TODO
-RTA_SESSION = 13		# TODO
+RTA_FLOW = 11                   # TODO
+RTA_CACHEINFO = 12              # TODO
+RTA_SESSION = 13                # TODO
 RTA_TABLE = 15
 
 #
@@ -210,10 +210,10 @@ RTAX_INITCWND = 11
 RTAX_FEATURES = 12
 RTAX_RTO_MIN = 13
 
-RTAX_FEATURE_ECN	= 0x00000001
-RTAX_FEATURE_SACK	= 0x00000002
-RTAX_FEATURE_TIMESTAMP	= 0x00000004
-RTAX_FEATURE_ALLFRAG	= 0x00000008
+RTAX_FEATURE_ECN        = 0x00000001
+RTAX_FEATURE_SACK       = 0x00000002
+RTAX_FEATURE_TIMESTAMP  = 0x00000004
+RTAX_FEATURE_ALLFRAG    = 0x00000008
 
 #
 # IFA TLV IDs.
@@ -280,7 +280,7 @@ IFLA_MASTER = 10
 IFLA_WIRELESS = 11
 IFLA_PROTINFO = 12
 IFLA_TXQLEN = 13
-IFLA_MAP = 14			# Bus specific, we can do without.
+IFLA_MAP = 14                   # Bus specific, we can do without.
 IFLA_WEIGHT = 15
 IFLA_OPERSTATE = 16
 IFLA_LINKMODE = 17
@@ -301,9 +301,9 @@ IFLA_INET6_ICMP6STATS = 6
 #
 # PREFIX TLV IDs.
 #
-PREFIX_UNSPEC = 0		# Unused.
-PREFIX_ADDRESS = 1		# The address prefix itself.
-PREFIX_CACHEINFO = 2		# (uint32_t,uint32_t) preferred, valid times.
+PREFIX_UNSPEC = 0               # Unused.
+PREFIX_ADDRESS = 1              # The address prefix itself.
+PREFIX_CACHEINFO = 2            # (uint32_t,uint32_t) preferred, valid times.
 
 #
 # IPv6 prefix message flags.
@@ -337,12 +337,12 @@ class NexthopField(pcs.CompoundField):
         # If keyword initializers are present, deal with the syntactic sugar.
         # TODO: Figure out how to initialize the TLVs inside our TLV...
         if kv is not None:
-            for kw in kv.iteritems():
+            for kw in kv.items():
                 if kw[0] in self.__dict__:
                     if kw[0] == 'tlvs':
                         if not isinstance(kw[1], list):
                             if __debug__:
-                                print "argument is not a list"
+                                print("argument is not a list")
                             continue
                         #for src in kw[1]:
                         #    if not isinstance(src, int):
@@ -424,12 +424,12 @@ class NexthopField(pcs.CompoundField):
     def bounds(self, value):
         """Check the bounds of this field."""
         # XXX assume maxwidth is inclusive
-	minwidth = self.len.width + self.flags.width + \
+        minwidth = self.len.width + self.flags.width + \
                    self.hops.width + self.ifindex.width
-	maxwidth = (2 ** self.len.width) * 8
-	if self.width < minwidth or self.width > maxwidth:
-            raise FieldBoundsError, "NexthopField must be between %d " \
-                                    "and %d bytes wide" % (minwidth, maxwidth)
+        maxwidth = (2 ** self.len.width) * 8
+        if self.width < minwidth or self.width > maxwidth:
+            raise FieldBoundsError("NexthopField must be between %d " \
+                                    "and %d bytes wide" % (minwidth, maxwidth))
 
     def __eq__(self, other):
         """Test two NexthopFields for equality."""

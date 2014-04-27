@@ -36,8 +36,8 @@
 #
 
 import pcs
-import udp, tcp, icmpv4
-import ipv6_map
+from . import udp, tcp, icmpv4
+from . import ipv6_map
 
 import os
 from socket import AF_INET6, inet_ntop

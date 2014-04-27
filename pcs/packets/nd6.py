@@ -36,7 +36,7 @@
 
 import pcs
 
-import icmpv6 # All neighbor discovery messages are inserted in ICMPv6 packets
+from . import icmpv6 # All neighbor discovery messages are inserted in ICMPv6 packets
 
 import time
 

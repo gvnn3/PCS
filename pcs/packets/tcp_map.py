@@ -35,7 +35,7 @@
 # Description: A mapping of TCP port numbers to higher level protocols
 
 #import ymsg_hdr
-import http
+from . import http
 #ymsg_port = 5050
 http_port = 80
 https_port = 43

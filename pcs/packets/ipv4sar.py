@@ -35,7 +35,7 @@
 # Description: IPv4 Segmentation and Reassembly (SAR) module
 
 import pcs
-import payload
+from . import payload
 
 class ipv4frag(pcs.packets.payload):
     """A fragment of an IPv4 datagram awaiting reassembly."""
@@ -176,17 +176,17 @@ class ipv4sar(object):
         # Take a deep copy of the IP header, and construct the
         # fragmentation headers.
         from copy import deepcopy
-        fip = deepcopy(ip)		# first IP fragment header
+        fip = deepcopy(ip)              # first IP fragment header
         fip.ip_flags = IP_MF
         assert (len(fip.getbytes()) % 4) == 0, \
                "First IPv4 fragment header not on 4-byte boundary."
 
-        sip = make_fragment_header(fip)	# template IP fragment header
+        sip = make_fragment_header(fip) # template IP fragment header
         sip.ip_flags = IP_MF
         assert (len(fip.getbytes()) % 4) == 0, \
                "Subsequent IPv4 fragment header not on 4-byte boundary."
 
-        result = []			# The fragments w/o other headers.
+        result = []                     # The fragments w/o other headers.
 
         # The first fragment needs to be calculated separately as it
         # may have a different set of IP options.

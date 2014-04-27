@@ -63,16 +63,16 @@ DVMRP_GRAFT_ACK = 9
 DVMRP_INFO_REQUEST = 10
 DVMRP_INFO_REPLY = 11
 
-DVMRP_CAP_LEAF		= 0x01	# This DVMRP peer is a leaf.
-DVMRP_CAP_PRUNE		= 0x02	# This DVMRP peer understands pruning.
-DVMRP_CAP_GENID		= 0x04	# This DVMRP peer sends Generation IDs.
-DVMRP_CAP_MTRACE	= 0x08	# This DVMRP peer understands MTRACE.
-DVMRP_CAP_SNMP		= 0x10	# This DVMRP peer supports the DVMRP MIB.
+DVMRP_CAP_LEAF          = 0x01  # This DVMRP peer is a leaf.
+DVMRP_CAP_PRUNE         = 0x02  # This DVMRP peer understands pruning.
+DVMRP_CAP_GENID         = 0x04  # This DVMRP peer sends Generation IDs.
+DVMRP_CAP_MTRACE        = 0x08  # This DVMRP peer understands MTRACE.
+DVMRP_CAP_SNMP          = 0x10  # This DVMRP peer supports the DVMRP MIB.
 
 # Default mask advertised by the Xerox PARC mrouted code.
-DVMRP_CAP_DEFAULT	= (DVMRP_CAP_PRUNE | \
-			   DVMRP_CAP_GENID | \
-			   DVMRP_CAP_MTRACE )
+DVMRP_CAP_DEFAULT       = (DVMRP_CAP_PRUNE | \
+                           DVMRP_CAP_GENID | \
+                           DVMRP_CAP_MTRACE )
 
 class dvmrp(pcs.Packet):
     """DVMRP message, as defined in RFC 1075."""
@@ -81,13 +81,13 @@ class dvmrp(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize a header very similar to that of IGMPv1/v2"""
-	reserved00 = pcs.Field("reserved00", 8)
-	capabilities = pcs.Field("capabilities", 8)
-	minor = pcs.Field("minor", 8)
-	major = pcs.Field("major", 8)
-	options = pcs.OptionListField("options")
+        reserved00 = pcs.Field("reserved00", 8)
+        capabilities = pcs.Field("capabilities", 8)
+        minor = pcs.Field("minor", 8)
+        major = pcs.Field("major", 8)
+        options = pcs.OptionListField("options")
         pcs.Packet.__init__(self, [reserved00, capabilities,
-				   minor, major, options], bytes, **kv)
+                                   minor, major, options], bytes, **kv)
 
         self.description = "initialize a header very similar to that of IGMPv1/v2"
 
@@ -96,7 +96,7 @@ class dvmrp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-	# XXX optional bytes not processed yet.
+        # XXX optional bytes not processed yet.
 
         if bytes is not None:
             offset = self.sizeof()

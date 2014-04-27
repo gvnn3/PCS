@@ -35,7 +35,7 @@
 # Description: The Ethernet packet class
 
 import pcs
-import ethernet_map
+from . import ethernet_map
 import pcs.packets.ipv4
 from pcs.packets.ipv6 import ipv6
 from pcs.packets.arp import arp
@@ -146,7 +146,7 @@ def ether_btoa(bytes):
     """
 
     pretty = ""
-    for i in (range(5)):
+    for i in (list(range(5))):
         pretty += hex(ord(bytes[i]))[2:4] # Strip the 0x from the string
         pretty += ':'
         

@@ -40,7 +40,7 @@ import time
 
 import pcs
 from pcs.packets import payload
-import ethernet_map
+from . import ethernet_map
 
 #
 # Unnumbered LLC frame control values
@@ -87,7 +87,7 @@ class llc(pcs.Packet):
     def __init__(self, bytes = None, timestamp = None, **kv):
         dsap = pcs.Field("dsap", 8)
         ssap = pcs.Field("ssap", 8)
-        control = pcs.Field("control", 8)	# snd_x2 in an I-frame.
+        control = pcs.Field("control", 8)       # snd_x2 in an I-frame.
         opt = pcs.OptionListField("opt")
 
         pcs.Packet.__init__(self, [dsap, ssap, opt], bytes = bytes, **kv)
@@ -107,7 +107,7 @@ class llc(pcs.Packet):
             if self.ssnap == LLC_8021D_LSAP and \
                self.dsnap == LLC_8021D_LSAP and \
                self.control == LLC_UI:
-                from ieee8021d import bpdu
+                from .ieee8021d import bpdu
                 self.data = bpdu(bytes[curr:remaining], timestamp = timestamp)
             elif self.ssnap == LLC_SNAP_LSAP and \
                self.dsnap == LLC_SNAP_LSAP and \

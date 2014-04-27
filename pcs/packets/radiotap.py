@@ -36,13 +36,13 @@
 
 import pcs
 import pcs.packets.payload
-#import pcs.packets.ieee80211	#notyet
+#import pcs.packets.ieee80211   #notyet
 
 import struct
 import time
 
 # TODO: Move this into pcap.pyx.
-DLT_IEEE802_11_RADIO = 127	# 802.11 with radiotap in front
+DLT_IEEE802_11_RADIO = 127      # 802.11 with radiotap in front
 
 #
 # radiotap TLV IDs.
@@ -138,49 +138,49 @@ def _xchannel(n, x):
 # XXX TODO: Force little-endian conversion if writing fields.
 #
 _vmap = {
-	IEEE80211_RADIOTAP_TSFT: \
-		( "tsft", 64, '<Q', \
+        IEEE80211_RADIOTAP_TSFT: \
+                ( "tsft", 64, '<Q', \
                   lambda n, x: [pcs.Field(n, 64, default=x[0])] ),
-	IEEE80211_RADIOTAP_FLAGS:
-		( "flags", 8, '<B', \
+        IEEE80211_RADIOTAP_FLAGS:
+                ( "flags", 8, '<B', \
                   lambda n, x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_RATE:
-		( "rate", 8, '<B', \
+        IEEE80211_RADIOTAP_RATE:
+                ( "rate", 8, '<B', \
                   lambda n, x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_CHANNEL: \
-		( "chan_mhz", 32, '<HH', _channel ),
-	IEEE80211_RADIOTAP_FHSS:
-		( "fhss", 16, '<H', \
+        IEEE80211_RADIOTAP_CHANNEL: \
+                ( "chan_mhz", 32, '<HH', _channel ),
+        IEEE80211_RADIOTAP_FHSS:
+                ( "fhss", 16, '<H', \
                   lambda n, x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_DBM_ANTSIGNAL: \
-		( "dbm_antsignal", 8, '<b', \
+        IEEE80211_RADIOTAP_DBM_ANTSIGNAL: \
+                ( "dbm_antsignal", 8, '<b', \
                   lambda x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_DBM_ANTNOISE: \
-		( "dbm_antnoise", 8, '<b', \
+        IEEE80211_RADIOTAP_DBM_ANTNOISE: \
+                ( "dbm_antnoise", 8, '<b', \
                   lambda n, x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_LOCK_QUALITY: \
-		( "lock_quality", 16, '<H', \
+        IEEE80211_RADIOTAP_LOCK_QUALITY: \
+                ( "lock_quality", 16, '<H', \
                   lambda n, x: [pcs.Field(n, 16, default=x[0])] ),
-	IEEE80211_RADIOTAP_TX_ATTENUATION: \
-		( "tx_attentuation", 16, '<H', \
+        IEEE80211_RADIOTAP_TX_ATTENUATION: \
+                ( "tx_attentuation", 16, '<H', \
                   lambda n, x: [pcs.Field(n, 16, default=x[0])] ),
-	IEEE80211_RADIOTAP_DB_TX_ATTENUATION: \
-		( "db_tx_attentuation", 16, '<H', \
+        IEEE80211_RADIOTAP_DB_TX_ATTENUATION: \
+                ( "db_tx_attentuation", 16, '<H', \
                   lambda n, x: [pcs.Field(n, 16, default=x[0])] ),
-	IEEE80211_RADIOTAP_DBM_TX_POWER: \
-		( "dbm_tx_power", 8, '<b', \
+        IEEE80211_RADIOTAP_DBM_TX_POWER: \
+                ( "dbm_tx_power", 8, '<b', \
                   lambda n, x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_ANTENNA: \
-		( "antenna", 8, '<B', \
+        IEEE80211_RADIOTAP_ANTENNA: \
+                ( "antenna", 8, '<B', \
                   lambda n, x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_DB_ANTSIGNAL: \
-		( "db_antsignal", 8, '<B', \
+        IEEE80211_RADIOTAP_DB_ANTSIGNAL: \
+                ( "db_antsignal", 8, '<B', \
                   lambda n, x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_DB_ANTNOISE: \
-		( "db_antnoise", 8, '<B', \
+        IEEE80211_RADIOTAP_DB_ANTNOISE: \
+                ( "db_antnoise", 8, '<B', \
                   lambda n, x: [pcs.Field(n, 8, default=x[0])] ),
-	IEEE80211_RADIOTAP_XCHANNEL:
-		( "xchan_flags", 8, '<IHBb', _xchannel )
+        IEEE80211_RADIOTAP_XCHANNEL:
+                ( "xchan_flags", 8, '<IHBb', _xchannel )
 }
 
 class radiotap(pcs.Packet):
@@ -195,10 +195,10 @@ class radiotap(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize an ethernet packet"""
-        version = pcs.Field("version", 8)		# currently 0.
+        version = pcs.Field("version", 8)               # currently 0.
         pad = pcs.Field("pad", 8)
-        len = pcs.Field("len", 16)			# inclusive.
-        present = pcs.Field("present", 32)		# Bit mask.
+        len = pcs.Field("len", 16)                      # inclusive.
+        present = pcs.Field("present", 32)              # Bit mask.
         tlvs = pcs.OptionListField("tlvs")
 
         pcs.Packet.__init__(self, [version, pad, len, present, tlvs], \
@@ -217,7 +217,7 @@ class radiotap(pcs.Packet):
             # Force little-endian conversion.
             # TODO: Process the EXT bit.
             he_prez = struct.unpack('<i', bytes[4:4])
-            for i in xrange(IEEE80211_RADIOTAP_TSFT, \
+            for i in range(IEEE80211_RADIOTAP_TSFT, \
                             IEEE80211_RADIOTAP_XCHANNEL+1):
                 if (he_prez & (1 << i)) != 0:
                     if i in _vmap:

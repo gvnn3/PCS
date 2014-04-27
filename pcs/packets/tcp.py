@@ -37,7 +37,7 @@
 import sys
 
 import pcs
-import tcp_map
+from . import tcp_map
 from pcs import UnpackError
 from pcs.packets import payload
 
@@ -91,17 +91,16 @@ class tcp(pcs.Packet):
             # option area. We will perform this check during encoding later.
 
             if data_offset > len(bytes):
-                raise UnpackError, \
-                      "TCP segment is larger than input (%d > %d)" % \
-                      (data_offset, len(bytes))
+                raise UnpackError("TCP segment is larger than input (%d > %d)" % \
+                      (data_offset, len(bytes)))
 
             if (options_len > 0):
                 curr = self.sizeof()
                 while (curr < data_offset):
                     option = struct.unpack('!B', bytes[curr])[0]
 
-		    #print "(curr = %d, data_offset = %d, option = %d)" % \
-		    #	  (curr, data_offset, option)
+                    #print "(curr = %d, data_offset = %d, option = %d)" % \
+                    #     (curr, data_offset, option)
 
                     # Special-case options which do not have a length field.
                     if option == 0:        # end
@@ -116,9 +115,8 @@ class tcp(pcs.Packet):
 
                     optlen = struct.unpack('!B', bytes[curr+1])[0]
                     if (optlen < 1 or optlen > (data_offset - curr)):
-                        raise UnpackError, \
-                              "Bad length %d for TCP option %d" % \
-                              (optlen, option)
+                        raise UnpackError("Bad length %d for TCP option %d" % \
+                              (optlen, option))
 
                     # XXX we could break this out into a map.
                     # option lengths include the length of the code byte,
@@ -126,66 +124,63 @@ class tcp(pcs.Packet):
                     # buttermilk of course is that they do not 1:1 map
                     # onto TLVs, see above, but they need to if we plan
                     # to use the existing object model.
-		    #print "\t(optlen %d)" % (optlen)
+                    #print "\t(optlen %d)" % (optlen)
 
                     if option == 2:        # mss
-			# XXX This is being thrown, not sure why.
+                        # XXX This is being thrown, not sure why.
                         #if optlen != 4:
-			#    print options
+                        #    print options
                         #    raise UnpackError, \
                         #          "Bad length %d for TCP option %d, should be %d" % \
                         #          (optlen, option, 4)
                         value = struct.unpack("!H", bytes[curr+2:curr+4])[0]
-			# XXX does tlv encode a length in bits or bytes??
-			# 'cuz a second pass spits out 'it's optlen 16'"
-			options.append(pcs.TypeLengthValueField("mss", \
-				       pcs.Field("t", 8, default = option), \
-				       pcs.Field("l", 8, default = optlen), \
-				       pcs.Field("v", 16, default = value)))
+                        # XXX does tlv encode a length in bits or bytes??
+                        # 'cuz a second pass spits out 'it's optlen 16'"
+                        options.append(pcs.TypeLengthValueField("mss", \
+                                       pcs.Field("t", 8, default = option), \
+                                       pcs.Field("l", 8, default = optlen), \
+                                       pcs.Field("v", 16, default = value)))
                         curr += optlen
                     elif option == 3:        # wscale
                         if optlen != 3:
-                            raise UnpackError, \
-                                  "Bad length %d for TCP option %d, should be %d" % \
-                                  (optlen, option, 3)
+                            raise UnpackError("Bad length %d for TCP option %d, should be %d" % \
+                                  (optlen, option, 3))
                         value = struct.unpack("B", bytes[curr+2:curr+3])[0]
-			options.append(pcs.TypeLengthValueField("wscale", \
-				       pcs.Field("t", 8, default = option), \
-				       pcs.Field("l", 8, default = optlen), \
-				       pcs.Field("v", 8, default = value)))
+                        options.append(pcs.TypeLengthValueField("wscale", \
+                                       pcs.Field("t", 8, default = option), \
+                                       pcs.Field("l", 8, default = optlen), \
+                                       pcs.Field("v", 8, default = value)))
                         curr += optlen
                     elif option == 4:        # sackok
                         if optlen != 2:
-                            raise UnpackError, \
-                                  "Bad length %d for TCP option %d, should be %d" % \
-                                  (optlen, option, 2)
-		    	options.append(pcs.TypeLengthValueField("sackok", \
-		    		       pcs.Field("t", 8, default = option), \
-		    		       pcs.Field("l", 8, default = optlen), \
-		    		       pcs.Field("v", 0, default = value)))
+                            raise UnpackError("Bad length %d for TCP option %d, should be %d" % \
+                                  (optlen, option, 2))
+                        options.append(pcs.TypeLengthValueField("sackok", \
+                                       pcs.Field("t", 8, default = option), \
+                                       pcs.Field("l", 8, default = optlen), \
+                                       pcs.Field("v", 0, default = value)))
                         curr += optlen
                     elif option == 5:        # sack
                         # this is a variable length option, the permitted
- 		    	# range is 2 + 1..4*sizeof(sackblock) subject
-		    	# to any other options.
-		    	sacklen = optlen - 2
+                        # range is 2 + 1..4*sizeof(sackblock) subject
+                        # to any other options.
+                        sacklen = optlen - 2
                         value = struct.unpack("%dB" % sacklen,
-		    			      bytes[curr+2:curr+sacklen])[0]
-		    	options.append(pcs.TypeLengthValueField("sack", \
-		    		       pcs.Field("t", 8, default = option), \
-		    		       pcs.Field("l", 8, default = optlen), \
-		    		       pcs.Field("v", sacklen * 8, default = value)))
+                                              bytes[curr+2:curr+sacklen])[0]
+                        options.append(pcs.TypeLengthValueField("sack", \
+                                       pcs.Field("t", 8, default = option), \
+                                       pcs.Field("l", 8, default = optlen), \
+                                       pcs.Field("v", sacklen * 8, default = value)))
                         curr += optlen
                     elif option == 8:        # tstamp
                         if optlen != 10:
-                            raise UnpackError, \
-                                  "Bad length %d for TCP option %d, should be %d" % \
-                                  (optlen, option, 10)
+                            raise UnpackError("Bad length %d for TCP option %d, should be %d" % \
+                                  (optlen, option, 10))
                         value = struct.unpack("!2I", bytes[curr+2:curr+10])[0]
-			options.append(pcs.TypeLengthValueField("tstamp", \
-				       pcs.Field("t", 8, default = option), \
-				       pcs.Field("l", 8, default = optlen), \
-				       pcs.Field("v", 64, default = value)))
+                        options.append(pcs.TypeLengthValueField("tstamp", \
+                                       pcs.Field("t", 8, default = option), \
+                                       pcs.Field("l", 8, default = optlen), \
+                                       pcs.Field("v", 64, default = value)))
                         curr += optlen
                     #elif option == 19:        # md5
                     #    if optlen != 18:
@@ -193,10 +188,10 @@ class tcp(pcs.Packet):
                     #              "Bad length %d for TCP option %d, should be %d" % \
                     #              (optlen, option, 18)
                     #    value = struct.unpack("16B", bytes[curr+2:curr+16])[0]
-		    #	options.append(pcs.TypeLengthValueField("md5", \
-		    #		       pcs.Field("t", 8, default = option), \
-		    #		       pcs.Field("l", 8, default = optlen), \
-		    #		       pcs.Field("v", 64, default = value)))
+                    #   options.append(pcs.TypeLengthValueField("md5", \
+                    #                  pcs.Field("t", 8, default = option), \
+                    #                  pcs.Field("l", 8, default = optlen), \
+                    #                  pcs.Field("v", 64, default = value)))
                     #    curr += optlen
                     elif option == 30:        # multipath
                         optdatalen = optlen - 2
@@ -213,18 +208,18 @@ class tcp(pcs.Packet):
                         curr += optlen
                     else:
                         #print "warning: unknown option %d" % option
-			optdatalen = optlen - 2
-			value = struct.unpack("!B", bytes[curr+2:curr+optdatalen])[0]
-			options.append(pcs.TypeLengthValueField("unknown", \
-				       pcs.Field("t", 8, default = option), \
-				       pcs.Field("l", 8, default = optlen), \
-				       pcs.Field("v", optdatalen * 8, default = value)))
+                        optdatalen = optlen - 2
+                        value = struct.unpack("!B", bytes[curr+2:curr+optdatalen])[0]
+                        options.append(pcs.TypeLengthValueField("unknown", \
+                                       pcs.Field("t", 8, default = option), \
+                                       pcs.Field("l", 8, default = optlen), \
+                                       pcs.Field("v", optdatalen * 8, default = value)))
                         curr += optlen
 
         if (bytes is not None and (self.offset * 4 < len(bytes))):
             self.data = self.next(bytes[(self.offset * 4):len(bytes)],
                                   timestamp = timestamp)
-	    if self.data is None:
+            if self.data is None:
                 from pcs.packets.payload import payload
                 self.data = payload(bytes[(self.offset * 4):len(bytes)])
         else:
@@ -292,9 +287,9 @@ class tcp(pcs.Packet):
         if ip is not None and ip6 is not None:
             assert iip != iip6, "ipv4 and ipv6 cannot be at same index"
             if iip6 > iip:
-                ip = None	# ip6 is nearest outer header, ignore ip
+                ip = None       # ip6 is nearest outer header, ignore ip
             else:
-                ip6 = None	# ip is nearest outer header, ignore ip6
+                ip6 = None      # ip is nearest outer header, ignore ip6
         if ip is not None:
             self.calc_checksum_v4(ip)
         else:

@@ -54,7 +54,7 @@ PROTO_GARP = 0x0001
 
 ATTR_END = 0
 ATTR_GROUP = 1
-ATTR_VID = ATTR_GROUP		# Alias for GVRP
+ATTR_VID = ATTR_GROUP           # Alias for GVRP
 ATTR_REQUIREMENT = 2
 
 # GARP attribute event types
@@ -148,8 +148,8 @@ class stp(pcs.Packet):
         return s
 
 map = {
-	PROTO_STP: stp,
-	PROTO_GARP: garp
+        PROTO_STP: stp,
+        PROTO_GARP: garp
 }
 
 class bpdu(pcs.Packet):

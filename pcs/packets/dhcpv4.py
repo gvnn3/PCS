@@ -47,7 +47,7 @@ from socket import inet_ntop
 #from pcs.packets.ethernet import ether_btoa
 from pcs.packets import payload
 
-import dhcpv4_options
+from . import dhcpv4_options
 
 # BOOTP opcodes.
 BOOTREQUEST = 1
@@ -92,101 +92,100 @@ class dhcpv4(pcs.Packet):
         sname = pcs.StringField("sname", 64*8)
         file = pcs.StringField("file", 128*8)
 
-	options = pcs.OptionListField("options")
+        options = pcs.OptionListField("options")
 
         pcs.Packet.__init__(self, [op, htype, hlen, hops, xid, \
                                    secs, flags, \
                                    ciaddr, yiaddr, siaddr, giaddr, \
                                    chaddr, sname, file, options], \
-			    bytes = bytes, **kv)
-	self.description = "Initialize a DHCPv4 packet. "
+                            bytes = bytes, **kv)
+        self.description = "Initialize a DHCPv4 packet. "
 
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-	# Always point beyond the static payload so that we take the
-	# correct slice as a vanilla payload iff no options are parsed.
-	curr = self.sizeof()
-	#print "self.sizeof() %d\n" % curr
-	if bytes is not None:
-	    opts_off = curr
-	    end = len(bytes)
-	    if (end - curr) > 4:
-		# If the DHCP cookie is present, we append it to the
-		# options list so it will be reflected if we re-encode.
-		# If it is not present, we set the remaining counter to 0
-		# so that the options list loop will not execute.
+        # Always point beyond the static payload so that we take the
+        # correct slice as a vanilla payload iff no options are parsed.
+        curr = self.sizeof()
+        #print "self.sizeof() %d\n" % curr
+        if bytes is not None:
+            opts_off = curr
+            end = len(bytes)
+            if (end - curr) > 4:
+                # If the DHCP cookie is present, we append it to the
+                # options list so it will be reflected if we re-encode.
+                # If it is not present, we set the remaining counter to 0
+                # so that the options list loop will not execute.
                 cval = struct.unpack('!L', bytes[curr:curr+4])[0]
-		if cval == DHCP_OPTIONS_COOKIE:
-		    options.append(pcs.Field("cookie", 32, default = cval))
-		    curr += 4
-		else:
-		    end = 0
+                if cval == DHCP_OPTIONS_COOKIE:
+                    options.append(pcs.Field("cookie", 32, default = cval))
+                    curr += 4
+                else:
+                    end = 0
 
-		while curr < end:
-		    option = struct.unpack('!B', bytes[curr])[0]
+                while curr < end:
+                    option = struct.unpack('!B', bytes[curr])[0]
 
-		    # Special-case options which have only a type field
-		    # and no data or length field.
-		    if option == DHO_PAD:		# pad
-			# Chew adjacent bytes into a single field.
-			ps = curr
-			pc = ps
-			while pc < end:
-			    pb = struct.unpack('!B', bytes[pc])[0]
-			    if pb != 0:
-				break
-			    pc += 1
-			padlen = pc - ps
-			#print "got %d pad bytes\n" % (padlen)
-			options.append(pcs.Field("pad", padlen * 8))
-			curr += padlen
-			continue
-		    elif option == DHO_END:		# end
-			options.append(pcs.Field("end", 8, default = option))
-			curr += 1
-			continue
+                    # Special-case options which have only a type field
+                    # and no data or length field.
+                    if option == DHO_PAD:               # pad
+                        # Chew adjacent bytes into a single field.
+                        ps = curr
+                        pc = ps
+                        while pc < end:
+                            pb = struct.unpack('!B', bytes[pc])[0]
+                            if pb != 0:
+                                break
+                            pc += 1
+                        padlen = pc - ps
+                        #print "got %d pad bytes\n" % (padlen)
+                        options.append(pcs.Field("pad", padlen * 8))
+                        curr += padlen
+                        continue
+                    elif option == DHO_END:             # end
+                        options.append(pcs.Field("end", 8, default = option))
+                        curr += 1
+                        continue
 
-		    # All DHCP options have a type byte, a length byte,
-		    # and a payload. The length byte does NOT include
-		    # the length of the other fields.
-		    curr += 1
+                    # All DHCP options have a type byte, a length byte,
+                    # and a payload. The length byte does NOT include
+                    # the length of the other fields.
+                    curr += 1
                     optlen = struct.unpack('!B', bytes[curr:curr+1])[0]
                     if (optlen < 1 or ((curr + optlen) > end)):
-                        raise UnpackError, \
-                              "Bad length %d for DHCPv4 option %d" % \
-                              (optlen, option)
+                        raise UnpackError("Bad length %d for DHCPv4 option %d" % \
+                              (optlen, option))
 
-		    # Attempt to parse this DHCP option.
-		    # Note well: unlike TCP and IP options, the length field
-		    # in a DHCP option field does not include the length
-		    # and type bytes.
-		    # The map contains functions which take the option
-		    # list and byte array as parameters, and return a
-		    # reference to a class which wraps that option. All
-		    # are derived from a base class containing the generic
-		    # option parsing logic.
-		    # TODO: Use this technique for IGMP, IP and TCP options.
-		    curr += 1
-		    optinst = None
-		    if option in dhcpv4_options.map:
-			optinst = \
-			    dhcpv4_options.map[option](option, \
-						       bytes[curr:curr+optlen])
-		    else:
-			optinst = \
-			    dhcpv4_options.tlv_option(option, \
-						      bytes[curr:curr+optlen])
+                    # Attempt to parse this DHCP option.
+                    # Note well: unlike TCP and IP options, the length field
+                    # in a DHCP option field does not include the length
+                    # and type bytes.
+                    # The map contains functions which take the option
+                    # list and byte array as parameters, and return a
+                    # reference to a class which wraps that option. All
+                    # are derived from a base class containing the generic
+                    # option parsing logic.
+                    # TODO: Use this technique for IGMP, IP and TCP options.
+                    curr += 1
+                    optinst = None
+                    if option in dhcpv4_options.map:
+                        optinst = \
+                            dhcpv4_options.map[option](option, \
+                                                       bytes[curr:curr+optlen])
+                    else:
+                        optinst = \
+                            dhcpv4_options.tlv_option(option, \
+                                                      bytes[curr:curr+optlen])
 
-		    options.append(optinst.field())
-		    curr += optlen
+                    options.append(optinst.field())
+                    curr += optlen
 
-	if bytes is not None and curr < len(bytes):
-	    self.data = payload.payload(bytes[curr:len(bytes)])
-	else:
-	    self.data = None
+        if bytes is not None and curr < len(bytes):
+            self.data = payload.payload(bytes[curr:len(bytes)])
+        else:
+            self.data = None
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
@@ -201,5 +200,5 @@ class dhcpv4(pcs.Packet):
            attr == "siaddr" or attr == "giaddr":
                 return inet_ntop(AF_INET,
                                  struct.pack('!L', getattr(self,attr)))
-	#elif attr == "chaddr" and self.htype == HTYPE_ETHER:
+        #elif attr == "chaddr" and self.htype == HTYPE_ETHER:
         #    return ether_btoa(getattr(self, attr))

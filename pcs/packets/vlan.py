@@ -41,7 +41,7 @@ import time
 import pcs
 import pcs.packets.ethernet
 import pcs.packets.payload
-import ethernet_map
+from . import ethernet_map
 
 class vlan(pcs.Packet):
     """IEEE 802.1q VLAN header"""
@@ -52,7 +52,7 @@ class vlan(pcs.Packet):
     def __init__(self, bytes = None, timestamp = None, **kv):
         type = pcs.Field("type", 16, discriminator=True)
         p = pcs.Field("p", 3)
-        cfi = pcs.Field("cfi", 1)		# Canonical MAC
+        cfi = pcs.Field("cfi", 1)               # Canonical MAC
         vlan = pcs.Field("vlan", 12)
 
         pcs.Packet.__init__(self, [ p, cfi, vlan, type ], bytes = bytes, **kv)

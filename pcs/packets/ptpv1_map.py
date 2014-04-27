@@ -33,7 +33,7 @@
 # Description: A file for mapping various PTP (IEEE-1588) headers
 # These are for PTPv1 which is being deprecated.
 
-import ptp
+from . import ptp
 
 PTP_SYNC = 0
 PTP_DELAY_REQUEST = 1

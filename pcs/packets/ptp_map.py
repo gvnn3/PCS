@@ -34,7 +34,7 @@
 # PTPv2 headers
 
 
-import ptp
+from . import ptp
 
 PTP_SYNC = 0
 PTP_DELAY_REQUEST = 1

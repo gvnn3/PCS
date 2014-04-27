@@ -92,7 +92,7 @@ OAM_INFO_TLV_REMOTE = 0x02
 
 # OAMPDU State field
 OAM_STATE_F_MUX_ACTION =  0x04
-OAM_STATE_F_PARSE_ACTION = 0x03	# mask 0:1
+OAM_STATE_F_PARSE_ACTION = 0x03 # mask 0:1
 
 # OAMPDU Config field
 OAM_CFG_F_HAS_RETRIEVAL = 0x10
@@ -168,9 +168,9 @@ class marker(pcs.Packet):
             self.data = None
 
 map = {
-	SLOWPROTOCOLS_SUBTYPE_LACP: lacp,
-	SLOWPROTOCOLS_SUBTYPE_MARKER: marker
-	#SLOWPROTOCOLS_SUBTYPE_OAM: oam
+        SLOWPROTOCOLS_SUBTYPE_LACP: lacp,
+        SLOWPROTOCOLS_SUBTYPE_MARKER: marker
+        #SLOWPROTOCOLS_SUBTYPE_OAM: oam
 }
 
 class slowhdr(pcs.Packet):

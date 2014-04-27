@@ -55,16 +55,16 @@ class rtp(pcs.Packet):
     _layout = pcs.Layout()
 
     def __init__(self, bytes = None, timestamp = None, **kv):
-        v = pcs.Field("v", 2)		# version
-        p = pcs.Field("p", 1)		# padded
-        x = pcs.Field("x", 1)		# extended
-        cc = pcs.Field("cc", 4)		# csrc count
-        m = pcs.Field("m", 1)		# m-bit
-        pt = pcs.Field("pt", 7, discriminator=True)	# payload type
-        seq = pcs.Field("seq", 16)	# sequence
+        v = pcs.Field("v", 2)           # version
+        p = pcs.Field("p", 1)           # padded
+        x = pcs.Field("x", 1)           # extended
+        cc = pcs.Field("cc", 4)         # csrc count
+        m = pcs.Field("m", 1)           # m-bit
+        pt = pcs.Field("pt", 7, discriminator=True)     # payload type
+        seq = pcs.Field("seq", 16)      # sequence
         ts = pcs.Field("ts", 32)        # timestamp
-        ssrc = pcs.Field("ssrc", 32)	# source
-        opt = pcs.OptionListField("opt")	# optional fields
+        ssrc = pcs.Field("ssrc", 32)    # source
+        opt = pcs.OptionListField("opt")        # optional fields
 
         pcs.Packet.__init__(self, [v, p, x, cc, m, pt, seq, ts, ssrc, opt], \
                             bytes = bytes, **kv)

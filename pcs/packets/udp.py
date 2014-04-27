@@ -35,7 +35,7 @@
 # Description: A class which implements UDP v4 packets
 
 import pcs
-import udp_map
+from . import udp_map
 
 import socket
 import time
@@ -111,9 +111,9 @@ class udp(pcs.Packet):
         if ip is not None and ip6 is not None:
             assert iip != iip6, "ipv4 and ipv6 cannot be at same index"
             if iip6 > iip:
-                ip = None	# ip6 is nearest outer header, ignore ip
+                ip = None       # ip6 is nearest outer header, ignore ip
             else:
-                ip6 = None	# ip is nearest outer header, ignore ip6
+                ip6 = None      # ip is nearest outer header, ignore ip6
         if ip is not None:
             self.calc_checksum_v4(ip)
         else:

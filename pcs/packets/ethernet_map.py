@@ -38,15 +38,15 @@
 # The map is a dictionary who's key is the protocol type and who's
 # value is the class constructor for that type.
 
-import ipv4, ipv6, arp
+from . import ipv4, ipv6, arp
 
-ETHERTYPE_IP		= 0x0800	# IP protocol 
-ETHERTYPE_ARP		= 0x0806	# Addr. resolution protocol
-ETHERTYPE_VLAN		= 0x8100	# 802.1q header
-ETHERTYPE_IPV6		= 0x86dd	# IPv6
-ETHERTYPE_MPLS		= 0x8847	# unicast
-ETHERTYPE_MPLS_M	= 0x8848	# multicast
-ETHERTYPE_SLOW		= 0x8809	# 802.3ad link aggregation (LACP)
+ETHERTYPE_IP            = 0x0800        # IP protocol 
+ETHERTYPE_ARP           = 0x0806        # Addr. resolution protocol
+ETHERTYPE_VLAN          = 0x8100        # 802.1q header
+ETHERTYPE_IPV6          = 0x86dd        # IPv6
+ETHERTYPE_MPLS          = 0x8847        # unicast
+ETHERTYPE_MPLS_M        = 0x8848        # multicast
+ETHERTYPE_SLOW          = 0x8809        # 802.3ad link aggregation (LACP)
 
 map = {ETHERTYPE_IP: ipv4.ipv4,
        ETHERTYPE_ARP: arp.arp,

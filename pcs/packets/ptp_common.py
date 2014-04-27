@@ -33,7 +33,7 @@
 # Description: An encoding for the Precision Time Protocol (IEEE-1588)
 
 import pcs
-import ptp_map
+from . import ptp_map
 import time
 
 PTP_SUBDOMAIN_NAME_LENGTH = 16

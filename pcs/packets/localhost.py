@@ -39,7 +39,7 @@ import pcs
 from pcs.packets import ipv4
 from pcs.packets import ipv6
 
-import localhost_map
+from . import localhost_map
 
 import time
 

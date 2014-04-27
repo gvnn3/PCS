@@ -38,18 +38,18 @@ import struct
 from socket import AF_INET, inet_ntop, inet_ntoa
 import time
 
-ARPHRD_ETHER = 1	# ethernet hardware format
-ARPHRD_IEEE802 = 6	# token-ring hardware format
-ARPHRD_ARCNET = 7	# arcnet hardware format
-ARPHRD_FRELAY = 15	# frame relay hardware format
-ARPHRD_IEEE1394 = 24	# firewire hardware format
+ARPHRD_ETHER = 1        # ethernet hardware format
+ARPHRD_IEEE802 = 6      # token-ring hardware format
+ARPHRD_ARCNET = 7       # arcnet hardware format
+ARPHRD_FRELAY = 15      # frame relay hardware format
+ARPHRD_IEEE1394 = 24    # firewire hardware format
 
-ARPOP_REQUEST = 1	# request to resolve address
-ARPOP_REPLY = 2		# response to previous request
-ARPOP_REVREQUEST = 3	# request protocol address given hardware
-ARPOP_REVREPLY = 4	# response giving protocol address
-ARPOP_INVREQUEST = 8	# request to identify peer
-ARPOP_INVREPLY = 9	# response identifying peer
+ARPOP_REQUEST = 1       # request to resolve address
+ARPOP_REPLY = 2         # response to previous request
+ARPOP_REVREQUEST = 3    # request protocol address given hardware
+ARPOP_REVREPLY = 4      # response giving protocol address
+ARPOP_INVREQUEST = 8    # request to identify peer
+ARPOP_INVREPLY = 9      # response identifying peer
 
 class arp(pcs.Packet):
     """ARP"""
@@ -137,7 +137,7 @@ def ether_btoa(bytes):
     """
 
     pretty = ""
-    for i in (range(5)):
+    for i in (list(range(5))):
         pretty += hex(bytes[i])[2:4] # Strip the 0x from the string
         pretty += ':'
         

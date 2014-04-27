@@ -39,12 +39,12 @@ BOOTPS = 67
 BOOTPC = 68
 PTP    = 319
 PTP_GENERAL = 320
-import dns
-import dhcpv4
-import ptp_common
+from . import dns
+from . import dhcpv4
+from . import ptp_common
 
-map = {	DNS:	dns.dnsheader,
-	BOOTPS: dhcpv4.dhcpv4,
-	BOOTPC: dhcpv4.dhcpv4,
+map = { DNS:    dns.dnsheader,
+        BOOTPS: dhcpv4.dhcpv4,
+        BOOTPC: dhcpv4.dhcpv4,
         PTP: ptp_common.Common,
         PTP_GENERAL: ptp_common.Common}

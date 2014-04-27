@@ -37,7 +37,7 @@
 import pcs
 from pcs import UnpackError
 from socket import AF_INET, inet_ntop
-import ipv4_map
+from . import ipv4_map
 
 import struct
 import time
@@ -45,24 +45,24 @@ import time
 #
 # IPv4 address constants.
 #
-INADDR_ANY		= 0x00000000	# 0.0.0.0
-INADDR_NONE		= 0x00000000	# 0.0.0.0
-INADDR_BROADCAST	= 0xffffffff	# 255.255.255.255
-INADDR_LOOPBACK		= 0x7f000001	# 127.0.0.1
-INADDR_UNSPEC_GROUP	= 0xe0000000	# 224.0.0.0
-INADDR_ALLHOSTS_GROUP	= 0xe0000001	# 224.0.0.1
-INADDR_ALLRTRS_GROUP	= 0xe0000002	# 224.0.0.2
-INADDR_DVMRP_GROUP	= 0xe0000004	# 224.0.0.4
-INADDR_ALLPIM_ROUTERS_GROUP = 0xe000000d	# 224.0.0.13
-INADDR_ALLRPTS_GROUP	= 0xe0000016	# 224.0.0.22, IGMPv3
-INADDR_MAX_LOCAL_GROUP	= 0xe00000ff	# 224.0.0.255
+INADDR_ANY              = 0x00000000    # 0.0.0.0
+INADDR_NONE             = 0x00000000    # 0.0.0.0
+INADDR_BROADCAST        = 0xffffffff    # 255.255.255.255
+INADDR_LOOPBACK         = 0x7f000001    # 127.0.0.1
+INADDR_UNSPEC_GROUP     = 0xe0000000    # 224.0.0.0
+INADDR_ALLHOSTS_GROUP   = 0xe0000001    # 224.0.0.1
+INADDR_ALLRTRS_GROUP    = 0xe0000002    # 224.0.0.2
+INADDR_DVMRP_GROUP      = 0xe0000004    # 224.0.0.4
+INADDR_ALLPIM_ROUTERS_GROUP = 0xe000000d        # 224.0.0.13
+INADDR_ALLRPTS_GROUP    = 0xe0000016    # 224.0.0.22, IGMPv3
+INADDR_MAX_LOCAL_GROUP  = 0xe00000ff    # 224.0.0.255
 
 #
 # IPv4 header flags.
 #
-IP_MF = 1	# More fragments
-IP_DF = 2	# Don't fragment
-IP_RF = 4	# Reserved; always set to 0.
+IP_MF = 1       # More fragments
+IP_DF = 2       # Don't fragment
+IP_RF = 4       # Reserved; always set to 0.
 
 #
 # IPv4 options.
@@ -142,9 +142,8 @@ class ipv4(pcs.Packet):
             options_len = hlen_bytes - self.sizeof()
 
             if hlen_bytes > len(bytes):
-                raise UnpackError, \
-                      "IP header is larger than input (%d > %d)" % \
-                      (hlen_bytes, len(bytes))
+                raise UnpackError("IP header is larger than input (%d > %d)" % \
+                      (hlen_bytes, len(bytes)))
 
             if options_len > 0:
                 curr = self.sizeof()
@@ -167,9 +166,8 @@ class ipv4(pcs.Packet):
                         # that a router must examine the packet. It is
                         # 32 bits wide including option code and length.
                         if optlen != 4:
-                            raise UnpackError, \
-                                  "Bad length %d for IP option %d, " \
-                                  "should be %d" % (optlen, option, 4)
+                            raise UnpackError("Bad length %d for IP option %d, " \
+                                  "should be %d" % (optlen, option, 4))
                         value = struct.unpack("!H", bytes[curr+2:curr+4])[0]
                         options.append(pcs.TypeLengthValueField("ra",
                                        pcs.Field("t", 8, default = option),
@@ -177,7 +175,7 @@ class ipv4(pcs.Packet):
                                        pcs.Field("v", 16, default = value)))
                         curr += optlen
                     else:
-                        print "warning: unknown IP option %d" % option
+                        print("warning: unknown IP option %d" % option)
                         optdatalen = optlen - 2
                         options.append(pcs.TypeLengthValueField("unknown",
                                        pcs.Field("t", 8, default = option),

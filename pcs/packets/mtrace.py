@@ -58,20 +58,20 @@ class query(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize the MTRACE query header."""
-	# (G,S) tuple to query.
-	group = pcs.Field("group", 32)
-	source = pcs.Field("source", 32)
-	# Who's asking.
-	receiver = pcs.Field("receiver", 32)
-	# Where to send the answer.
-	response_addr = pcs.Field("response_addr", 32)
-	response_hoplimit = pcs.Field("response_hoplimit", 8)
-	# The ID of this query.
-	query_id = pcs.Field("query_id", 24)
+        # (G,S) tuple to query.
+        group = pcs.Field("group", 32)
+        source = pcs.Field("source", 32)
+        # Who's asking.
+        receiver = pcs.Field("receiver", 32)
+        # Where to send the answer.
+        response_addr = pcs.Field("response_addr", 32)
+        response_hoplimit = pcs.Field("response_hoplimit", 8)
+        # The ID of this query.
+        query_id = pcs.Field("query_id", 24)
 
         pcs.Packet.__init__(self, [group, source, \
-				   receiver, response_addr, \
-				   response_hoplimit, query_id], bytes, **kv)
+                                   receiver, response_addr, \
+                                   response_hoplimit, query_id], bytes, **kv)
 
         self.description = "initialize the MTRACE query header."
 
@@ -91,22 +91,22 @@ class reply(pcs.Packet):
 
     def __init__(self, bytes = None, timestamp = None, **kv):
         """initialize the MTRACE response header."""
-	# (G,S) tuple to query.
-	group = pcs.Field("group", 32)
-	source = pcs.Field("source", 32)
-	# Who's asking.
-	receiver = pcs.Field("receiver", 32)
-	# Where to send the answer.
-	response_addr = pcs.Field("response_addr", 32)
-	response_hoplimit = pcs.Field("response_hoplimit", 8)
-	# The ID of this query.
-	query_id = pcs.Field("query_id", 24)
+        # (G,S) tuple to query.
+        group = pcs.Field("group", 32)
+        source = pcs.Field("source", 32)
+        # Who's asking.
+        receiver = pcs.Field("receiver", 32)
+        # Where to send the answer.
+        response_addr = pcs.Field("response_addr", 32)
+        response_hoplimit = pcs.Field("response_hoplimit", 8)
+        # The ID of this query.
+        query_id = pcs.Field("query_id", 24)
 
-	#...hops?
+        #...hops?
 
         pcs.Packet.__init__(self, [group, source, \
-				   receiver, response_addr, \
-				   response_hoplimit, query_id], bytes, **kv)
+                                   receiver, response_addr, \
+                                   response_hoplimit, query_id], bytes, **kv)
 
         self.description = "initialize the MTRACE response header."
 

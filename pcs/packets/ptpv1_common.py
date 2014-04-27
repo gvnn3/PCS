@@ -34,7 +34,7 @@
 # aka PTPv1, which is to be deprecated.
 
 import pcs
-import ptp_map
+from . import ptp_map
 import time
 
 PTP_SUBDOMAIN_NAME_LENGTH = 16

@@ -1,3 +1,39 @@
+# Copyright (c) 2014, Neville-Neil Consulting
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of Neville-Neil Consulting nor the names of its 
+# contributors may be used to endorse or promote products derived from 
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# File: $Id:$
+#
+# Author: Bruce M. Simpson
+#
+# Description: IGMP Packet Class
+
 import pcs
 from socket import AF_INET, inet_ntop
 
@@ -20,25 +56,25 @@ IGMP_MTRACE_REPLY = 0x1e
 IGMP_MTRACE_QUERY = 0x1f
 
 igmp_map = {
-	IGMP_HOST_MEMBERSHIP_QUERY:	igmpv2.igmpv2,
-	IGMP_v1_HOST_MEMBERSHIP_REPORT:	igmpv2.igmpv2,
-	#IGMP_DVMRP:			dvmrp.dvmrp,
-	IGMP_v2_HOST_MEMBERSHIP_REPORT:	igmpv2.igmpv2,
-	IGMP_HOST_LEAVE_MESSAGE:	igmpv2.igmpv2,
-	#IGMP_MTRACE_REPLY:		mtrace.reply,
-	#IGMP_MTRACE_QUERY:		mtrace.query,
-	IGMP_v3_HOST_MEMBERSHIP_REPORT:	igmpv3.report
+        IGMP_HOST_MEMBERSHIP_QUERY:     igmpv2.igmpv2,
+        IGMP_v1_HOST_MEMBERSHIP_REPORT: igmpv2.igmpv2,
+        #IGMP_DVMRP:                    dvmrp.dvmrp,
+        IGMP_v2_HOST_MEMBERSHIP_REPORT: igmpv2.igmpv2,
+        IGMP_HOST_LEAVE_MESSAGE:        igmpv2.igmpv2,
+        #IGMP_MTRACE_REPLY:             mtrace.reply,
+        #IGMP_MTRACE_QUERY:             mtrace.query,
+        IGMP_v3_HOST_MEMBERSHIP_REPORT: igmpv3.report
 }
 
 descr = {
-	IGMP_HOST_MEMBERSHIP_QUERY:	"IGMPv2 Query",
-	IGMP_v1_HOST_MEMBERSHIP_REPORT:	"IGMPv1 Report",
-	IGMP_DVMRP:			"DVMRP",
-	IGMP_v2_HOST_MEMBERSHIP_REPORT:	"IGMPv2 Report",
-	IGMP_HOST_LEAVE_MESSAGE:	"IGMPv2 Leave",
-	IGMP_MTRACE_REPLY:		"MTRACE Reply",
-	IGMP_MTRACE_QUERY:		"MTRACE Query",
-	IGMP_v3_HOST_MEMBERSHIP_REPORT:	"IGMPv3 Report"
+        IGMP_HOST_MEMBERSHIP_QUERY:     "IGMPv2 Query",
+        IGMP_v1_HOST_MEMBERSHIP_REPORT: "IGMPv1 Report",
+        IGMP_DVMRP:                     "DVMRP",
+        IGMP_v2_HOST_MEMBERSHIP_REPORT: "IGMPv2 Report",
+        IGMP_HOST_LEAVE_MESSAGE:        "IGMPv2 Leave",
+        IGMP_MTRACE_REPLY:              "MTRACE Reply",
+        IGMP_MTRACE_QUERY:              "MTRACE Query",
+        IGMP_v3_HOST_MEMBERSHIP_REPORT: "IGMPv3 Report"
 }
 
 class igmp(pcs.Packet):

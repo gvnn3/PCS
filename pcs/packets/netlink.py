@@ -39,7 +39,7 @@ import struct
 import time
 
 import pcs
-import payload
+from . import payload
 
 # TODO: Test all this.
 
@@ -47,7 +47,7 @@ import payload
 # Socket options; not yet needed.
 #NETLINK_ADD_MEMBERSHIP = 1
 #NETLINK_DROP_MEMBERSHIP = 2
-#NETLINK_PKTINFO = 3		# returns a uint32_t (group)
+#NETLINK_PKTINFO = 3            # returns a uint32_t (group)
 
 #
 # Netlink link types.
@@ -61,8 +61,8 @@ NETLINK_ROUTE = 0
 # nlmsg_type
 NLMSG_NOOP = 0x1
 NLMSG_ERROR = 0x2
-NLMSG_DONE = 0x3	# end of multipart.
-NLMSG_OVERRUN = 0x4	# unused?
+NLMSG_DONE = 0x3        # end of multipart.
+NLMSG_OVERRUN = 0x4     # unused?
 
 # nlmsg_flags
 NLM_F_REQUEST = 1
@@ -71,7 +71,7 @@ NLM_F_ACK = 4
 NLM_F_ECHO = 8
 NLM_F_ROOT = 0x100
 NLM_F_MATCH = 0x200
-NLM_F_DUMP = 0x300	# or'd
+NLM_F_DUMP = 0x300      # or'd
 NLM_F_ATOMIC = 0x400
 NLM_F_REPLACE = 0x100
 NLM_F_EXCL = 0x200
@@ -113,13 +113,13 @@ class nlmsg_error(pcs.Packet):
 # to avoid circular dependencies, and to make it easier to
 # introduce parsers for dealing with subsystems e.g. rtnetlink.
 nlmsg_map = {
-	NLMSG_NOOP:	payload.payload,
-	NLMSG_ERROR:	nlmsg_error
+        NLMSG_NOOP:     payload.payload,
+        NLMSG_ERROR:    nlmsg_error
 }
 
 descr = {
-	NLMSG_NOOP:	"Noop",
-	NLMSG_ERROR:	"Error"
+        NLMSG_NOOP:     "Noop",
+        NLMSG_ERROR:    "Error"
 }
 
 # XXX Can't fully discriminate without knowing which subsystem
@@ -146,7 +146,7 @@ class nlmsghdr(pcs.Packet):
         type = pcs.Field("type", 16, discriminator=True)
         flags = pcs.Field("flags", 16)
         seq = pcs.Field("seq", 32)
-        pid = pcs.Field("pid", 32)	# Port ID
+        pid = pcs.Field("pid", 32)      # Port ID
 
         pcs.Packet.__init__(self, [len, type, flags, seq, pid], \
                             bytes = bytes, **kv)

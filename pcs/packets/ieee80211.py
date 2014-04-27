@@ -131,43 +131,43 @@ IEEE80211_QOS_TID = 0x0f
 
 
 #struct ieee80211_frame_min {
-#	uint8_t		i_fc[2];
-#	uint8_t		i_dur[2];
-#	uint8_t		i_addr1[IEEE80211_ADDR_LEN];
-#	uint8_t		i_addr2[IEEE80211_ADDR_LEN];
+#       uint8_t         i_fc[2];
+#       uint8_t         i_dur[2];
+#       uint8_t         i_addr1[IEEE80211_ADDR_LEN];
+#       uint8_t         i_addr2[IEEE80211_ADDR_LEN];
 #} __packed;
 #
 #struct ieee80211_frame_rts {
-#	uint8_t		i_fc[2];
-#	uint8_t		i_dur[2];
-#	uint8_t		i_ra[IEEE80211_ADDR_LEN];
-#	uint8_t		i_ta[IEEE80211_ADDR_LEN];
+#       uint8_t         i_fc[2];
+#       uint8_t         i_dur[2];
+#       uint8_t         i_ra[IEEE80211_ADDR_LEN];
+#       uint8_t         i_ta[IEEE80211_ADDR_LEN];
 #} __packed;
 #
 #struct ieee80211_frame_cts {
-#	uint8_t		i_fc[2];
-#	uint8_t		i_dur[2];
-#	uint8_t		i_ra[IEEE80211_ADDR_LEN];
+#       uint8_t         i_fc[2];
+#       uint8_t         i_dur[2];
+#       uint8_t         i_ra[IEEE80211_ADDR_LEN];
 #} __packed;
 #
 #struct ieee80211_frame_ack {
-#	uint8_t		i_fc[2];
-#	uint8_t		i_dur[2];
-#	uint8_t		i_ra[IEEE80211_ADDR_LEN];
+#       uint8_t         i_fc[2];
+#       uint8_t         i_dur[2];
+#       uint8_t         i_ra[IEEE80211_ADDR_LEN];
 #} __packed;
 #
 #struct ieee80211_frame_pspoll {
-#	uint8_t		i_fc[2];
-#	uint8_t		i_aid[2];
-#	uint8_t		i_bssid[IEEE80211_ADDR_LEN];
-#	uint8_t		i_ta[IEEE80211_ADDR_LEN];
+#       uint8_t         i_fc[2];
+#       uint8_t         i_aid[2];
+#       uint8_t         i_bssid[IEEE80211_ADDR_LEN];
+#       uint8_t         i_ta[IEEE80211_ADDR_LEN];
 #} __packed;
 #
-#struct ieee80211_frame_cfend {		/* NB: also CF-End+CF-Ack */
-#	uint8_t		i_fc[2];
-#	uint8_t		i_dur[2];	/* should be zero */
-#	uint8_t		i_ra[IEEE80211_ADDR_LEN];
-#	uint8_t		i_bssid[IEEE80211_ADDR_LEN];
+#struct ieee80211_frame_cfend {         /* NB: also CF-End+CF-Ack */
+#       uint8_t         i_fc[2];
+#       uint8_t         i_dur[2];       /* should be zero */
+#       uint8_t         i_ra[IEEE80211_ADDR_LEN];
+#       uint8_t         i_bssid[IEEE80211_ADDR_LEN];
 #} __packed;
 
 # TODO: WME elements.
@@ -290,7 +290,7 @@ class plcp(pcs.Packet):
         sfd = pcs.Field("sfd", 16, default=0xF3A0) # start frame delimiter
         signal = pcs.Field("signal", 8)
         service = pcs.Field("service", 8)
-        length = pcs.Field("length", 16)	# duration!
+        length = pcs.Field("length", 16)        # duration!
         crc = pcs.Field("crc", 16)
 
         pcs.Packet.__init__(self, [sfd, signal, service, length, crc], \
