@@ -1,4 +1,4 @@
-# Copyright (c) 2005, Neville-Neil Consulting
+# Copyright (c) 2014, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -67,13 +67,12 @@ from socket import *
 
 import pcs.pcap as pcap
 
-import exceptions
 import itertools
 
 # import fast
 
 def attribreprlist(obj, attrs):
-    return map(lambda x, y = obj: '%s: %s' % (x.name, repr(getattr(y, x.name))), itertools.ifilter(lambda x, y = obj: hasattr(y, x.name), attrs))
+    return list(map(lambda x, y = obj: '%s: %s' % (x.name, repr(getattr(y, x.name))), list(filter(lambda x, y = obj: hasattr(y, x.name), attrs))))
 
 class FieldBoundsError(Exception):
     """When a programmer tries to set a field with an inappropriately
@@ -225,7 +224,7 @@ layout of the data and how it is addressed."""
         if ((value is None) or
             (value < 0) or
             (value > (2 ** self.width) - 1)):
-            raise FieldBoundsError, "Value must be between 0 and %d but is %d" % ((2 ** self.width - 1), value)
+            raise FieldBoundsError("Value must be between 0 and %d but is %d" % ((2 ** self.width - 1), value))
 
     def __copy__(self):
         """Return a shallow copy of a Field; used by copy module.
@@ -312,7 +311,7 @@ handled by the LengthValueField."""
         current position in the bytes array."""
         # byteBR == 8 is the neutral state
         if (byteBR is not None and byteBR != 8):
-            raise FieldAlignmentError, "Strings must start on a byte boundary"
+            raise FieldAlignmentError("Strings must start on a byte boundary")
         packarg = "%ds" % (self.width / 8)
         end = curr + self.width / 8
         value = struct.unpack(packarg, bytes[curr:end])[0]
@@ -323,7 +322,7 @@ handled by the LengthValueField."""
     def encode(self, bytearray, value, byte, byteBR):
         """Encode a string field, make sure the bytes are aligned."""
         if (byteBR is not None and byteBR != 8):
-            raise FieldAlignmentError, "Strings must start on a byte boundary"
+            raise FieldAlignmentError("Strings must start on a byte boundary")
         packarg = "%ds" % (self.width / 8)
         bytearray.append(struct.pack(packarg, value))
         return [byte, byteBR]
@@ -335,7 +334,7 @@ handled by the LengthValueField."""
     def bounds(self, value):
         """Check the bounds of this field."""
         if (value is None) or (len (value) > (self.width / 8)):
-            raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (self.width / 8)
+            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (self.width / 8))
 
 class LengthValueFieldError(Exception):
     """LengthValue fields only allow access to two internal pieces of data."""
@@ -358,12 +357,12 @@ class LengthValueField(object):
         self.name = name
         self.compare = compare
         if not isinstance(length, Field):
-            raise LengthValueFieldError, "Length must be of type Field but is %s" % type(length)
+            raise LengthValueFieldError("Length must be of type Field but is %s" % type(length))
         object.__setattr__(self, 'length', length)
         if isinstance(value, Field) or isinstance(value, StringField):
             object.__setattr__(self, 'value', value)
         else:
-            raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
+            raise LengthValueFieldError("Value must be of type Field or StringField but is %s" % type(value))
         self.width = length.width + value.width
         #self.packed = packed
 
@@ -392,14 +391,14 @@ class LengthValueField(object):
             self.length.value = self.value.width
         else:
             self.length.value = len(self.value.value)
-            #self.value.width = len(self.value.value) * 8	# XXX packed
+            #self.value.width = len(self.value.value) * 8       # XXX packed
         [byte, byteBR] = self.length.encode(bytearray, self.length.value, byte, byteBR)
         [byte, byteBR] = self.value.encode(bytearray, self.value.value, byte, byteBR)
         return [byte, byteBR]
 
     def set_value(self, value):
         """Set the value of a LengthValueField."""
-	self.length.value = len(value)
+        self.length.value = len(value)
         self.value.value = value
         if self.packet is not None:
             self.packet.__needencode = True
@@ -450,12 +449,12 @@ class TypeValueField(object):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
-            raise LengthValueFieldError, "Type must be of type Field but is %s" % type(type)
+            raise LengthValueFieldError("Type must be of type Field but is %s" % type(type))
         self.type = type
         if isinstance(value, Field) or isinstance(value, StringField):
             self.value = value
         else:
-            raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
+            raise LengthValueFieldError("Value must be of type Field or StringField but is %s" % type(value))
         self.width = type.width + value.width
         self.compare = compare
 
@@ -485,7 +484,7 @@ class TypeValueField(object):
         """Check the bounds of this field."""
         if ((value is None) or
             (len (value) > (((2 ** self.valuewidth) - 1) / 8))):
-            raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
+            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8))
 
     # There is no __setattr__ to stomp on us here.
     def __copy__(self):
@@ -524,15 +523,15 @@ class TypeLengthValueField(object):
         self.packet = None
         self.name = name
         if not isinstance(type, Field):
-            raise LengthValueFieldError, "Type must be of type Field but is %s" % type(type)
+            raise LengthValueFieldError("Type must be of type Field but is %s" % type(type))
         self.type = type
         if not isinstance(length, Field):
-            raise LengthValueFieldError, "Length must be of type Field but is %s" % type(type)
+            raise LengthValueFieldError("Length must be of type Field but is %s" % type(type))
         self.length = length
         if isinstance(value, Field) or isinstance(value, StringField):
             self.value = value
         else:
-            raise LengthValueFieldError, "Value must be of type Field or StringField but is %s" % type(value)
+            raise LengthValueFieldError("Value must be of type Field or StringField but is %s" % type(value))
         self.width = type.width + length.width + value.width
         self.inclusive = inclusive
         self.bytewise = bytewise
@@ -557,18 +556,18 @@ class TypeLengthValueField(object):
         """Encode a TypeLengthValue field."""
 
         if isinstance(self.value, Field):
-	    # Value is a field. Take its width in bits.
+            # Value is a field. Take its width in bits.
             self.length.value = self.value.width
         else:
-	    # Value is any other Python type. Take its actual length in bits. 
+            # Value is any other Python type. Take its actual length in bits. 
             self.length.value = len(self.value) * 8
 
-	if self.inclusive is True:
-	    # Length field includes the size of the type and length fields.
+        if self.inclusive is True:
+            # Length field includes the size of the type and length fields.
             self.length.value += (self.type.width + self.length.width)
 
-	if self.bytewise is True:
-	    # Length should be encoded as a measure of bytes, not bits.
+        if self.bytewise is True:
+            # Length should be encoded as a measure of bytes, not bits.
             self.length.value /= 8
 
         [byte, byteBR] = self.type.encode(bytearray, self.type.value, byte, byteBR)
@@ -584,7 +583,7 @@ class TypeLengthValueField(object):
         """Check the bounds of this field."""
         if ((value is None) or
             (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
-            raise FieldBoundsError, "Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8)
+            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8))
 
     # There is no __setattr__ to stomp on us here.
     def __copy__(self):
@@ -661,7 +660,7 @@ class OptionListField(CompoundField, list):
         self.index = 0
         return self
 
-    def next(self):
+    def __next__(self):
         """Option lists return a pair of (value, option) when iterated"""
         length = len(self._options)
         if length <= 0:
@@ -682,7 +681,7 @@ class OptionListField(CompoundField, list):
         if length != len(other._options):
             #print "option list lengths differ"
             return False
-        for i in xrange(length):
+        for i in range(length):
             #print "comparing option list field"
             f = self._options[i]
             if isinstance(f, Field):
@@ -720,15 +719,15 @@ class OptionListField(CompoundField, list):
     
     def __setitem__(self, index, value):
         if (index < 0 or index > len(self._options)):
-            raise IndexError, "index %d out of range" % index
+            raise IndexError("index %d out of range" % index)
         else:
             # Three part harmony
             # The caller can pass a list of (value, option) 
             if isinstance(value, list):
                 if len(value) != 2:
-                    raise OptionListError, "Option must be a pair (value, PCS Field)"
+                    raise OptionListError("Option must be a pair (value, PCS Field)")
                 if not isinstance(value[1], _fieldlist):
-                    raise OptionListError, "Option must be a valid PCS Field."
+                    raise OptionListError("Option must be a valid PCS Field.")
                 self._options[index] = value[1]
                 self._options[index].value = value[0]
                 return
@@ -745,7 +744,7 @@ class OptionListField(CompoundField, list):
     def __getitem__(self, index):
         """Return the value of a field in the list."""
         if (index < 0 or index > len(self._options)):
-            raise IndexError, "index %d out of range" % index
+            raise IndexError("index %d out of range" % index)
         else:
             return self._options[index].value
 
@@ -767,7 +766,7 @@ class OptionListField(CompoundField, list):
         Vaue,Option pairs are given as a list (value, option)
         """
         if not isinstance(option, _fieldlist):
-            raise OptionListError, "Option must be a valid PCS Field."
+            raise OptionListError("Option must be a valid PCS Field.")
         if not hasattr(self, '_options'):
             self._options = []
         self._options.append(option)
@@ -787,14 +786,14 @@ class OptionListField(CompoundField, list):
         if hasattr(self, '_options'):
             for option in self._options:
                 if isinstance(option, CompoundField):
-                    raise OptionListError, "Can't encode embedded lists yet"
+                    raise OptionListError("Can't encode embedded lists yet")
                 else:
                     [value, curr, byteBR] = option.decode(bytes, curr, byteBR)
                     option.value = value
         return [None, curr, byteBR]
 
     def reset(self):
-        print self._options
+        print(self._options)
 
     # There is no __setattr__ to stomp on us here.
     def __copy__(self):
@@ -822,7 +821,7 @@ class OptionListField(CompoundField, list):
 
     def default_compare(lp, lf, rp, rf):
         """Default comparison method."""
-        return lf == rf			# Will use __eq__ defined above.
+        return lf == rf                 # Will use __eq__ defined above.
 
     default_compare = staticmethod(default_compare)
 
@@ -988,7 +987,7 @@ class Packet(object):
                 continue
             if ((field.discriminator is True) and
                 (self._discriminator is not None)):
-                raise LayoutDiscriminatorError, "Layout can only have one field marked as a discriminator, but there are at least two %s %s" % (field, self._discriminator)
+                raise LayoutDiscriminatorError("Layout can only have one field marked as a discriminator, but there are at least two %s %s" % (field, self._discriminator))
             if (field.discriminator is True):
                 self._discriminator = field
 
@@ -996,7 +995,7 @@ class Packet(object):
         # Ignore any keyword arguments which do not correspond to
         # packet fields in the Layout.
         if kv is not None:
-            for kw in kv.iteritems():
+            for kw in kv.items():
                 if kw[0] in self._fieldnames:
                     self.__setattr__(kw[0], kw[1])
 
@@ -1109,7 +1108,7 @@ class Packet(object):
            default comparison function specific to the class of the Field.
            If an empty list is passed, apply the mask to all fields."""
         if fieldnames == []:
-            fieldnames = self._fieldnames.keys()
+            fieldnames = list(self._fieldnames.keys())
         for i in fieldnames:
             field = self._fieldnames[i]
             if unmask is True:
@@ -1270,7 +1269,7 @@ class Packet(object):
                 return False
            discfieldname = self._discriminator.name
 
-        for i in map.iteritems():
+        for i in map.items():
             if isinstance(packet, i[1]):
                 field = self._fieldnames[discfieldname]
                 field.value = i[0]
@@ -1337,7 +1336,7 @@ class Chain(list):
         if len(self.packets) != len(other.packets):
             return False
         length = len(self.packets)
-        for i in xrange(length):
+        for i in range(length):
             if self.packets[i] != other.packets[i]:
                 return False
         return True
@@ -1416,7 +1415,7 @@ class Chain(list):
            Used only by the div operator. The default behaviour is to
            set discriminator fields in p1 based on p2."""
         length = len(self.packets)
-        for i in xrange(length):
+        for i in range(length):
             if self.packets[i] is p1:
                 if rdiscriminate is True:
                     p1.rdiscriminate(p2)
@@ -1460,7 +1459,7 @@ class Chain(list):
         """Mark or unmark all of the fields in each Packet in this Chain
            as a wildcard for match() or contains()."""
         length = len(self.packets)
-        for i in xrange(length):
+        for i in range(length):
             self.packets[i].wildcard_mask([], unmask)
 
     def encode(self):
@@ -1624,24 +1623,24 @@ class Connector(object):
         #raise ConnNotImpError, "Cannot use base class"
 
     def accept(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def bind(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def connect(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def listen(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def read(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def poll_read(self, timeout):
         """Poll the underlying I/O layer for a read.
            Return TIMEOUT if the timeout was reached."""
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def read_packet(self):
         """Read a packet from the underlying I/O layer, and return
@@ -1651,7 +1650,7 @@ class Connector(object):
            the type returned by this method may vary.
            If the underlying packet parsers throw an exception, it
            will propagate here. """
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def read_chain(self):
         """Read the next available packet and attempt to decapsulate
@@ -1669,7 +1668,7 @@ class Connector(object):
         result = []
         if n is None or n == 0:
             n = 1
-        for i in xrange(n):
+        for i in range(n):
             p = self.read_packet()
             if p is not None:
                 c = p.chain()
@@ -1679,22 +1678,22 @@ class Connector(object):
         return result
 
     def write(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def send(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def sendto(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def recv(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def recvfrom(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def close(self):
-        raise ConnNotImpError, "Cannot use base class"
+        raise ConnNotImpError("Cannot use base class")
 
     def expect(self, patterns=[], timeout=None, limit=None):
         """Read from the Connector and return the index of the
@@ -1741,7 +1740,7 @@ class Connector(object):
             # as patterns. We need to check for timer expiry upfront.
             length = len(patterns)
             if timeout is not None and (now - start) > timeout:
-                for i in xrange(length):
+                for i in range(length):
                     if isinstance(patterns[i], TIMEOUT):
                         self.matches = [patterns[i]]
                         self.match_index = i
@@ -1754,7 +1753,7 @@ class Connector(object):
                     continue
 
             if isinstance(result, EOF):
-                for i in xrange(length):
+                for i in range(length):
                     if isinstance(patterns[i], EOF):
                         self.matches = [patterns[i]]
                         self.match_index = i
@@ -1773,12 +1772,12 @@ class Connector(object):
 
             # Check for a first match in the filter list.
             # If we exceed the remaining packet count, break.
-            for i in xrange(len(chains)):
+            for i in range(len(chains)):
                 c = chains[i]
                 #print "expect() firstpass: saw", str(type(c.packets[2]))[:-2].split('.')[-1]
                 if limit is not None:
                     remaining -= 1
-                for j in xrange(length):
+                for j in range(length):
                     filter = patterns[j]
                     if isinstance(filter, Chain) and filter.matches(c):
                         #print "matched at index", i
@@ -1798,7 +1797,7 @@ class Connector(object):
             if match_index is not None:
                 filter = patterns[match_index]
                 #print "scanning", next_chain, "to", len(chains)
-                for i in xrange(next_chain, len(chains)):
+                for i in range(next_chain, len(chains)):
                     c = chains[i]
                     #print "expect() lastpass: saw", str(type(c.packets[2]))[:-2].split('.')[-1]
                     if isinstance(filter, Chain) and filter.matches(c):
@@ -1814,7 +1813,7 @@ class Connector(object):
             # If we never got a match, and we reached our limit,
             # return an error.
             if limit is not None and remaining == 0:
-                for i in xrange(length):
+                for i in range(length):
                     if isinstance(patterns[i], LIMIT):
                         self.matches = [patterns[i]]
                         self.match_index = i
@@ -1867,9 +1866,9 @@ class PcapConnector(Connector):
         """
         return self.file.next()[1]
 
-    def next(self):
+    def __next__(self):
         """return a packet with its timestamp"""
-        return self.file.next()
+        return next(self.file)
 
     def recv(self):
         """recv a packet from a pcap file or interface"""
@@ -1900,7 +1899,7 @@ class PcapConnector(Connector):
         return None
 
     def read_packet(self):
-        (timestamp, packet) = self.file.next()
+        (timestamp, packet) = next(self.file)
         return self.unpack(packet, self.dlink, self.dloff, timestamp)
 
     def readpkt(self):
@@ -1912,9 +1911,9 @@ class PcapConnector(Connector):
            Used by Connector.expect() to do the right thing with
            buffering live captures."""
         if n is None or n == 0:
-            n = -1	# pcap: process all of the buffer in a live capture
-        result = []	# list of chain
-        ltp = []	# list of tuple (ts, packet)
+            n = -1      # pcap: process all of the buffer in a live capture
+        result = []     # list of chain
+        ltp = []        # list of tuple (ts, packet)
         def handler(ts, p, *args):
             ltp = args[0]
             ltp.append((ts, p))
@@ -1968,8 +1967,8 @@ class PcapConnector(Connector):
         dlink - a data link layer as defined in the pcap module
         dloff - a datalink offset as defined in the pcap module
         """
-        import packets.ethernet
-        import packets.localhost
+        from .packets import ethernet
+        from .packets import localhost
 
         if dlink == pcap.DLT_EN10MB:
             return packets.ethernet.ethernet(packet, timestamp)
@@ -1978,7 +1977,7 @@ class PcapConnector(Connector):
         elif dlink == pcap.DLT_RAW:
             return packets.ipv4.ipv4(packet, timestamp)
         else:
-            raise UnpackError, "Could not interpret packet"
+            raise UnpackError("Could not interpret packet")
                 
     def close(self):
         """Close the pcap file or interface."""
@@ -1987,7 +1986,7 @@ class PcapConnector(Connector):
     def set_bpf_program(self, prog):
         from pcs.bpf import program
         if not isinstance(prog, program):
-            raise ValueError, "not a BPF program"
+            raise ValueError("not a BPF program")
         return self.file.setbpfprogram(prog)
 
     # The intention is to offload some, but not all, of the filtering work
@@ -2049,7 +2048,7 @@ class PcapDumpConnector(Connector):
 
     def __init__(self, dumpfile = None, dumptype = None):
         """initialize a pcap dump connector"""
-        from pcap import pcap
+        from .pcap import pcap
         try:
             self.file = pcap(dumpfile = dumpfile, dumptype=dumptype)
         except:
@@ -2169,12 +2168,12 @@ class TapConnector(Connector):
            right thing with buffering live captures.
            Note that unlike pcap, timestamps are not real-time."""
         from time import time
-        result = []	# list of chain
-        lpb = []	# list of strings (packet buffers) 
+        result = []     # list of chain
+        lpb = []        # list of strings (packet buffers) 
         if __debug__ and not self.is_nonblocking:
-            print "WARNING: TapConnector.try_read_n_chains w/o O_NONBLOCK"
+            print("WARNING: TapConnector.try_read_n_chains w/o O_NONBLOCK")
         ts = time()
-        for i in xrange(n):
+        for i in range(n):
             pb = self.try_read_one()
             if pb is None:
                 break
@@ -2209,7 +2208,7 @@ class TapConnector(Connector):
         if ((flags & O_NONBLOCK) == O_NONBLOCK) != enabled:
             flags ^= O_NONBLOCK
             if fcntl(self.fileno, F_SETFL, flags) == -1:
-                raise OSError, "fcntl"
+                raise OSError("fcntl")
         return flags
 
     def write(self, packet, bytes):
@@ -2391,8 +2390,8 @@ class UmlMcast4Connector(UDP4Connector):
         if ifaddr is None:
             ifaddr = "127.0.0.1"
         try:
-	    self.group = group
-	    self.port = int(port)
+            self.group = group
+            self.port = int(port)
 
             self.file = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
 
@@ -2605,7 +2604,7 @@ def bsprintf(flags, fmt):
         if c > 32:
             i += 1
         else:
-            for j in xrange(i+1, fmtlen):
+            for j in range(i+1, fmtlen):
                 if ord(fmt[j]) <= 32:
                     break
             if (flags & (1 << (c - 1))) != 0:
