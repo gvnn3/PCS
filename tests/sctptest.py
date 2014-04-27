@@ -73,9 +73,9 @@ class sctpTestCase(unittest.TestCase):
         sctp = packet.data.data
         assert (sctp != None)
 
-	expected = "<SCTP common header class: sport: 16384, dport: 2944, " \
-		   "tag: 93962, checksum: 1840257154>"
-	got = sctp.println()
+        expected = "<SCTP common header class: sport: 16384, dport: 2944, " \
+                   "tag: 93962, checksum: 1840257154>"
+        got = sctp.println()
 
         self.assertEqual(expected, got, \
                          "strings are not equal \nexpected %s \ngot %s " % \

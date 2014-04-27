@@ -119,26 +119,26 @@ class pcapTestCase(unittest.TestCase):
         packet = Chain([e, ip, icmp, echo])
 
         packet.calc_checksums()
-	packet.encode()
+        packet.encode()
 
-	import os
-	uname = os.uname()[0]
-	if uname == "FreeBSD":
-	    devname = "edsc0"
-	elif uname == "Linux":
-	    devname = "lo"
+        import os
+        uname = os.uname()[0]
+        if uname == "FreeBSD":
+            devname = "edsc0"
+        elif uname == "Linux":
+            devname = "lo"
         elif uname == "Darwin":
             devname = "en0"
-	else:
-	    print "unknown host os %s" % uname
-	    return
+        else:
+            print("unknown host os %s" % uname)
+            return
 
         wfile = PcapConnector(devname)
         rfile = PcapConnector(devname)
-	rfile.setfilter("icmp")
+        rfile.setfilter("icmp")
 
         count = wfile.write(packet.bytes, 42)
-	assert (count == 42)
+        assert (count == 42)
 
         got = ethernet(rfile.read())
         ip = got.data

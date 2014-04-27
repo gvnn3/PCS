@@ -53,7 +53,7 @@ class testPacket(pcs.Packet):
     def __init__(self, bytes = None):
         f1 = pcs.Field("f1", 32)
         f2 = pcs.TypeLengthValueField("f2", pcs.Field("t", 8),
-				     pcs.Field("l", 8),
+                                     pcs.Field("l", 8),
                                      pcs.StringField("v", 10 * 8))
         pcs.Packet.__init__(self, [f1, f2], bytes = None)
 
@@ -67,28 +67,28 @@ class testPacket(pcs.Packet):
 class tlvTestCase(unittest.TestCase):
     def test_tlv(self):
         """Create one packet containing a TLV field."""
-	data = "\x12\x34\xAB\xCD\xAB\x0c\x66\x6F" \
-	       "\x6F\x62\x61\x72\x00\x00\x00\x00"
+        data = "\x12\x34\xAB\xCD\xAB\x0c\x66\x6F" \
+               "\x6F\x62\x61\x72\x00\x00\x00\x00"
 
-	# XXX The length of the f2 field is filled out with
-	# the maximum length of the value field, NOT its packed
-	# length. LengthValueField also has this issue.
-	# Also, the TLV fields are ambiguous as to whether the
-	# length represents bits or bytes.
-	# IP protocols are usually byte or 32-bit word aligned.
-	packet = testPacket()
-	packet.f1 = 0x1234abcd
-	packet.f2.type.value = 0xab
-	packet.f2.length.value = len("foobar")
-	packet.f2.value.value = "foobar"
-	packet.encode()
+        # XXX The length of the f2 field is filled out with
+        # the maximum length of the value field, NOT its packed
+        # length. LengthValueField also has this issue.
+        # Also, the TLV fields are ambiguous as to whether the
+        # length represents bits or bytes.
+        # IP protocols are usually byte or 32-bit word aligned.
+        packet = testPacket()
+        packet.f1 = 0x1234abcd
+        packet.f2.type.value = 0xab
+        packet.f2.length.value = len("foobar")
+        packet.f2.value.value = "foobar"
+        packet.encode()
 
-	#hd = hexdumper()
-	#print hd.dump(packet.bytes)
-	#print hd.dump(data)
+        #hd = hexdumper()
+        #print hd.dump(packet.bytes)
+        #print hd.dump(data)
 
-	self.assertEqual(packet.bytes, data, \
-			 "packets should be equal but are not")
+        self.assertEqual(packet.bytes, data, \
+                         "packets should be equal but are not")
 
 if __name__ == '__main__':
     unittest.main()

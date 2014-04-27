@@ -84,17 +84,17 @@ class dnsTestCase(unittest.TestCase):
     def test_dns_query(self):
         # create one query, copy its bytes, then compare their fields
         dns = dnsquery()
-	assert (dns != None)
+        assert (dns != None)
 
-	# XXX This field doesn't exist. Normally how the dns classes are
-	# used is that labels go in front -- the code isn't yet smart
-	# enough to encode labels at this level.
+        # XXX This field doesn't exist. Normally how the dns classes are
+        # used is that labels go in front -- the code isn't yet smart
+        # enough to encode labels at this level.
         dns.name = "neville-neil.com"
         dns.type = 1
         dns.query_class = 1
 
         dnsnew = dnsquery()
-	assert (dnsnew != None)
+        assert (dnsnew != None)
         dnsnew.decode(dns.bytes)
 
         self.assertEqual(dns.type, dnsnew.type, "type not equal")
@@ -104,14 +104,14 @@ class dnsTestCase(unittest.TestCase):
         # create one resource record, copy its bytes, then compare their fields
 
         dns = dnsrr()
-	assert (dns != None)
+        assert (dns != None)
 
-	# XXX 'name' should really be a sequence of labels or pointers,
-	# see RFC 1035, we just use a single string for now as implementing
-	# the name compression is troublesome.
-	# Both 'name' and 'rdata' encode as their entire field width. Of
-	# course we have a variable field with, which the PCS reflection
-	# in python doesn't grok.
+        # XXX 'name' should really be a sequence of labels or pointers,
+        # see RFC 1035, we just use a single string for now as implementing
+        # the name compression is troublesome.
+        # Both 'name' and 'rdata' encode as their entire field width. Of
+        # course we have a variable field with, which the PCS reflection
+        # in python doesn't grok.
 
         dns.name = "neville-neil.com"
         dns.type = 1
@@ -126,13 +126,13 @@ class dnsTestCase(unittest.TestCase):
         dnsnew = dnsrr(dns.bytes)
         assert (dnsnew != None)
 
-	#print
-	#print "'%s'" % dns.name.value.value
-	#print "'%s'" % dnsnew.name.value.value
-	#print "'%s'" % dns.rdata.value.value
-	#print "'%s'" % dnsnew.rdata.value.value
+        #print
+        #print "'%s'" % dns.name.value.value
+        #print "'%s'" % dnsnew.name.value.value
+        #print "'%s'" % dns.rdata.value.value
+        #print "'%s'" % dnsnew.rdata.value.value
 
-	# XXX accessor for dns.name produces field, not string.
+        # XXX accessor for dns.name produces field, not string.
 
         #self.assertEqual(dns.name, dnsnew.name, "name not equal")
         self.assertEqual(dns.name.value.value, dnsnew.name.value.value, "name not equal")

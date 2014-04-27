@@ -154,24 +154,24 @@ class ptpTestCase(unittest.TestCase):
         file = pcs.PcapConnector("ptp.out")
         packet = file.readpkt()
         
-        print "Common"
-        print packet.data.data.data
+        print("Common")
+        print(packet.data.data.data)
         
-        print "Sync"
-        print packet.data.data.data.data
+        print("Sync")
+        print(packet.data.data.data.data)
     
         packet = file.readpkt()
 
-        print "Delay Request"
-        print packet.data.data.data
-        print packet.data.data.data.data
+        print("Delay Request")
+        print(packet.data.data.data)
+        print(packet.data.data.data.data)
 
         for i in range(0,51):
             packet = file.readpkt()
 
-        print "Follow Up"
-        print packet.data.data.data
-        print packet.data.data.data.data
+        print("Follow Up")
+        print(packet.data.data.data)
+        print(packet.data.data.data.data)
 
 if __name__ == '__main__':
     unittest.main()

@@ -111,7 +111,7 @@ class ipTestCase(unittest.TestCase):
         assert (ip2 != None)
         self.assertEqual(ip1, ip2, "packets should be equal but are not")
 
-        ip1.dst = 0xffffffffL
+        ip1.dst = 0xffffffff
         self.assertNotEqual(ip1, ip2, "packets compare equal but should not")
         
     def test_ipv4_print(self):
@@ -169,14 +169,14 @@ class ipTestCase(unittest.TestCase):
         ip = ipv4()
         assert (ip != None)
         ip.version = 4
-        ip.hlen = 6		# XXX We add an IP option below.
+        ip.hlen = 6             # XXX We add an IP option below.
         ip.tos = 0
-        ip.length = 24 		# a bare IP header w/o data
+        ip.length = 24                  # a bare IP header w/o data
         ip.id = 1
         ip.flags = IP_DF
         ip.offset = 0
         ip.ttl = 1
-        ip.protocol = 2		# a fake IGMP packet
+        ip.protocol = 2                 # a fake IGMP packet
         ip.src = inet_atol("192.0.2.1")
         ip.dst = inet_atol("224.0.0.22")
 
@@ -188,48 +188,48 @@ class ipTestCase(unittest.TestCase):
         #hd = hexdumper()
         #print hd.dump(ip.bytes)
 
-	expected = "\x46\x00\x00\x18\x00\x01\x40\x00" \
+        expected = "\x46\x00\x00\x18\x00\x01\x40\x00" \
                    "\x01\x02\x42\xC7\xC0\x00\x02\x01" \
                    "\xE0\x00\x00\x16\x94\x04\x00\x00"
-	gotttted = ip.bytes
+        gotttted = ip.bytes
 
-	self.assertEqual(expected, gotttted, "packet bytes not expected")
+        self.assertEqual(expected, gotttted, "packet bytes not expected")
 
     def test_IN_LINKLOCAL(self):
-	linklocal = inet_atol("169.254.12.34")
-	self.assert_(IN_LINKLOCAL(linklocal) == True)
-	non_linklocal = inet_atol("127.0.0.0")
-	self.assert_(IN_LINKLOCAL(non_linklocal) == False)
+        linklocal = inet_atol("169.254.12.34")
+        self.assert_(IN_LINKLOCAL(linklocal) == True)
+        non_linklocal = inet_atol("127.0.0.0")
+        self.assert_(IN_LINKLOCAL(non_linklocal) == False)
 
     def test_IN_MULTICAST(self):
-	mcast = inet_atol("239.0.12.34")
-	self.assert_(IN_MULTICAST(mcast) == True)
-	non_mcast = inet_atol("10.3.4.5")
-	self.assert_(IN_MULTICAST(non_mcast) == False)
+        mcast = inet_atol("239.0.12.34")
+        self.assert_(IN_MULTICAST(mcast) == True)
+        non_mcast = inet_atol("10.3.4.5")
+        self.assert_(IN_MULTICAST(non_mcast) == False)
 
     def test_IN_LOCAL_GROUP(self):
-	localgroup = inet_atol("224.0.0.251")
-	self.assert_(IN_LOCAL_GROUP(localgroup) == True)
-	nonlocalgroup = inet_atol("239.0.12.34")
-	self.assert_(IN_LOCAL_GROUP(nonlocalgroup) == False)
+        localgroup = inet_atol("224.0.0.251")
+        self.assert_(IN_LOCAL_GROUP(localgroup) == True)
+        nonlocalgroup = inet_atol("239.0.12.34")
+        self.assert_(IN_LOCAL_GROUP(nonlocalgroup) == False)
 
     def test_IN_EXPERIMENTAL(self):
-	classe = inet_atol("240.1.2.3")
-	self.assert_(IN_EXPERIMENTAL(classe) == True)
-	non_classe = inet_atol("30.40.50.60")
-	self.assert_(IN_EXPERIMENTAL(non_classe) == False)
+        classe = inet_atol("240.1.2.3")
+        self.assert_(IN_EXPERIMENTAL(classe) == True)
+        non_classe = inet_atol("30.40.50.60")
+        self.assert_(IN_EXPERIMENTAL(non_classe) == False)
 
     def test_IN_PRIVATE(self):
-	tens = inet_atol("10.20.30.40")
-	self.assert_(IN_PRIVATE(tens) == True)
-	seventeens = inet_atol("172.16.254.3")
-	self.assert_(IN_PRIVATE(seventeens) == True)
-	nineteens = inet_atol("192.168.123.45")
-	self.assert_(IN_PRIVATE(nineteens) == True)
-	umpteens = inet_atol("192.0.2.1")
-	self.assert_(IN_PRIVATE(umpteens) == False)
-	loopback = inet_atol("127.0.0.1")
-	self.assert_(IN_PRIVATE(loopback) == False)
+        tens = inet_atol("10.20.30.40")
+        self.assert_(IN_PRIVATE(tens) == True)
+        seventeens = inet_atol("172.16.254.3")
+        self.assert_(IN_PRIVATE(seventeens) == True)
+        nineteens = inet_atol("192.168.123.45")
+        self.assert_(IN_PRIVATE(nineteens) == True)
+        umpteens = inet_atol("192.0.2.1")
+        self.assert_(IN_PRIVATE(umpteens) == False)
+        loopback = inet_atol("127.0.0.1")
+        self.assert_(IN_PRIVATE(loopback) == False)
 
 if __name__ == '__main__':
     unittest.main()
