@@ -3,6 +3,8 @@
 #
 # $Id: pcap.pyx,v 1.20 2005/10/16 23:00:11 dugsong Exp $
 
+# cython: c_string_type=str, c_string_encoding=ascii
+
 """packet capture library
 
 This module provides a high level interface to packet capture systems.
@@ -23,7 +25,7 @@ import calendar
 import time
 
 cdef extern from "Python.h":
-    object PyBuffer_FromMemory(char *s, int len)
+    object PyMemoryView_FromMemory(char*, Py_ssize_t, int)
     int    PyGILState_Ensure()
     void   PyGILState_Release(int gil)
     void   Py_BEGIN_ALLOW_THREADS()
@@ -108,7 +110,7 @@ cdef void __pcap_handler(void *arg, pcap_pkthdr *hdr, char *pkt):
     gil = PyGILState_Ensure()
     try:
         (<object>ctx.callback)(hdr.ts.tv_sec + (hdr.ts.tv_usec/1000000.0),
-                               PyBuffer_FromMemory(pkt, hdr.caplen),
+                               PyMemoryView_FromMemory(pkt, hdr.caplen, 0),
                                *(<object>ctx.args))
     except:
         ctx.got_exc = 1
@@ -326,7 +328,7 @@ cdef class pcap:
         if not pkt:
             return None
         return (hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-                PyBuffer_FromMemory(pkt, hdr.caplen))
+                PyMemoryView_FromMemory(pkt, hdr.caplen, 0))
 
     def __add_pkts(self, ts, pkt, pkts):
         pkts.append((ts, pkt))
@@ -382,7 +384,7 @@ cdef class pcap:
             Py_END_ALLOW_THREADS
             if n == 1:
                 callback(hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-                         PyBuffer_FromMemory(pkt, hdr.caplen), *args)
+                         PyMemoryView_FromMemory(pkt, hdr.caplen, 0), *args)
             elif n == -1:
                 raise KeyboardInterrupt
             elif n == -2:
@@ -464,7 +466,7 @@ cdef class pcap:
             Py_END_ALLOW_THREADS
             if n == 1:
                 return (hdr.ts.tv_sec + (hdr.ts.tv_usec / 1000000.0),
-                        PyBuffer_FromMemory(pkt, hdr.caplen))
+                        PyMemoryView_FromMemory(pkt, hdr.caplen, 0))
             elif n == -1:
                 raise KeyboardInterrupt
             elif n == -2:
