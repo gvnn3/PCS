@@ -67,7 +67,7 @@ class config_pcap(config.config):
         if buf.find('pcap_setnonblock(') != -1:
             d['HAVE_PCAP_SETNONBLOCK'] = 1
         f = open('pcs/pcap/config.h', 'w')
-        for k, v in d.iteritems():
+        for k, v in d.items():
             f.write('#define %s %s\n' % (k, v))
         f.close()
     
@@ -92,7 +92,7 @@ class config_pcap(config.config):
                                     cfg['libraries'].append('iphlpapi')
                                     cfg['extra_compile_args'] = \
                                         [ '-DWIN32', '-DWPCAP' ]
-                                print 'found', cfg
+                                print('found', cfg)
                                 self._write_config_h(cfg)
                                 return cfg
         raise "couldn't find pcap build or installation directory"
