@@ -65,9 +65,9 @@ import struct
 # We need the socket module for to implement some of the Connector classes.
 from socket import *
 
-import pcs.pcap as pcap
-
 import itertools
+
+from .pcap import pcap
 
 # import fast
 
@@ -141,7 +141,7 @@ layout of the data and how it is addressed."""
         while (fieldBR > 0 and curr < length):
             if fieldBR < byteBR:
                 shift = byteBR - fieldBR
-                value = ord(bytes[curr]) >> shift
+                value = bytes[curr] >> shift
                 mask = 2 ** fieldBR -1
                 value = (value & mask)
                 byteBR -= fieldBR
@@ -149,13 +149,13 @@ layout of the data and how it is addressed."""
             elif fieldBR > byteBR:
                 shift = fieldBR - byteBR
                 mask = 2 ** byteBR - 1
-                value = (ord(bytes[curr]) & mask)
+                value = bytes[curr] & mask
                 fieldBR -= byteBR
                 byteBR = 8
                 curr += 1 # next byte
             elif fieldBR == byteBR:
                 mask = 2 ** byteBR - 1
-                value = ord(bytes[curr]) & mask
+                value = bytes[curr] & mask
                 fieldBR -= byteBR
                 byteBR = 8
                 curr += 1 # next byte
@@ -312,10 +312,10 @@ handled by the LengthValueField."""
         # byteBR == 8 is the neutral state
         if (byteBR is not None and byteBR != 8):
             raise FieldAlignmentError("Strings must start on a byte boundary")
-        packarg = "%ds" % (self.width / 8)
-        end = curr + self.width / 8
+        packarg = "%ds" % (self.width // 8)
+        end = curr + self.width // 8
         value = struct.unpack(packarg, bytes[curr:end])[0]
-        curr += self.width / 8
+        curr += self.width // 8
         self.value = value
         return [value, curr, byteBR]
 
@@ -323,7 +323,7 @@ handled by the LengthValueField."""
         """Encode a string field, make sure the bytes are aligned."""
         if (byteBR is not None and byteBR != 8):
             raise FieldAlignmentError("Strings must start on a byte boundary")
-        packarg = "%ds" % (self.width / 8)
+        packarg = "%ds" % (self.width // 8)
         bytearray.append(struct.pack(packarg, value))
         return [byte, byteBR]
 
@@ -333,8 +333,8 @@ handled by the LengthValueField."""
 
     def bounds(self, value):
         """Check the bounds of this field."""
-        if (value is None) or (len (value) > (self.width / 8)):
-            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (self.width / 8))
+        if (value is None) or (len (value) > (self.width // 8)):
+            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (self.width // 8))
 
 class LengthValueFieldError(Exception):
     """LengthValue fields only allow access to two internal pieces of data."""
@@ -483,8 +483,8 @@ class TypeValueField(object):
     def bounds(self, value):
         """Check the bounds of this field."""
         if ((value is None) or
-            (len (value) > (((2 ** self.valuewidth) - 1) / 8))):
-            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8))
+            (len (value) > (((2 ** self.valuewidth) - 1) // 8))):
+            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) // 8))
 
     # There is no __setattr__ to stomp on us here.
     def __copy__(self):
@@ -582,8 +582,8 @@ class TypeLengthValueField(object):
     def bounds(self, value):
         """Check the bounds of this field."""
         if ((value is None) or
-            (len (value) > (((2 ** self.lengthwidth) - 1) / 8))):
-            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) / 8))
+            (len (value) > (((2 ** self.lengthwidth) - 1) // 8))):
+            raise FieldBoundsError("Value must be between 0 and %d bytes long" % (((2 ** self.width) - 1) // 8))
 
     # There is no __setattr__ to stomp on us here.
     def __copy__(self):
@@ -954,7 +954,7 @@ class Packet(object):
             value = self._fieldnames[field.name].value
             [byte, byteBR] = field.encode(bytearray, value, byte, byteBR)
 
-        self._bytes = ''.join(bytearray) # Install the new value
+        self._bytes = b"".join(bytearray) # Install the new value
 
     def __init__(self, layout = None, bytes = None, **kv):
         """initialize a Packet object
@@ -1292,7 +1292,7 @@ class Packet(object):
 
     def sizeof(self):
         """Return the size, in bytes, of the packet."""
-        return (self._bitlength / 8)
+        return (self._bitlength // 8)
 
     def toXML(self):
         """Transform the Packet into XML."""
@@ -1846,7 +1846,7 @@ class PcapConnector(Connector):
         """
         super(PcapConnector, self).__init__()
         try:
-            self.file = pcap.pcap(name, snaplen, promisc, timeout_ms)
+            self.file = pcap(name, snaplen, promisc, timeout_ms)
         except:
             raise
 
@@ -2048,7 +2048,6 @@ class PcapDumpConnector(Connector):
 
     def __init__(self, dumpfile = None, dumptype = None):
         """initialize a pcap dump connector"""
-        from .pcap import pcap
         try:
             self.file = pcap(dumpfile = dumpfile, dumptype=dumptype)
         except:
@@ -2060,9 +2059,6 @@ class PcapDumpConnector(Connector):
         
     def write(self, packet):
         """write a packet to the dumpfile"""
-        if type(packet) is buffer:
-            packarg = "%ds" % len(packet)
-            packet = struct.unpack(packarg, packet)[0]
         return self.file.dump(packet)
 
     def send(self, packet):
