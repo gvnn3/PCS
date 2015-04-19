@@ -179,7 +179,7 @@ def main():
             if (options.graph):
                 tmpfile.write("%s %s\n" % (packets, tcp.window))
             else:
-                print "Window size changed to %d at %d" % (tcp.window, packets)
+                print("Window size changed to %d at %d" % (tcp.window, packets))
 
             win_prev = tcp.window
 
@@ -194,7 +194,7 @@ def main():
         plotter.plot(Gnuplot.File(tmpfile.name))
 
         if (options.batch == False):
-            raw_input('Press return to exit')
+            input('Press return to exit')
         else:
             time.sleep(1)
         

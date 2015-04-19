@@ -52,7 +52,7 @@ def main():
 
     while 1:
         packet = ethernet(snarf.read())
-        print packet
-        print packet.data
+        print(packet)
+        print(packet.data)
         
 main()

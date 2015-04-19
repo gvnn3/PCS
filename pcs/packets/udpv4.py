@@ -45,9 +45,9 @@ class udpv4(pcs.packets.udp.udp):
     _layout = pcs.Layout()
     _map = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """Initialize a UDP packet for IPv4"""
-        pcs.packets.udp.udp.__init__(self, bytes, timestamp, **kv)
+        pcs.packets.udp.udp.__init__(self, pdata, timestamp, **kv)
 
     def cksum(self, ip, data = ""):
         """Calculate the checksum for this UDPv4 header,
@@ -59,9 +59,9 @@ class udpv4(pcs.packets.udp.udp):
         tmpip.src = ip.src
         tmpip.dst = ip.dst
         tmpip.protocol = IPPROTO_UDP
-        tmpip.length = len(self.getbytes()) + len(data)
-        tmpbytes = tmpip.getbytes() + self.getbytes() + data
-        return ipv4.ipv4_cksum(tmpbytes)
+        tmpip.length = len(self.getpdata()) + len(data)
+        tmppdata = tmpip.getpdata() + self.getpdata() + data
+        return ipv4.ipv4_cksum(tmppdata)
 
     def calc_checksum(self):
         """Calculate and store the checksum for this UDPv4 datagram.
@@ -74,6 +74,6 @@ class udpv4(pcs.packets.udp.udp):
             ip = self._head.find_preceding(self, pcs.packets.ipv4.ipv4)
         if ip is None:
             self.checksum = 0
-            self.checksum = ipv4.ipv4.ipv4_cksum(self.getbytes())
+            self.checksum = ipv4.ipv4.ipv4_cksum(self.getpdata())
             return
         pcs.packets.udp.udp.calc_checksum_v4(self, ip)

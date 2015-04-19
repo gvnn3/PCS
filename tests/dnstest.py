@@ -75,14 +75,14 @@ class dnsTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         dnsnew = dnsheader()
-        dnsnew.decode(dns.bytes)
+        dnsnew.decode(dns.pdata)
 
-        self.assertEqual(dns.bytes, dnsnew.bytes, "bytes not equal")
+        self.assertEqual(dns.pdata, dnsnew.pdata, "pdata not equal")
         for field in dns._fieldnames:
             self.assertEqual(getattr(dns, field), getattr(dnsnew, field), ("%s not equal" % field))
 
     def test_dns_query(self):
-        # create one query, copy its bytes, then compare their fields
+        # create one query, copy its pdata, then compare their fields
         dns = dnsquery()
         assert (dns != None)
 
@@ -95,13 +95,13 @@ class dnsTestCase(unittest.TestCase):
 
         dnsnew = dnsquery()
         assert (dnsnew != None)
-        dnsnew.decode(dns.bytes)
+        dnsnew.decode(dns.pdata)
 
         self.assertEqual(dns.type, dnsnew.type, "type not equal")
         self.assertEqual(dns.query_class, dnsnew.query_class, "class not equal")
 
     def test_dns_rr(self):
-        # create one resource record, copy its bytes, then compare their fields
+        # create one resource record, copy its pdata, then compare their fields
 
         dns = dnsrr()
         assert (dns != None)
@@ -121,9 +121,9 @@ class dnsTestCase(unittest.TestCase):
 
         # XXX this DOESN'T copy the LengthValue fields, why?
         #dnsnew = dnsrr()
-        #dnsnew.decode(dns.bytes)
+        #dnsnew.decode(dns.pdata)
 
-        dnsnew = dnsrr(dns.bytes)
+        dnsnew = dnsrr(dns.pdata)
         assert (dnsnew != None)
 
         #print
@@ -153,14 +153,14 @@ class dnsTestCase(unittest.TestCase):
         
     def test_dns_compare(self):
         """Test the underlying __compare__ functionality of the
-        packet.  Two packets constructed from the same bytes should be
+        packet.  Two packets constructed from the same pdata should be
         equal and two that are not should not be equal."""
         file = pcs.PcapConnector("dns.out")
         packet = file.readpkt()
         ip = packet.data
         assert (ip != None)
-        udp1 = udpv4(ip.data.bytes)
-        udp2 = udpv4(ip.data.bytes)
+        udp1 = udpv4(ip.data.pdata)
+        udp2 = udpv4(ip.data.pdata)
         assert (udp1 != None)
         assert (udp2 != None)
         self.assertEqual(udp1, udp2, "packets should be equal but are not")

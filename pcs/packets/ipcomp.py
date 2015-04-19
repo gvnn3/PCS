@@ -43,12 +43,12 @@ class ipcomp(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, **kv):
+    def __init__(self, pdata = None, **kv):
         "A class that contains the IPComp header. RFC3173"
         nx = pcs.Field("next_header", 8)
         flags = pcs.Field("flags", 8)
         cpi = pcs.Field("cpi", 16)
-        pcs.Packet.__init__(self, [nx, flags, cpi], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [nx, flags, cpi], pdata = pdata, **kv)
 
     def __str__(self):
         """Walk the entire packet and pretty print the values

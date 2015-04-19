@@ -45,7 +45,7 @@ class tcpv6(pcs.Packet):
     """TCPv6"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize a TCP packet for IPv6"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
@@ -64,7 +64,7 @@ class tcpv6(pcs.Packet):
         urgptr = pcs.Field("urg_pointer", 16)
         pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
                                    urg, ack, psh, rst, syn, fin, window, cksum, urgptr],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "initialize a TCP packet for IPv6"
         if timestamp is None:
             self.timestamp = time.time()
@@ -87,12 +87,12 @@ class tcpv6(pcs.Packet):
         p6 = pseudoipv6()
         p6.src = ip.src
         p6.dst = ip.dst
-        p6.length = len(self.getbytes()) + len (data)
+        p6.length = len(self.getpdata()) + len (data)
         if nx:
             p6.next_header = nx
         else:
             p6.next_header = ip.next_header
-        pkt = p6.getbytes() + self.getbytes() + data
+        pkt = p6.getpdata() + self.getpdata() + data
         return ipv4.ipv4_cksum(pkt)
 
     def calc_checksum(self):
@@ -109,9 +109,9 @@ class tcpv6(pcs.Packet):
             pip6.src = ip.src
             pip6.dst = ip.dst
             pip6.next_header = ip6.next_header
-            pip6.length = len(self.getbytes()) + len(payload)
-            tmpbytes = pip6.getbytes() + self.getbytes() + payload
+            pip6.length = len(self.getpdata()) + len(payload)
+            tmppdata = pip6.getpdata() + self.getpdata() + payload
         else:
-            tmpbytes = self.bytes
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+            tmppdata = self.pdata
+        self.checksum = ipv4.ipv4_cksum(tmppdata)
             

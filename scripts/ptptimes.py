@@ -72,12 +72,12 @@ def main():
                 ms = ts.microsecond / 1000
                 msecond = ts.strftime("%H:%M:%S")
                 msecond += (".%d") % ms
-                print msecond
+                print(msecond)
             else:
-                print packet.data.data.timestamp
-            print packet.data.data.data
+                print(packet.data.data.timestamp)
+            print(packet.data.data.data)
         if packet.data.data.data.data != None:
-            print packet.data.data.data.data
+            print(packet.data.data.data.data)
         packet = file.readpkt()
 
 

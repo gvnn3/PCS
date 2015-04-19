@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
 class ipTestCase(unittest.TestCase):
     def test_ipv4(self):
-        # create one packet, copy its bytes, then compare their fields
+        # create one packet, copy its pdata, then compare their fields
         ip = ipv4()
         assert (ip != None)
         ip.version = 4
@@ -70,9 +70,9 @@ class ipTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         ipnew = ipv4()
-        ipnew.decode(ip.bytes)
+        ipnew.decode(ip.pdata)
 
-        self.assertEqual(ip.bytes, ipnew.bytes, "bytes not equal")
+        self.assertEqual(ip.pdata, ipnew.pdata, "pdata not equal")
         for field in ip._fieldnames:
             self.assertEqual(getattr(ip, field), getattr(ipnew, field), ("%s not equal" % field))
 
@@ -101,12 +101,12 @@ class ipTestCase(unittest.TestCase):
 
     def test_ipv4_compare(self):
         """Test the underlying __compare__ functionality of the
-        packet.  Two packets constructed from the same bytes should be
+        packet.  Two packets constructed from the same pdata should be
         equal and two that are not should not be equal."""
         file = PcapConnector("loopping.out")
         packet = file.readpkt()
         ip1 = packet.data
-        ip2 = ipv4(packet.data.bytes)
+        ip2 = ipv4(packet.data.pdata)
         assert (ip1 != None)
         assert (ip2 != None)
         self.assertEqual(ip1, ip2, "packets should be equal but are not")
@@ -186,14 +186,14 @@ class ipTestCase(unittest.TestCase):
         ip.calc_checksum()
 
         #hd = hexdumper()
-        #print hd.dump(ip.bytes)
+        #print hd.dump(ip.pdata)
 
         expected = "\x46\x00\x00\x18\x00\x01\x40\x00" \
                    "\x01\x02\x42\xC7\xC0\x00\x02\x01" \
                    "\xE0\x00\x00\x16\x94\x04\x00\x00"
-        gotttted = ip.bytes
+        gotttted = ip.pdata
 
-        self.assertEqual(expected, gotttted, "packet bytes not expected")
+        self.assertEqual(expected, gotttted, "packet pdata not expected")
 
     def test_IN_LINKLOCAL(self):
         linklocal = inet_atol("169.254.12.34")

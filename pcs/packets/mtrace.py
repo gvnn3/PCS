@@ -56,7 +56,7 @@ from socket import AF_INET, inet_ntop, inet_ntoa
 class query(pcs.Packet):
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize the MTRACE query header."""
         # (G,S) tuple to query.
         group = pcs.Field("group", 32)
@@ -71,7 +71,7 @@ class query(pcs.Packet):
 
         pcs.Packet.__init__(self, [group, source, \
                                    receiver, response_addr, \
-                                   response_hoplimit, query_id], bytes, **kv)
+                                   response_hoplimit, query_id], pdata, **kv)
 
         self.description = "initialize the MTRACE query header."
 
@@ -80,16 +80,16 @@ class query(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
+        if (pdata is not None):
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
 class reply(pcs.Packet):
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize the MTRACE response header."""
         # (G,S) tuple to query.
         group = pcs.Field("group", 32)
@@ -106,7 +106,7 @@ class reply(pcs.Packet):
 
         pcs.Packet.__init__(self, [group, source, \
                                    receiver, response_addr, \
-                                   response_hoplimit, query_id], bytes, **kv)
+                                   response_hoplimit, query_id], pdata, **kv)
 
         self.description = "initialize the MTRACE response header."
 
@@ -115,8 +115,8 @@ class reply(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
+        if (pdata is not None):
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None

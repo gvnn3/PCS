@@ -57,20 +57,20 @@ def main():
     #fxp0.setfilter('icmp')
     #fxp0.set_bpf_program(bp)
 
-    print "Expecting at least 1 ICMP echo request within 10 seconds."
+    print("Expecting at least 1 ICMP echo request within 10 seconds.")
     try:
         fxp0.expect([filter], 10)
     except LimitReachedError:
-        print "Limit reached."
+        print("Limit reached.")
         sys.exit(1)
     except TimeoutError:
-        print "Timed out."
+        print("Timed out.")
         sys.exit(1)
 
     nmatches = 0
     if fxp0.matches is not None:
         nmatches = len(fxp0.matches)
-    print "Matched", nmatches, "chain(s)."
+    print("Matched", nmatches, "chain(s).")
 
     sys.exit(0)
 

@@ -92,14 +92,14 @@ def main():
         else:
             in_network +=1
 
-    print "%d packets in dumpfile" % packets
-    print "%d unique source IPs" % len(srcmap)
-    print "%d packets in specified network" % in_network
-    print "Top %d source addresses were" % max
-    hit_list = sorted(srcmap.itervalues(), reverse = True)
+    print("%d packets in dumpfile" % packets)
+    print("%d unique source IPs" % len(srcmap))
+    print("%d packets in specified network" % in_network)
+    print("Top %d source addresses were" % max)
+    hit_list = sorted(iter(srcmap.values()), reverse = True)
     for i in range(1,max):
-        for addr in srcmap.items():
+        for addr in list(srcmap.items()):
             if addr[1] == hit_list[i]:
-                print "Address %s\t Count %s\t Percentage %f" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), addr[1], (float(addr[1]) / float(packets)) * float(100))
+                print("Address %s\t Count %s\t Percentage %f" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), addr[1], (float(addr[1]) / float(packets)) * float(100)))
 
 main()

@@ -50,12 +50,12 @@ class testPacket(pcs.Packet):
     """Define a packet containing a TLV field for use in testing."""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, pdata = None):
         f1 = pcs.Field("f1", 32)
         f2 = pcs.TypeLengthValueField("f2", pcs.Field("t", 8),
                                      pcs.Field("l", 8),
                                      pcs.StringField("v", 10 * 8))
-        pcs.Packet.__init__(self, [f1, f2], bytes = None)
+        pcs.Packet.__init__(self, [f1, f2], pdata = None)
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""
@@ -74,7 +74,7 @@ class tlvTestCase(unittest.TestCase):
         # the maximum length of the value field, NOT its packed
         # length. LengthValueField also has this issue.
         # Also, the TLV fields are ambiguous as to whether the
-        # length represents bits or bytes.
+        # length represents bits or pdata.
         # IP protocols are usually byte or 32-bit word aligned.
         packet = testPacket()
         packet.f1 = 0x1234abcd
@@ -84,10 +84,10 @@ class tlvTestCase(unittest.TestCase):
         packet.encode()
 
         #hd = hexdumper()
-        #print hd.dump(packet.bytes)
+        #print hd.dump(packet.pdata)
         #print hd.dump(data)
 
-        self.assertEqual(packet.bytes, data, \
+        self.assertEqual(packet.pdata, data, \
                          "packets should be equal but are not")
 
 if __name__ == '__main__':

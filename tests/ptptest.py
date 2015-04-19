@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
 class ptpTestCase(unittest.TestCase):
     def test_ptp_header(self):
-        # create one header, copy its bytes, then compare their fields
+        # create one header, copy its pdata, then compare their fields
         ptp = Common()
         assert (ptp != None)
 
@@ -67,14 +67,14 @@ class ptpTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         ptpnew = Common()
-        ptpnew.decode(ptp.bytes)
+        ptpnew.decode(ptp.pdata)
 
-        self.assertEqual(ptp.bytes, ptpnew.bytes, "bytes not equal")
+        self.assertEqual(ptp.pdata, ptpnew.pdata, "pdata not equal")
         for field in ptp._fieldnames:
             self.assertEqual(getattr(ptp, field), getattr(ptpnew, field), ("%s not equal" % field))
 
     def test_ptp_sync(self):
-        # create one header, copy its bytes, then compare their fields
+        # create one header, copy its pdata, then compare their fields
         ptp = Sync()
         assert (ptp != None)
 
@@ -105,15 +105,15 @@ class ptpTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         ptpnew = Sync()
-        ptpnew.decode(ptp.bytes)
+        ptpnew.decode(ptp.pdata)
 
-        self.assertEqual(ptp.bytes, ptpnew.bytes, "bytes not equal")
+        self.assertEqual(ptp.pdata, ptpnew.pdata, "pdata not equal")
         for field in ptp._fieldnames:
             self.assertEqual(getattr(ptp, field), getattr(ptpnew, field), ("%s not equal" % field))
 
     
     def test_ptp_followup(self):
-        # create one header, copy its bytes, then compare their fields
+        # create one header, copy its pdata, then compare their fields
         ptp = Followup()
         assert (ptp != None)
 
@@ -123,14 +123,14 @@ class ptpTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         ptpnew = Followup()
-        ptpnew.decode(ptp.bytes)
+        ptpnew.decode(ptp.pdata)
 
-        self.assertEqual(ptp.bytes, ptpnew.bytes, "bytes not equal")
+        self.assertEqual(ptp.pdata, ptpnew.pdata, "pdata not equal")
         for field in ptp._fieldnames:
             self.assertEqual(getattr(ptp, field), getattr(ptpnew, field), ("%s not equal" % field))
 
     def test_ptp_delay_response(self):
-        # create one header, copy its bytes, then compare their fields
+        # create one header, copy its pdata, then compare their fields
         ptp = DelayResponse()
         assert (ptp != None)
 
@@ -143,9 +143,9 @@ class ptpTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         ptpnew = DelayResponse()
-        ptpnew.decode(ptp.bytes)
+        ptpnew.decode(ptp.pdata)
 
-        self.assertEqual(ptp.bytes, ptpnew.bytes, "bytes not equal")
+        self.assertEqual(ptp.pdata, ptpnew.pdata, "pdata not equal")
         for field in ptp._fieldnames:
             self.assertEqual(getattr(ptp, field), getattr(ptpnew, field), ("%s not equal" % field))
 

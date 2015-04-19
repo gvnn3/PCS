@@ -6,7 +6,7 @@
 #
 # Makefile for running PCS regression tests.
 
-PYTHON	= python3.3
+PYTHON	= python3.4
 
 .PHONY: test
 

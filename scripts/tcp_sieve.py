@@ -79,7 +79,7 @@ def progress(signum, frame):
     """A signal handler so we can see how far we've gotten
     through the file."""
     global packets
-    print "Processed %d packets" % packets
+    print("Processed %d packets" % packets)
     
 def main():
 
@@ -110,7 +110,7 @@ def main():
     
     while not done:
         try:
-            (timestamp, data) = file.next()
+            (timestamp, data) = next(file)
         except:
             done = True
 

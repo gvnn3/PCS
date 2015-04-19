@@ -110,7 +110,7 @@ class ipv4(pcs.Packet):
     _layout = pcs.Layout()
     _map = ipv4_map.map
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """ define the fields of an IPv4 packet, from RFC 791."""
         version = pcs.Field("version", 4, default=4)
         hlen = pcs.Field("hlen", 4, default=5)
@@ -128,7 +128,7 @@ class ipv4(pcs.Packet):
         pcs.Packet.__init__(self,
                             [version, hlen, tos, length, id, flags, offset,
                              ttl, protocol, checksum, src, dst, options],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         # Description MUST be set after the PCS layer init
         self.description = "IPv4"
 
@@ -137,18 +137,18 @@ class ipv4(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
-            hlen_bytes = self.hlen * 4
-            options_len = hlen_bytes - self.sizeof()
+        if pdata is not None:
+            hlen_pdata = self.hlen * 4
+            options_len = hlen_pdata - self.sizeof()
 
-            if hlen_bytes > len(bytes):
+            if hlen_pdata > len(pdata):
                 raise UnpackError("IP header is larger than input (%d > %d)" % \
-                      (hlen_bytes, len(bytes)))
+                      (hlen_pdata, len(pdata)))
 
             if options_len > 0:
                 curr = self.sizeof()
-                while curr < hlen_bytes:
-                    option = struct.unpack('!B', bytes[curr])[0]
+                while curr < hlen_pdata:
+                    option = struct.unpack('!B', pdata[curr])[0]
 
                     if option == IPOPT_EOL:
                         options.append(pcs.Field("end", 8, default = IPOPT_EOL))
@@ -159,7 +159,7 @@ class ipv4(pcs.Packet):
                         curr += 1
                         continue
 
-                    optlen = struct.unpack('!B', bytes[curr+1])[0]
+                    optlen = struct.unpack('!B', pdata[curr+1])[0]
                     if option == IPOPT_RA:
                         # The IPv4 Router Alert option (RFC 2113) is a
                         # single 16 bit value. Its existence indicates
@@ -168,7 +168,7 @@ class ipv4(pcs.Packet):
                         if optlen != 4:
                             raise UnpackError("Bad length %d for IP option %d, " \
                                   "should be %d" % (optlen, option, 4))
-                        value = struct.unpack("!H", bytes[curr+2:curr+4])[0]
+                        value = struct.unpack("!H", pdata[curr+2:curr+4])[0]
                         options.append(pcs.TypeLengthValueField("ra",
                                        pcs.Field("t", 8, default = option),
                                        pcs.Field("l", 8, default = optlen),
@@ -184,13 +184,13 @@ class ipv4(pcs.Packet):
                                                  default = value)))
                         curr += optlen
 
-        if (bytes is not None):
+        if (pdata is not None):
             offset = self.hlen << 2
-            self.data = self.next(bytes[offset:len(bytes)],
+            self.data = self.next(pdata[offset:len(pdata)],
                                   timestamp = timestamp)
             if self.data is None:
                 from pcs.packets.payload import payload
-                self.data = payload(bytes[offset:len(bytes)])
+                self.data = payload(pdata[offset:len(pdata)])
             #if __debug__:
             #    print "decoded IPv4 payload proto", self.protocol, "as", type(self.data)
         else:
@@ -218,26 +218,26 @@ class ipv4(pcs.Packet):
         """Calculate and store the checksum for this packet."""
         #print "ipv4.calc_checksum()"
         self.checksum = 0
-        self.checksum = ipv4.ipv4_cksum(self.getbytes())
+        self.checksum = ipv4.ipv4_cksum(self.getpdata())
 
     def calc_length(self):
         """Calculate and store the length field(s) for this packet."""
-        tmpbytes = self.getbytes()
-        self.hlen = (len(tmpbytes) >> 2)
-        self.length = len(tmpbytes)
+        tmppdata = self.getpdata()
+        self.hlen = (len(tmppdata) >> 2)
+        self.length = len(tmppdata)
         if self._head is not None:
             self.length += len(self._head.collate_following(self))
 
-    def ipv4_cksum(bytes):
+    def ipv4_cksum(pdata):
         """Static method to: Calculate and return the IPv4 header checksum
-           over the string of bytes provided."""
+           over the string of pdata provided."""
 
-        tmpbytes = bytes
+        tmppdata = pdata
         total = 0
-        if len(tmpbytes) % 2 == 1:
-            tmpbytes += "\0"
-        for i in range(len(tmpbytes)/2):
-            total += (struct.unpack("!H", tmpbytes[2*i:2*i+2])[0])
+        if len(tmppdata) % 2 == 1:
+            tmppdata += "\0"
+        for i in range(len(tmppdata)/2):
+            total += (struct.unpack("!H", tmppdata[2*i:2*i+2])[0])
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16
         return ~total & 0xffff
@@ -256,7 +256,7 @@ class pseudoipv4(pcs.Packet):
 
     from socket import IPPROTO_TCP
 
-    def __init__(self, bytes = None, timestamp = None, proto = IPPROTO_TCP):
+    def __init__(self, pdata = None, timestamp = None, proto = IPPROTO_TCP):
         """For a pseudo header we only need the source and destination ddresses."""
         src = pcs.Field("src", 32)
         dst = pcs.Field("dst", 32)
@@ -264,7 +264,7 @@ class pseudoipv4(pcs.Packet):
         protocol = pcs.Field("protocol", 8, default = proto)
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [src, dst, reserved, protocol, length],
-                            bytes = bytes)
+                            pdata = pdata)
         # Description MUST be set after the PCS layer init"For a pseudo header we only need the source and destination ddresses."
         self.description = "IPv4 Pseudo Header"
         if timestamp is None:

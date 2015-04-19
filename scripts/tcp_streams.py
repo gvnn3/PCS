@@ -136,16 +136,16 @@ def main():
         connection_map.append(quad)
 
     if (options.streams == False):
-        print "Analyzed %d packets, found %d connections:" % (packets,
-                                                              len(connection_map))
+        print("Analyzed %d packets, found %d connections:" % (packets,
+                                                              len(connection_map)))
     for connection in connection_map:
         if (options.streams):
-            print "-s %s -S %d -d %s -D %d" % (connection[0],
+            print("-s %s -S %d -d %s -D %d" % (connection[0],
                                                connection[2],
                                                connection[1],
-                                               connection[3])
+                                               connection[3]))
         else:
-            print connection
+            print(connection)
 
 
 # The canonical way to make a python module into a script.

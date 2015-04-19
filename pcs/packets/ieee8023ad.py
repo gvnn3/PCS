@@ -110,11 +110,11 @@ class lacp(pcs.Packet):
     _map = None
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         # composed entirely of TLVs.
         tlvs = pcs.OptionListField("tlvs")
 
-        pcs.Packet.__init__(self, [ tlvs ], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ tlvs ], pdata = pdata, **kv)
         self.description = "IEEE 802.3ad Slow Protocols -- LACP"
 
         if timestamp is None:
@@ -122,12 +122,12 @@ class lacp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = 0
-            remaining = len(bytes)
+            remaining = len(pdata)
             # XXX Need to decode the LACP TLVs here, however,
             # TLV needs to be able to contain OptionLists to proceed...
-            self.data = payload(bytes[self.sizeof():len(bytes)],
+            self.data = payload(pdata[self.sizeof():len(pdata)],
                                 timestamp = timestamp)
         else:
             self.data = None
@@ -139,7 +139,7 @@ class marker(pcs.Packet):
     _map = None
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         # XXX: TLV fields can't contain multiple values yet, so we
         # kludge by making the first TLV fields exposed here.
         it = pcs.Field("info_type", 8)
@@ -153,7 +153,7 @@ class marker(pcs.Packet):
         resv = pcs.StringField("resv", 90 * 8)
 
         pcs.Packet.__init__(self, [ it, il, port, system, xid, pad, \
-                                    tt, tl, resv ], bytes = bytes, **kv)
+                                    tt, tl, resv ], pdata = pdata, **kv)
         self.description = "IEEE 802.3ad Slow Protocols -- Marker"
 
         if timestamp is None:
@@ -161,8 +161,8 @@ class marker(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
-            self.data = payload(bytes[self.sizeof():len(bytes)],
+        if pdata is not None:
+            self.data = payload(pdata[self.sizeof():len(pdata)],
                                 timestamp = timestamp)
         else:
             self.data = None
@@ -180,11 +180,11 @@ class slowhdr(pcs.Packet):
     _map = map
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         subtype = pcs.Field("subtype", 8)
         version = pcs.Field("version", 8)
 
-        pcs.Packet.__init__(self, [subtype, version], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [subtype, version], pdata = pdata, **kv)
         self.description = "IEEE 802.3ad Slow Protocols -- common header"
 
         if timestamp is None:
@@ -192,8 +192,8 @@ class slowhdr(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
-            self.data = frame(bytes[self.sizeof():len(bytes)],
+        if pdata is not None:
+            self.data = frame(pdata[self.sizeof():len(pdata)],
                               timestamp = timestamp)
         else:
             self.data = None

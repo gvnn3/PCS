@@ -73,23 +73,23 @@ EVENT_EMPTY = 5
 class garp(pcs.Packet):
     """IEEE 802.1d GARP PDU"""
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         attributes = pcs.OptionListField("attributes")
 
-        pcs.Packet.__init__(self, [ attributes ], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ attributes ], pdata = pdata, **kv)
         self.description = "IEEE 802.1d GARP PDU"
 
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # TODO parse GARP attribute list..
             if self.data is None:
-                self.data = payload.payload(bytes[curr:remaining], \
+                self.data = payload.payload(pdata[curr:remaining], \
                                             timestamp=timestamp)
         else:
             self.data = None
@@ -101,7 +101,7 @@ class stp(pcs.Packet):
     _flagbits = "\x01ACK\x02AGREE\x03FORWARDING\x04LEARNING\x05BACKUP" \
                 "\x06ROOT\x07PROPOSAL\x08CHANGED"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         version = pcs.Field("version", 8)
         type = pcs.Field("type", 8)
         flags = pcs.Field("flags", 8)
@@ -117,7 +117,7 @@ class stp(pcs.Packet):
 
         pcs.Packet.__init__(self, [ version, type, flags, root, \
                                     cost, src, pid, age, maxage, interval, \
-                                    delay ], bytes = bytes, **kv)
+                                    delay ], pdata = pdata, **kv)
         self.description = "IEEE 802.1d STP PDU"
 
         if timestamp is None:
@@ -125,12 +125,12 @@ class stp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # 802.1d shouldn't have any trailers.
-            self.data = payload.payload(bytes[curr:remaining], \
+            self.data = payload.payload(pdata[curr:remaining], \
                                         timestamp = timestamp)
         else:
             self.data = None
@@ -158,10 +158,10 @@ class bpdu(pcs.Packet):
     _layout = pcs.Layout()
     _map = map
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         protocol = pcs.Field("protocol", 16, discriminator=True)
 
-        pcs.Packet.__init__(self, [ protocol ], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ protocol ], pdata = pdata, **kv)
         self.description = "IEEE 802.1d bridge PDU header"
 
         if timestamp is None:
@@ -169,13 +169,13 @@ class bpdu(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
-            self.data = self.next(bytes[curr:remaining], timestamp=timestamp)
+            remaining = len(pdata) - offset
+            self.data = self.next(pdata[curr:remaining], timestamp=timestamp)
             if self.data is None:
-                self.data = payload.payload(bytes[curr:remaining], \
+                self.data = payload.payload(pdata[curr:remaining], \
                                             timestamp=timestamp)
         else:
             self.data = None

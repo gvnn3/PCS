@@ -69,20 +69,20 @@ class pcapTestCase(unittest.TestCase):
         """This test writes a fake ethernet packet to a dump file."""
         from pcs.pcap import DLT_EN10MB
         file = PcapDumpConnector("pcapdump.out", DLT_EN10MB)
-        # create one packet, copy its bytes, then compare their fields
+        # create one packet, copy its pdata, then compare their fields
         ether = ethernet()
         assert (ethernet != None)
         ether.src = "\x00\x00\x00\x00\x00\x00"
         ether.dst = "\xff\xff\xff\xff\xff\xff"
         ether.type = 2048
-        file.write(ether.bytes)
+        file.write(ether.pdata)
 
     def test_ethernet_dump(self):
         """This test dumps a fake ethernet packet, with timetamp, to a
         dump file."""
         from pcs.pcap import DLT_EN10MB
         file = PcapDumpConnector("pcapdump2.out", DLT_EN10MB)
-        # create one packet, copy its bytes, then compare their fields
+        # create one packet, copy its pdata, then compare their fields
         ether = ethernet()
         assert (ethernet != None)
         ether.src = "\x00\x00\x00\x00\x00\x00"
@@ -95,8 +95,8 @@ class pcapTestCase(unittest.TestCase):
         
         header.sec = 69
         header.usec = 69
-        header.caplen = len(ether.bytes)
-        file.sendto(ether.bytes, header)
+        header.caplen = len(ether.pdata)
+        file.sendto(ether.pdata, header)
         file.close()
         # Re read what we just wrote.
         file = PcapConnector("pcapdump2.out", DLT_EN10MB)        

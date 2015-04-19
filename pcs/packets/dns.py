@@ -42,7 +42,7 @@ class dnsheader(pcs.Packet):
     """DNS Header"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, tcp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, tcp = None, **kv):
         """Define the fields of a DNS (RFC 1035) header"""
         id = pcs.Field("id", 16)
         query = pcs.Field("query", 1)
@@ -69,12 +69,12 @@ class dnsheader(pcs.Packet):
             pcs.Packet.__init__(self,
                                 [length, id, query, opcode, aa, tc, rd, ra, z,
                                  rcode, qdcount, ancount, nscount, arcount],
-                                bytes = bytes, **kv)
+                                pdata = pdata, **kv)
         else:
             pcs.Packet.__init__(self,
                             [id, query, opcode, aa, tc, rd, ra, z,
                              rcode, qdcount, ancount, nscount, arcount],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "Define the fields of a DNS (RFC 1035) header"
         if timestamp is None:
@@ -94,7 +94,7 @@ class dnsheader(pcs.Packet):
            include the length of the length field, however it does include
            the length of any following payload."""
         if self.is_tcp is True:
-            self.length = len(self.getbytes()) - 2
+            self.length = len(self.getpdata()) - 2
             if self._head is not None:
                 self.length += len(self._head.collate_following(self))
 
@@ -103,12 +103,12 @@ class dnslabel(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, pdata = None):
         """initialize a DNS label, which is a component of a domain name"""
         name = pcs.LengthValueField("name", 8)
         pcs.Packet.__init__(self,
                             [name],
-                            bytes = bytes)
+                            pdata = pdata)
         
         self.description = "DNS Label"
 
@@ -117,13 +117,13 @@ class dnsquery(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, pdata = None):
         """initialize a DNS query packet, which is a query for information"""
         type = pcs.Field("type", 16)
         qclass = pcs.Field("query_class", 16)
         pcs.Packet.__init__(self,
                             [type, qclass],
-                            bytes = bytes)
+                            pdata = pdata)
         
         self.description = "initialize a DNS query packet, which is a query for information"
 
@@ -133,9 +133,9 @@ class dnsquery(pcs.Packet):
 # entities to use a different string field, and b) perform
 # the compression when we come to encode.
 # 'rdata' can contain arbitrary data depending on qclass,
-# however, the valid total length of a UDP dns packet is 512 bytes.
+# however, the valid total length of a UDP dns packet is 512 pdata.
 #
-# Below for now both field contents are limited to 32 bytes ( 2 ** 4 * 8),
+# Below for now both field contents are limited to 32 pdata ( 2 ** 4 * 8),
 # the length fields remain the same as per RFC 1035.
 #
 class dnsrr(pcs.Packet):
@@ -143,7 +143,7 @@ class dnsrr(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None):
+    def __init__(self, pdata = None):
         """initialize a DNS resource record, which encodes data returned from a query"""
         #name = pcs.LengthValueField("name", pcs.Field("", 8),
         #                             pcs.StringField("", (2 ** 8) * 8))
@@ -159,6 +159,6 @@ class dnsrr(pcs.Packet):
 
         pcs.Packet.__init__(self,
                             [name, type, qclass, ttl, rdata],
-                            bytes = bytes)
+                            pdata = pdata)
         
         self.description = "DNS Resource Record"

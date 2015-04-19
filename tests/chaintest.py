@@ -59,18 +59,18 @@ class chainTestCase(unittest.TestCase):
         file = PcapConnector("loopping.out")
         packet = file.readpkt()
         # Create new packets don't just point to them
-        ip1 = ipv4(packet.data.bytes)
-        ip2 = ipv4(packet.data.bytes)
+        ip1 = ipv4(packet.data.pdata)
+        ip2 = ipv4(packet.data.pdata)
         assert (ip1 != None)
         assert (ip2 != None)
 
         ether1 = ethernet()
-        ether1.src = "\x00\x00\x00\x00\x00\x01"
-        ether1.dst = "\x00\x00\x00\x00\x00\x02"
+        ether1.src = b"\x00\x00\x00\x00\x00\x01"
+        ether1.dst = b"\x00\x00\x00\x00\x00\x02"
 
         ether2 = ethernet()
-        ether2.src = "\x00\x00\x00\x00\x00\x01"
-        ether2.dst = "\x00\x00\x00\x00\x00\x02"
+        ether2.src = b"\x00\x00\x00\x00\x00\x01"
+        ether2.dst = b"\x00\x00\x00\x00\x00\x02"
 
         chain1 = Chain([ether1, ip1])
         chain2 = Chain([ether2, ip2])
@@ -82,11 +82,11 @@ class chainTestCase(unittest.TestCase):
 
     def test_chain_read(self):
         """Test whether or not the chain method of the base class works."""
-        file = PcapConnector("loopping.out")
+        file = PcapConnector(b"loopping.out")
         packet = file.readpkt()
         chain = packet.chain()
         #test_string = "Localhost\ntype 2\n IPv4\nversion 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\noptions []\n ICMPv4\ntype 8\ncode 0\nchecksum 60550\n Payload\n\'\\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f !\"#$%&\\'()*+,-./01234567' "
-        test_string = "Localhost\ntype 2\n IPv4\nversion 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\noptions []\n ICMPv4 Echo Request\ntype 8\ncode 0\nchecksum 60550\n ICMPv4 Echo\nid 23366\nsequence 0\n Payload\n\'B\\xf8s\\xad\\x00\\r\\x0e}\\x08\\t\\n\\x0b\\x0c\\r\\x0e\\x0f\\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17\\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f !\"#$%&\\\'()*+,-./01234567\' "
+        test_string = b"Localhost\ntype 2\n IPv4\nversion 4\nhlen 5\ntos 0\nlength 84\nid 59067\nflags 0\noffset 0\nttl 64\nprotocol 1\nchecksum 0\nsrc 127.0.0.1\ndst 127.0.0.1\noptions []\n ICMPv4 Echo Request\ntype 8\ncode 0\nchecksum 60550\n ICMPv4 Echo\nid 23366\nsequence 0\n Payload\n\'B\\xf8s\\xad\\x00\\r\\x0e}\\x08\\t\\n\\x0b\\x0c\\r\\x0e\\x0f\\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17\\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f !\"#$%&\\\'()*+,-./01234567\' "
 
         string = chain.__str__()
 

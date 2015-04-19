@@ -56,7 +56,7 @@ class boundaryPacket(pcs.Packet):
     """
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None):
+    def __init__(self, pdata = None):
         f1 = pcs.Field("f1", 1)
         f2 = pcs.Field("f2", 2)
         f3 = pcs.Field("f3", 3)
@@ -94,7 +94,7 @@ class boundaryPacket(pcs.Packet):
                              f10, f11, f12, f13, f14, f15, f16,
                              f17, f18, f19, f20, f21, f22, f23,
                              f24, f25, f26, f27, f28, f29, f30,
-                             f31, f32], bytes = None)
+                             f31, f32], pdata = None)
 
 class boundsTestCase(unittest.TestCase):
     def test_field(self):

@@ -44,7 +44,7 @@ class SyncV1(pcs.Packet):
     """PTPv1 Sync"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         originTimestampSeconds = pcs.Field("originTimestampSeconds", 32)
         originTimestampNanoseconds = pcs.Field("originTimestampNanoseconds", 32)
         epochNumber = pcs.Field("epochNumber", 16)
@@ -124,7 +124,7 @@ class SyncV1(pcs.Packet):
                                    estimatedMasterVariance,
                                    estimatedMasterDrift,
                                    zero13,
-                                   utcReasonable], bytes = bytes, **kv)
+                                   utcReasonable], pdata = pdata, **kv)
 
         self.description = "PTP Sync"
 
@@ -133,8 +133,8 @@ class SyncV1(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -149,7 +149,7 @@ class DelayRequestV1(pcs.Packet):
     """PTPv1 DelayRequest"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         originTimestampSeconds = pcs.Field("originTimestampSeconds", 32)
         originTimestampNanoseconds = pcs.Field("originTimestampNanoseconds", 32)
         epochNumber = pcs.Field("epochNumber", 16)
@@ -229,7 +229,7 @@ class DelayRequestV1(pcs.Packet):
                                    estimatedMasterVariance,
                                    estimatedMasterDrift,
                                    zero13,
-                                   utcReasonable], bytes = bytes, **kv)
+                                   utcReasonable], pdata = pdata, **kv)
 
         self.description = "PTP DelayRequest"
 
@@ -238,8 +238,8 @@ class DelayRequestV1(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -254,7 +254,7 @@ class FollowupV1(pcs.Packet):
     """PTPv1 Followup"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """Followup Header """
         zero1 = pcs.Field("zero1", 16, default = 0)
         associatedSequenceId = pcs.Field("associatedSequenceId", 16)
@@ -266,7 +266,7 @@ class FollowupV1(pcs.Packet):
                                    associatedSequenceId,
                                    preciseTimestampSeconds,
                                    preciseTimestampNanoseconds],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "Followup Header "
 
@@ -275,8 +275,8 @@ class FollowupV1(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -290,7 +290,7 @@ class DelayResponseV1(pcs.Packet):
     """PTPv1 Delay Response"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """Followup Header """
         delayReceiptTimestampSeconds = pcs.Field(
             "delayReceiptTimestampSeconds", 32)
@@ -311,7 +311,7 @@ class DelayResponseV1(pcs.Packet):
                                    requestingSourceUuid,
                                    requestingSourcePortId,
                                    requestingSourceSequenceId],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "Followup Header "
 
@@ -320,8 +320,8 @@ class DelayResponseV1(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None

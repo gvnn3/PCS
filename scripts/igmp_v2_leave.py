@@ -43,7 +43,7 @@ def main():
        options.ether_source is None or \
        options.ether_iface is None or \
        options.ip_source is None:
-           print "A required argument is missing."
+           print("A required argument is missing.")
            return
 
     output = PcapConnector(options.ether_iface)

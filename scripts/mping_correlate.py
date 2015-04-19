@@ -128,7 +128,7 @@ def main():
     
     if ((min(sequences[0]) > max(sequences[1])) or
         (min(sequences[1]) > max(sequences[1]))):
-        print "sequences do not overlap"
+        print("sequences do not overlap")
         sys.exit(1)
     
     # Trim the dictionaries of non overlapping elements
@@ -170,8 +170,8 @@ def main():
         try:
             delta = abs(files[1][i] - files[0][i])
         except KeyError:
-            print "9:99:99.000900"
-            print "missing packet %d" % i
+            print("9:99:99.000900")
+            print("missing packet %d" % i)
             continue
             
         if delta > maximum:
@@ -180,14 +180,14 @@ def main():
             minimum = delta
 
         if (options.debug != 0):
-            print delta
+            print(delta)
         graph.append(delta.microseconds)
 
     print "min %s, max %s" % (minimum, maximum)
 
     if (minimum.seconds > 1):
-        print "Time difference exceeded one second maximum, " \
-              "cannot graph differences"
+        print("Time difference exceeded one second maximum, " \
+              "cannot graph differences")
         sys.exit(1)
         
     plotter = Gnuplot.Gnuplot(debug=1)
@@ -201,9 +201,9 @@ def main():
 
     if (options.png != None):
         plotter.hardcopy(options.png + ".png", terminal='png')
-        raw_input('Press return to exit')
+        input('Press return to exit')
     else:
-        raw_input('Press return to exit')
+        input('Press return to exit')
 
 # The canonical way to make a python module into a script.
 # Remove if unnecessary.

@@ -40,7 +40,7 @@ class rt_ext(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, count = 1, **kv):
+    def __init__(self, pdata = None, count = 1, **kv):
         next_header = pcs.Field("next_header", 8)
         length = pcs.Field("length", 8, default = 2 * count)
         type = pcs.Field("type", 8, default = 0)
@@ -50,5 +50,5 @@ class rt_ext(pcs.Packet):
         addr1 = pcs.StringField("addr1", 16 * 8)
         pcs.Packet.__init__(self,
                             [next_header, length, type, segments_left,
-                             reserved, addr1], bytes, **kv)
+                             reserved, addr1], pdata, **kv)
         self.description = "Type 0 Routing header"

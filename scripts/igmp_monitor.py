@@ -26,7 +26,7 @@ def main():
     (options, args) = parser.parse_args()
 
     if options.ether_iface is None:
-        print "Non-optional argument missing."
+        print("Non-optional argument missing.")
         return
 
     input = PcapConnector(options.ether_iface)
@@ -39,7 +39,7 @@ def main():
     while not quit:
         packet = input.readpkt()
         chain = packet.chain()
-        print chain
+        print(chain)
 	#if chain.packets[2].type == IGMP_v2_HOST_MEMBERSHIP_REPORT:
 	#    #print chain.packets[2].println()
 	#    print "%s is in %s" % \

@@ -49,7 +49,7 @@ def main():
        options.ether_source is None or \
        options.ip_source is None or \
        options.count is None:
-        print "Non-optional argument missing."
+        print("Non-optional argument missing.")
         return
 
     maxresp = 3 * 10
@@ -81,7 +81,7 @@ def main():
     #
     count = int(options.count)
     if count < 0:
-        count = sys.maxint
+        count = sys.maxsize
     while count > 0:
         out = output.write(c.bytes, len(c.bytes))
         count -= 1

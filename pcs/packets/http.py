@@ -42,16 +42,16 @@ class http(pcs.Packet):
     """HTTP"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize a TCP packet"""
         # XXX: Right now we just have a 64K request.  Need to augment
         # from the RFC as this gets fleshed out.
-        if bytes is None:
+        if pdata is None:
             request = pcs.StringField("request", 65535*8)
         else:
-            request = pcs.StringField("request", len(bytes)*8)
+            request = pcs.StringField("request", len(pdata)*8)
         pcs.Packet.__init__(self, [request],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "initialize a TCP packet"
         if timestamp is None:
             self.timestamp = time.time()

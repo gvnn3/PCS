@@ -66,12 +66,12 @@ class notification(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         code = pcs.Field("code", 8)
         subcode = pcs.Field("subcode", 8)
         opt = pcs.OptionListField("opt")
 
-        pcs.Packet.__init__(self, [ code, subcode, opt ], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ code, subcode, opt ], pdata = pdata, **kv)
         self.description = "RFC 4271 BGP NOTIFICATION message."
 
         if timestamp is None:
@@ -79,13 +79,13 @@ class notification(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             if remaining > 0:
                 value = pcs.StringField("data", remaining*8, \
-                                        default=bytes[curr:remaining])
+                                        default=pdata[curr:remaining])
                 opt._options.append(value)
         else:
             self.data = None
@@ -96,7 +96,7 @@ class update(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         nwithdrawn = pcs.Field("nwithdrawn", 16)
         withdrawn = pcs.OptionListField("withdrawn")
         npathattrs = pcs.Field("npathattrs", 16)
@@ -104,7 +104,7 @@ class update(pcs.Packet):
         nlri = pcs.OptionListField("nlri")
 
         pcs.Packet.__init__(self, [ nwithdrawn, withdrawn, npathattrs, \
-                                    pathattrs, nlri ], bytes = bytes, **kv)
+                                    pathattrs, nlri ], pdata = pdata, **kv)
         self.description = "RFC 4271 BGP UPDATE message."
 
         if timestamp is None:
@@ -112,15 +112,15 @@ class update(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = nwithdrawn.width
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # TODO parse withdrawn
             # TODO parse pathattrs
             # TODO parse nlri
             if remaining > 0:
-                self.data = payload.payload(bytes[curr:remaining], \
+                self.data = payload.payload(pdata[curr:remaining], \
                                             timestamp = timestamp)
         else:
             self.data = None
@@ -130,7 +130,7 @@ class open(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         version = pcs.Field("version", 8, default=4)
         asnum = pcs.Field("asnum", 16)
         holdtime = pcs.Field("holdtime", 16)
@@ -140,7 +140,7 @@ class open(pcs.Packet):
 
         pcs.Packet.__init__(self, \
                             [ version, asnum, holdtime, id, optlen, opt], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "RFC 4271 BGP OPEN message."
 
         if timestamp is None:
@@ -149,17 +149,17 @@ class open(pcs.Packet):
             self.timestamp = timestamp
 
         # TODO: Parse the Capabilities TLV (RFC 3392).
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             if optlen > 0 and remaining == optlen:
                 opt._options.append(pcs.StringField("opts", optlen*8, \
-                                                    bytes[curr:curr+optlen]))
+                                                    pdata[curr:curr+optlen]))
                 curr += optlen
                 remaining -= optlen
             if remaining > 0:
-                self.data = payload.payload(bytes[curr:remaining], \
+                self.data = payload.payload(pdata[curr:remaining], \
                                             timestamp = timestamp)
         else:
             self.data = None
@@ -178,12 +178,12 @@ class header(pcs.Packet):
     _marker = "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"\
               "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         marker = pcs.StringField("marker", 16 * 8, default=_marker)
         length = pcs.Field("length", 16)
         type = pcs.Field("type", 8, discriminator=True)
 
-        pcs.Packet.__init__(self, [ marker, length, type ], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ marker, length, type ], pdata = pdata, **kv)
         self.description = "RFC 4271 BGP message header."
 
         if timestamp is None:
@@ -191,14 +191,14 @@ class header(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
-            self.data = self.next(bytes[curr:remaining], \
+            remaining = len(pdata) - offset
+            self.data = self.next(pdata[curr:remaining], \
                                   timestamp = timestamp)
             if self.data is None:
-                self.data = payload.payload(bytes[curr:remaining], \
+                self.data = payload.payload(pdata[curr:remaining], \
                                             timestamp = timestamp)
         else:
             self.data = None

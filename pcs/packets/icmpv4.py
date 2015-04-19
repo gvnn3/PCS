@@ -106,21 +106,21 @@ class icmpv4echo(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize an ICMPv4 echo packet, used by ping(8) and others"""
         id = pcs.Field("id", 16)
         seq = pcs.Field("sequence", 16)
-        pcs.Packet.__init__(self, [id, seq], bytes, **kv)
+        pcs.Packet.__init__(self, [id, seq], pdata, **kv)
         self.description = "ICMPv4 Echo"
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             from pcs.packets import payload
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -144,12 +144,12 @@ class icmpv4(pcs.Packet):
     _map = icmp_map
     _descr = descr
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize a ICMPv4 packet"""
         type = pcs.Field("type", 8, discriminator=True)
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [type, code, cksum], bytes, **kv)
+        pcs.Packet.__init__(self, [type, code, cksum], pdata, **kv)
         self.description = "ICMPv4"
 
         if timestamp is None:
@@ -157,15 +157,15 @@ class icmpv4(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             # XXX Workaround Packet.next() -- it only returns something
             # if it can discriminate.
-            self.data = self.next(bytes[offset:len(bytes)],
+            self.data = self.next(pdata[offset:len(pdata)],
                                   timestamp = timestamp)
             if self.data is None:
                 from pcs.packets.payload import payload
-                self.data = payload(bytes[offset:len(bytes)])
+                self.data = payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -173,11 +173,11 @@ class icmpv4(pcs.Packet):
         """Calculate and store the checksum for this ICMP header.
            ICMP checksums are computed over payloads, but not IP headers."""
         self.checksum = 0
-        tmpbytes = self.getbytes()
+        tmppdata = self.getpdata()
         if not self._head is None:
-            tmpbytes += self._head.collate_following(self)
+            tmppdata += self._head.collate_following(self)
         from pcs.packets.ipv4 import ipv4
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+        self.checksum = ipv4.ipv4_cksum(tmppdata)
 
     def rdiscriminate(self, packet, discfieldname = None, map = icmp_map):
         """Reverse-map an encapsulated packet back to a discriminator

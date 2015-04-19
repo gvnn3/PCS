@@ -67,7 +67,7 @@ from socket import *
 
 import itertools
 
-from .pcap import pcap
+from .pcap import *
 
 # import fast
 
@@ -123,25 +123,25 @@ layout of the data and how it is addressed."""
         return "<pcs.Field  name %s, %d bits, default %s, discriminator %d>" %\
                (self.name, self.width, self.default, self.discriminator)
 
-    def decode(self, bytes, curr, byteBR):
+    def decode(self, pdata, curr, byteBR):
         """Decode a field and return the value and the updated current
-        pointer into the bytes array
+        pointer into the pdata array
 
-        bytes - the byte array for the packet
-        curr - the current byte position in the bytes array
+        pdata - the byte array for the packet
+        curr - the current byte position in the pdata array
         byteBR - the number of Bits Remaining in the current byte
         """
-#         [ real_value, curr, byteBR ] = fast.decode(self.width, len(bytes), bytes, curr, byteBR)
+#         [ real_value, curr, byteBR ] = fast.decode(self.width, len(pdata), pdata, curr, byteBR)
 #         self.value = real_value
 #         return [ real_value, curr, byteBR ]
 
         real_value = 0
         fieldBR = self.width
-        length = len(bytes)
+        length = len(pdata)
         while (fieldBR > 0 and curr < length):
             if fieldBR < byteBR:
                 shift = byteBR - fieldBR
-                value = bytes[curr] >> shift
+                value = pdata[curr] >> shift
                 mask = 2 ** fieldBR -1
                 value = (value & mask)
                 byteBR -= fieldBR
@@ -149,13 +149,13 @@ layout of the data and how it is addressed."""
             elif fieldBR > byteBR:
                 shift = fieldBR - byteBR
                 mask = 2 ** byteBR - 1
-                value = bytes[curr] & mask
+                value = pdata[curr] & mask
                 fieldBR -= byteBR
                 byteBR = 8
                 curr += 1 # next byte
             elif fieldBR == byteBR:
                 mask = 2 ** byteBR - 1
-                value = bytes[curr] & mask
+                value = pdata[curr] & mask
                 fieldBR -= byteBR
                 byteBR = 8
                 curr += 1 # next byte
@@ -164,7 +164,7 @@ layout of the data and how it is addressed."""
         return [real_value, curr, byteBR]
 
     def encode(self, bytearray, value, byte, byteBR):
-        """encode the a field into the bytes necessary to transmit it
+        """encode the a field into the pdata necessary to transmit it
         as part of a packet
 
         bytearray - the array of bytes that will be returned
@@ -306,7 +306,7 @@ handled by the LengthValueField."""
         return "<pcs.StringField  name %s, %d bits, default %s>" % \
                (self.name, self.width, self.default)
 
-    def decode(self, bytes, curr, byteBR):
+    def decode(self, pdata, curr, byteBR):
         """Decode the field and return the value as well as the new
         current position in the bytes array."""
         # byteBR == 8 is the neutral state
@@ -314,7 +314,7 @@ handled by the LengthValueField."""
             raise FieldAlignmentError("Strings must start on a byte boundary")
         packarg = "%ds" % (self.width // 8)
         end = curr + self.width // 8
-        value = struct.unpack(packarg, bytes[curr:end])[0]
+        value = struct.unpack(packarg, pdata[curr:end])[0]
         curr += self.width // 8
         self.value = value
         return [value, curr, byteBR]
@@ -379,10 +379,10 @@ class LengthValueField(object):
         if self.packet is not None:
             self.packet.__needencode = True
 
-    def decode(self, bytes, curr, byteBR):
+    def decode(self, pdata, curr, byteBR):
         """Decode a LengthValue field."""
-        [self.length.value, curr, byteBR] = self.length.decode(bytes, curr, byteBR)
-        [self.value.value, curr, byteBR] = self.value.decode(bytes, curr, byteBR)
+        [self.length.value, curr, byteBR] = self.length.decode(pdata, curr, byteBR)
+        [self.value.value, curr, byteBR] = self.value.decode(pdata, curr, byteBR)
         return [self.value.value, curr, byteBR]
         
     def encode(self, bytearray, value, byte, byteBR):
@@ -466,9 +466,9 @@ class TypeValueField(object):
         if self.packet is not None:
             self.packet.__needencode = True
 
-    def decode(self, bytes, curr, byteBR):
-        [self.type.value, curr, byteBR] = self.type.decode(bytes, curr, byteBR)
-        [self.value.value, curr, byteBR] = self.value.decode(bytes, curr, byteBR)
+    def decode(self, pdata, curr, byteBR):
+        [self.type.value, curr, byteBR] = self.type.decode(pdata, curr, byteBR)
+        [self.value.value, curr, byteBR] = self.value.decode(pdata, curr, byteBR)
         return [value, curr, byteBR]
         
     def encode(self, bytearray, value, byte, byteBR):
@@ -546,10 +546,10 @@ class TypeLengthValueField(object):
         if self.packet is not None:
             self.packet.__needencode = True
 
-    def decode(self, bytes, curr, byteBR):
-        [self.type.value, curr, byteBR] = self.type.decode(bytes, curr, byteBR)
-        [self.length.value, curr, byteBR] = self.length.decode(bytes, curr, byteBR)
-        [self.value.value, curr, byteBR] = self.value.decode(bytes, curr, byteBR)
+    def decode(self, pdata, curr, byteBR):
+        [self.type.value, curr, byteBR] = self.type.decode(pdata, curr, byteBR)
+        [self.length.value, curr, byteBR] = self.length.decode(pdata, curr, byteBR)
+        [self.value.value, curr, byteBR] = self.value.decode(pdata, curr, byteBR)
         return [value, curr, byteBR]
         
     def encode(self, bytearray, value, byte, byteBR):
@@ -781,14 +781,14 @@ class OptionListField(CompoundField, list):
                     option.encode(bytearray, option.value, byte, byteBR)
         return [byte, byteBR]
 
-    def decode(self, bytes, curr, byteBR):
+    def decode(self, pdata, curr, byteBR):
         """Decode all the options in the list"""
         if hasattr(self, '_options'):
             for option in self._options:
                 if isinstance(option, CompoundField):
                     raise OptionListError("Can't encode embedded lists yet")
                 else:
-                    [value, curr, byteBR] = option.decode(bytes, curr, byteBR)
+                    [value, curr, byteBR] = option.decode(pdata, curr, byteBR)
                     option.value = value
         return [None, curr, byteBR]
 
@@ -904,37 +904,37 @@ class Packet(object):
     # This allows the programmer to set fields in what might be
     # considered a natural way with a foo.bar = baz type of syntax.
 
-    # The bytes are the actual bytes in network byte order of a fully
+    # The pdata are the actual bytes in network byte order of a fully
     # formed packet.  Packets are always fully formed as any setting
     # of a packet field generates a call to the update() method.
 
-    _bytes = ""
-    def getbytes(self):
-        """return the bytes of the packet"""
+    _pdata = b""
+    def getpdata(self):
+        """return the pdata of the packet"""
         if self._needencode:
             self._needencode = False
             self.encode()
-        return self._bytes
+        return self._pdata
 
     # decode must be defined before its used in the property
     # that is set below it.
-    def decode(self, bytes):
-        """Reset the bytes field and then update the associated
+    def decode(self, pdata):
+        """Reset the pdata field and then update the associated
         attributes of the packet.  This method is used when a packet
         is read in raw form."""
-        self._bytes = bytes
+        self._pdata = pdata
         curr = 0
         byteBR = 8
-        length = len(bytes)
+        length = len(pdata)
         for field in self._layout:
             if curr > length:
                 break
-            [value, curr, byteBR]  = field.decode(bytes, curr, byteBR)
+            [value, curr, byteBR]  = field.decode(pdata, curr, byteBR)
 
-    bytes = property(getbytes, decode)
+    pdata = property(getpdata, decode)
  
     def encode(self):
-        """Update the internal bytes representing the packet.  This
+        """Update the internal pdata representing the packet.  This
         function ought to be considered private to the class."""
 
         # Encode the fields, which are a set of bit widths and values
@@ -954,28 +954,28 @@ class Packet(object):
             value = self._fieldnames[field.name].value
             [byte, byteBR] = field.encode(bytearray, value, byte, byteBR)
 
-        self._bytes = b"".join(bytearray) # Install the new value
+        self._pdata = b"".join(bytearray) # Install the new value
 
-    def __init__(self, layout = None, bytes = None, **kv):
+    def __init__(self, layout = None, pdata = None, **kv):
         """initialize a Packet object
 
         layout - the layout of the packet, a list of Field objects
-        bytes - if the packet is being set up now the bytes to set in it
+        pdata - if the packet is being set up now the bytes to set in it
         kv - if the packet is being set up now, the initial values of
              each named field, specified as keyword arguments. These
              are always passed as a dict from classes which inherit
              from Packet.
         """
         # XXX
-        #self._bytes = ""
+        #self._pdata = ""
         self._layout = layout
         self._fieldnames = {}
         self._head = None
         for field in layout:
             self._fieldnames[field.name] = field
         self._needencode = True
-        if bytes is not None:
-            self.decode(bytes)
+        if pdata is not None:
+            self.decode(pdata)
 
         self._discriminator = None
         self._discriminator_inited = False
@@ -1043,7 +1043,7 @@ class Packet(object):
     def __getattribute__(self, name):
         """Getting an attribute means we may have extended an option.
 
-        If we append to an options list we have to reencode the bytes."""
+        If we append to an options list we have to reencode the pdata."""
         object.__setattr__(self, '_needencode', True)
 
         try: 
@@ -1060,10 +1060,10 @@ class Packet(object):
         return object.__getattribute__(self, name)
 
     def __eq__(self, other):
-        """Do a comparison of the packets data, including fields and bytes."""
+        """Do a comparison of the packets data, including fields and pdata."""
         if (type(self) != type(other)):
             return False
-        if (self.bytes != other.bytes):
+        if (self.pdata != other.pdata):
             return False
         for field in self._layout:
             if self._fieldnames[field.name].value != other._fieldnames[field.name].value:
@@ -1071,7 +1071,7 @@ class Packet(object):
         return True
 
     def __ne__(self, other):
-        """Do a comparison of the packets data, including fields and bytes."""
+        """Do a comparison of the packets data, including fields and pdata."""
         return not self.__eq__(other)
 
     def matches(self, other):
@@ -1144,9 +1144,9 @@ class Packet(object):
 
     def __len__(self):
         """Return the count of the number of bytes in the packet."""
-        return len(self.bytes)
+        return len(self.pdata)
 
-    def __div__(self, packet):
+    def __truediv__(self, packet):
         """/ operator: Insert a packet after this packet in a chain.
            If I am not already part of a chain, build one.
            If the discriminator field in this packet has not been
@@ -1188,7 +1188,7 @@ class Packet(object):
            and we need to return an instance of the derived class, so we
            call its default constructor, and make a deep copy of all the
            field values here.
-           The backing store in self.bytes is an immutable buffer
+           The backing store in self.pdata is an immutable buffer
            which is dynamically reallocated when changed, so we can
            either copy it or forget about it."""
         from copy import deepcopy
@@ -1213,7 +1213,7 @@ class Packet(object):
                 done = True
         return chain
         
-    def next(self, bytes, discriminator = None, timestamp = None):
+    def next(self, pdata, discriminator = None, timestamp = None):
         """Demultiplex higher layer protocols based on a supplied map and
         discriminator field."""
 
@@ -1226,11 +1226,11 @@ class Packet(object):
 
         if ((discriminator is not None) and (self._map is not None)):
             if (discriminator in self._map):
-                return self._map[self._fieldnames[discriminator.name].value](bytes, timestamp = timestamp)
+                return self._map[self._fieldnames[discriminator.name].value](pdata, timestamp = timestamp)
             
         if ((self._discriminator is not None) and (self._map is not None)):
             if (self._fieldnames[self._discriminator.name].value in self._map):
-                return self._map[self._fieldnames[self._discriminator.name].value](bytes, timestamp = timestamp)
+                return self._map[self._fieldnames[self._discriminator.name].value](pdata, timestamp = timestamp)
         
         return None
 
@@ -1358,7 +1358,7 @@ class Chain(list):
         #print "Chain.__repr__() called"
         return self.packets.__repr__()
 
-    def __div__(self, packet, rdiscriminate=True):
+    def __truediv__(self, packet, rdiscriminate=True):
         """/ operator: Append a packet to the end of a chain.
            The packet's head pointer will be overwritten to point to
            this chain.
@@ -1406,7 +1406,7 @@ class Chain(list):
 
     def append(self, packet):
         """Append a packet to a chain.  Appending a packet requires
-        that we update the bytes as well."""
+        that we update the pdata as well."""
         self.packets.append(packet)
         self.encode()
 
@@ -1463,15 +1463,15 @@ class Chain(list):
             self.packets[i].wildcard_mask([], unmask)
 
     def encode(self):
-        """Encode all the packets in a chain into a set of bytes for the Chain"""
-        self.bytes = ""
+        """Encode all the packets in a chain into a set of pdata for the Chain"""
+        self.pdata = b""
         for packet in self.packets:
-            self.bytes += packet.bytes
+            self.pdata += packet.pdata
     
-    def decode(self, bytes):
-        """Decode all the bytes of all the packets in a Chain into the underlying packets"""
+    def decode(self, pdata):
+        """Decode all the pdata of all the packets in a Chain into the underlying packets"""
         for packet in self.packets:
-            packet.decode(packet.bytes)
+            packet.decode(packet.pdata)
 
     # XXX We are a model of list so if we proxy this to member
     # self.packets this can be renamed index() and go away.
@@ -1489,16 +1489,16 @@ class Chain(list):
 
     def collate_following(self, packet):
         """Given a packet which is part of this chain, return a string
-           containing the bytes of all packets following it in this chain.
+           containing the pdata of all packets following it in this chain.
            Helper method used by Internet transport protocols."""
-        tmpbytes = ""
+        tmppdata = b""
         n = self.index_of(packet)
         if n == len(self.packets)-1:
-            return tmpbytes
+            return tmppdata
         for p in self.packets[n+1:]:
             #print "collating %s" % (type(p))
-            tmpbytes += p.getbytes()
-        return tmpbytes
+            tmppdata += p.getpdata()
+        return tmppdata
 
     def find_first_of(self, ptype):
         """Find the first packet of type 'ptype' in this chain.
@@ -1941,24 +1941,24 @@ class PcapConnector(Connector):
             self.is_nonblocking = False
         return result
 
-    def write(self, packet, bytes):
+    def write(self, packet, pdata):
         """Write a packet to a pcap file or network interface.
 
-        bytes - the bytes of the packet, and not the packet object
+        pdata - the bytes of the packet, and not the packet object
 """
-        return self.file.inject(packet, bytes)
+        return self.file.inject(packet, pdata)
 
-    def send(self, packet, bytes):
+    def send(self, packet, pdata):
         """Write a packet to a pcap file or network interface.
 
-        bytes - the bytes of the packet, and not the packet object"""
-        return self.file.inject(packet, bytes)
+        pdata - the bytes of the packet, and not the packet object"""
+        return self.file.inject(packet, pdata)
 
-    def sendto(self, packet, bytes):
+    def sendto(self, packet, pdata):
         """Write a packet to a pcap file or network interface.
 
-        bytes - the bytes of the packet, and not the packet object"""
-        return self.file.inject(packet, bytes)
+        pdata - the bytes of the packet, and not the packet object"""
+        return self.file.inject(packet, pdata)
 
     def unpack(self, packet, dlink, dloff, timestamp):
         """Create a Packet from a string of bytes.
@@ -1970,11 +1970,11 @@ class PcapConnector(Connector):
         from .packets import ethernet
         from .packets import localhost
 
-        if dlink == pcap.DLT_EN10MB:
+        if dlink == DLT_EN10MB:
             return packets.ethernet.ethernet(packet, timestamp)
-        elif dlink == pcap.DLT_NULL:
+        elif dlink == DLT_NULL:
             return packets.localhost.localhost(packet, timestamp)
-        elif dlink == pcap.DLT_RAW:
+        elif dlink == DLT_RAW:
             return packets.ipv4.ipv4(packet, timestamp)
         else:
             raise UnpackError("Could not interpret packet")
@@ -1996,7 +1996,7 @@ class PcapConnector(Connector):
     # Relative branches are forward only up to 256 instructions.
     # The length of each packet header may not be constant if optional
     # fields are present in filter chain, so calculate offset into
-    # chain using getbytes() not sizeof().
+    # chain using getpdata() not sizeof().
     # XXX We always assume a datalink header is present in the chain.
     def make_bpf_program(c):
         """Given a filter chain c, create a simple BPF filter program."""
@@ -2118,27 +2118,27 @@ class TapConnector(Connector):
     def read_packet(self):
         """Read a packet from a pcap file or interfaces returning an
         appropriate packet object."""
-        bytes = self.blocking_read()
-        return packets.ethernet.ethernet(bytes)
+        pdata = self.blocking_read()
+        return packets.ethernet.ethernet(pdata)
 
     def readpkt(self):
         # XXX legacy name.
         return self.read_packet()
 
-    def write(self, packet, bytes):
+    def write(self, packet, pdata):
         """Write a packet to a pcap file or network interface.
-        bytes - the bytes of the packet, and not the packet object
+        pdata - the bytes of the packet, and not the packet object
         """
         return self.blocking_write(packet)
 
-    def send(self, packet, bytes):
+    def send(self, packet, pdata):
         """Write a packet to a pcap file or network interface.
-        bytes - the bytes of the packet, and not the packet object"""
+        pdata - the bytes of the packet, and not the packet object"""
         return self.blocking_write(packet)
 
-    def sendto(self, packet, bytes):
+    def sendto(self, packet, pdata):
         """Write a packet to a pcap file or network interface.
-        bytes - the bytes of the packet, and not the packet object"""
+        pdata - the bytes of the packet, and not the packet object"""
         return self.blocking_write(packet)
 
     # XXX We could just call PcapConnector's method here.
@@ -2207,16 +2207,16 @@ class TapConnector(Connector):
                 raise OSError("fcntl")
         return flags
 
-    def write(self, packet, bytes):
+    def write(self, packet, pdata):
         """Write a packet to a pcap file or network interface.
-           bytes - the bytes of the packet, and not the packet object"""
-        return self.file.inject(packet, bytes)
+           pdata - the bytes of the packet, and not the packet object"""
+        return self.file.inject(packet, pdata)
 
-    def send(self, packet, bytes):
+    def send(self, packet, pdata):
         """Write a packet to a pcap file or network interface.
 
-        bytes - the bytes of the packet, and not the packet object"""
-        return self.file.inject(packet, bytes)
+        pdata - the bytes of the packet, and not the packet object"""
+        return self.file.inject(packet, pdata)
 
     def blocking_read(self):
         """Block until the next packet arrives and return it."""
@@ -2242,22 +2242,22 @@ class TapConnector(Connector):
         try:
             buf = array.array('i', [0])
             s = fcntl.ioctl(self.fileno, FIONREAD, buf)
-            qbytes = buf.pop()
-            if qbytes == 0:
+            qpdata = buf.pop()
+            if qpdata == 0:
                 return None
-            return os.read(self.fileno, qbytes)
+            return os.read(self.fileno, qpdata)
         except:
             raise
         return None
 
-    def blocking_write(self, bytes):
+    def blocking_write(self, pdata):
         import os
         # Force a blocking write.
         oldnblock = self.is_nonblocking
         if oldnblock is True:
             self.setnonblocking(False)
             self.is_nonblocking = False
-        result = os.write(self.fileno, bytes)
+        result = os.write(self.fileno, pdata)
         # Unconditionally restore O_NBLOCK mode.
         self.setnonblocking(oldnblock)
         self.is_nonblocking = oldnblock
@@ -2291,8 +2291,8 @@ class IP4Connector(Connector):
         return self.file.recv(len)
 
     def read_packet(self):
-        bytes = self.file.read()
-        return packets.ipv4.ipv4(bytes)
+        pdata = self.file.read()
+        return packets.ipv4.ipv4(pdata)
 
     def recv(self, len, flags = 0):
         """recv data from an IPv4 socket"""
@@ -2407,8 +2407,8 @@ class UmlMcast4Connector(UDP4Connector):
             raise
 
     def read_packet(self):
-        bytes = self.blocking_read()
-        return packets.ethernet.ethernet(bytes)
+        pdata = self.blocking_read()
+        return packets.ethernet.ethernet(pdata)
 
     def readpkt(self):
         # XXX legacy name.
@@ -2473,8 +2473,8 @@ class IP6Connector(Connector):
         return self.file.recv(len)
 
     def read_packet(self):
-        bytes = self.file.read()
-        return packets.ipv6.ipv6(bytes)
+        pdata = self.file.read()
+        return packets.ipv6.ipv6(pdata)
 
     def recv(self, len, flags = 0):
         """recv data from an IPv4 socket"""

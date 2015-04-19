@@ -49,13 +49,13 @@ class vlan(pcs.Packet):
     _layout = pcs.Layout()
     _map = ethernet_map.map
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         type = pcs.Field("type", 16, discriminator=True)
         p = pcs.Field("p", 3)
         cfi = pcs.Field("cfi", 1)               # Canonical MAC
         vlan = pcs.Field("vlan", 12)
 
-        pcs.Packet.__init__(self, [ p, cfi, vlan, type ], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ p, cfi, vlan, type ], pdata = pdata, **kv)
         self.description = "IEEE 802.1q VLAN header"
 
         if timestamp is None:
@@ -63,13 +63,13 @@ class vlan(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
-            self.data = self.next(bytes[curr:remaining], timestamp=timestamp)
-            if bytes is not None:
-                self.data = payload.payload(bytes[curr:remaining], \
+            remaining = len(pdata) - offset
+            self.data = self.next(pdata[curr:remaining], timestamp=timestamp)
+            if pdata is not None:
+                self.data = payload.payload(pdata[curr:remaining], \
                                             timestamp = timestamp)
         else:
             self.data = None

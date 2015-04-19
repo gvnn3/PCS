@@ -84,12 +84,12 @@ class igmp(pcs.Packet):
     _map = igmp_map
     _descr = descr
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """ Define the common IGMP encapsulation; see RFC 2236. """
         type = pcs.Field("type", 8, discriminator=True)
         code = pcs.Field("code", 8)
         checksum = pcs.Field("checksum", 16)
-        pcs.Packet.__init__(self, [type, code, checksum], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [type, code, checksum], pdata = pdata, **kv)
         self.description = "IGMP"
 
         if timestamp is None:
@@ -97,19 +97,19 @@ class igmp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             if self.type == IGMP_HOST_MEMBERSHIP_QUERY and \
-               len(bytes) >= igmpv3.IGMP_V3_QUERY_MINLEN:
-                    self.data = igmpv3.query(bytes[offset:len(bytes)],
+               len(pdata) >= igmpv3.IGMP_V3_QUERY_MINLEN:
+                    self.data = igmpv3.query(pdata[offset:len(pdata)],
                                              timestamp = timestamp)
             else:
                 # XXX Workaround Packet.next() -- it only returns something
                 # if it can discriminate.
-                self.data = self.next(bytes[offset:len(bytes)],
+                self.data = self.next(pdata[offset:len(pdata)],
                                       timestamp = timestamp)
                 if self.data is None:
-                    self.data = payload.payload(bytes[offset:len(bytes)])
+                    self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -124,10 +124,10 @@ class igmp(pcs.Packet):
            IGMP checksums are computed over payloads too."""
         from pcs.packets.ipv4 import ipv4
         self.checksum = 0
-        tmpbytes = self.bytes
+        tmppdata = self.pdata
         if not self._head is None:
-            tmpbytes += self._head.collate_following(self)
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+            tmppdata += self._head.collate_following(self)
+        self.checksum = ipv4.ipv4_cksum(tmppdata)
 
     def __str__(self):
         """Walk the entire packet and pretty print the values of the fields."""

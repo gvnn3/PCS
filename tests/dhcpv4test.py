@@ -106,15 +106,15 @@ class bootpTestCase(unittest.TestCase):
         p.options.append(end.field())
 
         # Pad BOOTP payload to 32-bit width.
-        padlen = 4 - (len(p.bytes) % 4)
+        padlen = 4 - (len(p.pdata) % 4)
         pad = dhcpv4_options.pad(padlen)
         p.options.append(pad.field())
 
         p.encode()
         #hd = hexdumper()
         #print p
-        #print hd.dump2(p.bytes)
-        gotttted = p.bytes
+        #print hd.dump2(p.pdata)
+        gotttted = p.pdata
         expected = \
                 "\x01\x01\x06\x63\xAB\xAD\xCA\xFE" \
                 "\x00\x7B\x80\x00\x01\x02\x03\x04" \

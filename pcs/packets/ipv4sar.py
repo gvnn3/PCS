@@ -134,7 +134,7 @@ class ipv4sar(object):
         nip = deepcopy(ip)
         nip.options._options = newopts
         nip.encode()
-        assert len(nip.getbytes()) <= 64, "IPv4 header cannot exceed 64 bytes."
+        assert len(nip.getpdata()) <= 64, "IPv4 header cannot exceed 64 bytes."
         return nip
 
     def fragment(chain, mtu, index = None):
@@ -163,14 +163,14 @@ class ipv4sar(object):
             return None
 
         # Collate the payload to be fragmented and calculate its length.
-        tmpbytes = chain.collate_following(ip)
-        remaining = len(tmpbytes)
+        tmppdata = chain.collate_following(ip)
+        remaining = len(tmppdata)
 
         # If existing IP header and payload fit within MTU, no need to
         # do any further work. Otherwise we must fragment it. This
         # doesn't take the headers in front into account, so we'll
         # assume the caller did.
-        if mtu >= len(ip.getbytes()) + remaining:
+        if mtu >= len(ip.getpdata()) + remaining:
             return [chain]
 
         # Take a deep copy of the IP header, and construct the
@@ -178,12 +178,12 @@ class ipv4sar(object):
         from copy import deepcopy
         fip = deepcopy(ip)              # first IP fragment header
         fip.ip_flags = IP_MF
-        assert (len(fip.getbytes()) % 4) == 0, \
+        assert (len(fip.getpdata()) % 4) == 0, \
                "First IPv4 fragment header not on 4-byte boundary."
 
         sip = make_fragment_header(fip) # template IP fragment header
         sip.ip_flags = IP_MF
-        assert (len(fip.getbytes()) % 4) == 0, \
+        assert (len(fip.getpdata()) % 4) == 0, \
                "Subsequent IPv4 fragment header not on 4-byte boundary."
 
         result = []                     # The fragments w/o other headers.
@@ -191,25 +191,25 @@ class ipv4sar(object):
         # The first fragment needs to be calculated separately as it
         # may have a different set of IP options.
         off = 0
-        rmtu = mtu - len(fip.getbytes())
+        rmtu = mtu - len(fip.getpdata())
         assert rmtu >= 8, "Insufficient MTU for first IPv4 fragment."
         rmtu -= rmtu % 8
 
         fip.ip_off = 0
-        result.append(Chain([fip, ipv4frag(bytes=tmpbytes[:rmtu])]))
+        result.append(Chain([fip, ipv4frag(pdata=tmppdata[:rmtu])]))
         off += rmtu
         remaining -= rmtu
 
         # Subsequent fragments use a template header. The minimum length
         # of a fragment's payload is 8 bytes. ip_off measures 64-bit words,
         # so each fragment must be on an 8-byte boundary.
-        rmtu = mtu - len(sip.getbytes())
+        rmtu = mtu - len(sip.getpdata())
         assert rmtu >= 8, "Insufficient MTU for subsequent IPv4 fragments."
         rmtu -= rmtu % 8
         while remaining >= rmtu:
             sip.ip_off = off >> 3
             result.append(Chain([deepcopy(sip), \
-                                 ipv4frag(bytes=tmpbytes[off:rmtu])]))
+                                 ipv4frag(pdata=tmppdata[off:rmtu])]))
             off += rmtu
             remaining -= rmtu
 
@@ -222,10 +222,10 @@ class ipv4sar(object):
             if not (ip.ip_flags & IP_MF):
                 sip.ip_flags = 0
             result.append(Chain([deepcopy(sip), \
-                                 ipv4frag(bytes=tmpbytes[off:remaining])]))
+                                 ipv4frag(pdata=tmppdata[off:remaining])]))
             off += remaining
             remaining -= remaining
-        assert off == len(tmpbytes), "Did not fragment entire payload."
+        assert off == len(tmppdata), "Did not fragment entire payload."
         assert remaining == 0, "Did not fragment entire payload."
 
         return result

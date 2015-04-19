@@ -210,7 +210,7 @@ class if_link_msg(pcs.Packet):
     _descr = None
     _flagbits = _iff_flagbits
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         addrs = pcs.Field("addrs", 32)
         flags = pcs.Field("flags", 32)
         index = pcs.Field("index", 16)
@@ -220,7 +220,7 @@ class if_link_msg(pcs.Packet):
         data = pcs.Field("data", 152 * 8)
 
         pcs.Packet.__init__(self, [addrs, flags, index, pad00, ifdata], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "BSD Routing socket -- link-state message (if_msghdr)"
 
         if timestamp is None:
@@ -228,9 +228,9 @@ class if_link_msg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -253,7 +253,7 @@ class if_addr_msg(pcs.Packet):
     _map = None
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         addrs = pcs.Field("addrs", 32)
         flags = pcs.Field("flags", 32)  # ifa_flags, not much defined
         index = pcs.Field("index", 16)
@@ -261,7 +261,7 @@ class if_addr_msg(pcs.Packet):
         metric = pcs.Field("metric", 32)
 
         pcs.Packet.__init__(self, [addrs, flags, index, pad00, metric], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "BSD Routing socket -- protocol address message (ifa_msghdr) "
 
         if timestamp is None:
@@ -269,9 +269,9 @@ class if_addr_msg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -282,12 +282,12 @@ class if_maddr_msg(pcs.Packet):
     _map = None
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         addrs = pcs.Field("addrs", 32)
         flags = pcs.Field("flags", 32)  # ifa_flags, not much defined
         index = pcs.Field("index", 16)
 
-        pcs.Packet.__init__(self, [addrs, flags, index], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [addrs, flags, index], pdata = pdata, **kv)
         self.description = "BSD Routing socket -- multicast group message (ifma_msghdr) "
 
         if timestamp is None:
@@ -295,9 +295,9 @@ class if_maddr_msg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -308,12 +308,12 @@ class if_state_msg(pcs.Packet):
     _map = None
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         index = pcs.Field("index", 16)
         name = pcs.StringField("name", IFNAMSIZ * 8)
         what = pcs.Field("what", 16)
 
-        pcs.Packet.__init__(self, [index, name, what], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [index, name, what], pdata = pdata, **kv)
         self.description = "BSD Routing socket -- interface-state message (if_announcemsghdr)"
 
         if timestamp is None:
@@ -321,9 +321,9 @@ class if_state_msg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -336,17 +336,17 @@ class ieee80211_join_event(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     _descr = None
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         address = pcs.Field("address", 6 * 8)
-        pcs.Packet.__init__(self, [address], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [address], pdata = pdata, **kv)
         self.description = "BSD Routing socket -- IEEE 802.11 join event"
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -355,17 +355,17 @@ class ieee80211_leave_event(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     _descr = None
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         address = pcs.Field("address", 6 * 8)
-        pcs.Packet.__init__(self, [address], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [address], pdata = pdata, **kv)
         self.description = "BSD Routing socket -- IEEE 802.11 leave event"
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -374,7 +374,7 @@ class ieee80211_replay_event(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     _descr = None
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         src = pcs.Field("src", 6 * 8)
         dst = pcs.Field("dst", 6 * 8)
         cipher = pcs.Field("cipher", 8)
@@ -382,15 +382,15 @@ class ieee80211_replay_event(pcs.Packet):
         keyix = pcs.Field("keyrsc", 64)
         rsc = pcs.Field("rsc", 64)
         pcs.Packet.__init__(self, [src, dst, cipher, keyid, keyix, rsc], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "BSD Routing socket -- IEEE 802.11 replay event"
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -399,21 +399,21 @@ class ieee80211_michael_event(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     _descr = None
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         src = pcs.Field("src", 6 * 8)
         dst = pcs.Field("dst", 6 * 8)
         cipher = pcs.Field("cipher", 8)
         keyix = pcs.Field("keyrsc", 64)
         pcs.Packet.__init__(self, [src, dst, cipher, keyix], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "BSD Routing socket -- IEEE 802.11 MICHAEL failure event"
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -448,12 +448,12 @@ class if_ieee80211_msg(pcs.Packet):
     _map = ieee80211_map
     _descr = ieee80211_descr
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         index = pcs.Field("index", 16)
         name = pcs.StringField("name", IFNAMSIZ * 8)
         what = pcs.Field("what", 16, discriminator=True)
 
-        pcs.Packet.__init__(self, [index, name, what], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [index, name, what], pdata = pdata, **kv)
         self.description = "BSD Routing socket -- IEEE 802.11 state messages (if_announcemsghdr)"
 
         if timestamp is None:
@@ -461,9 +461,9 @@ class if_ieee80211_msg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -487,7 +487,7 @@ class rt_msg(pcs.Packet):
                 "\x11WASCLONED\x12PROTO3\x14PINNED\x15LOCAL\x16BROADCAST"\
                 "\x17MULTICAST"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """ Define the common rtmsg header; see <net/route.h>. """
         index = pcs.Field("index", 16)
         flags = pcs.Field("flags", 32)
@@ -501,7 +501,7 @@ class rt_msg(pcs.Packet):
         #rmx = pcs.Field("rmx", 32)
 
         pcs.Packet.__init__(self, [index, flags, addrs, pid, seq, errno, \
-                                   fmask, inits], bytes = bytes, **kv)
+                                   fmask, inits], pdata = pdata, **kv)
         self.description = " Define the common rtmsg header; see <net/route.h>. "
 
         if timestamp is None:
@@ -509,9 +509,9 @@ class rt_msg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -579,7 +579,7 @@ class rtmsghdr(pcs.Packet):
     _map = rtmsg_map
     _descr = descr
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """ Define the common rtmsg header; see <net/route.h>. """
         msglen = pcs.Field("msglen", 16)
         version = pcs.Field("version", 8, default=RTM_VERSION)
@@ -588,7 +588,7 @@ class rtmsghdr(pcs.Packet):
         pad0 = pcs.Field("type", 16)
 
         pcs.Packet.__init__(self, [msglen, version, type, pad0], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = " Define the common rtmsg header; see <net/route.h>. "
 
         if timestamp is None:
@@ -596,15 +596,15 @@ class rtmsghdr(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             # XXX Workaround Packet.next() -- it only returns something
             # if it can discriminate.
             # XXX Should try rtmsg next, next.
             offset = self.sizeof()
-            self.data = self.next(bytes[offset:len(bytes)],
+            self.data = self.next(pdata[offset:len(pdata)],
                                       timestamp = timestamp)
             if self.data is None:
-                self.data = payload.payload(bytes[offset:len(bytes)])
+                self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 

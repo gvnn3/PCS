@@ -59,9 +59,9 @@ class sctpTestCase(unittest.TestCase):
         packet.checksum = 0
 
         new_packet = common()
-        new_packet.decode(packet.bytes)
+        new_packet.decode(packet.pdata)
 
-        self.assertEqual(packet.bytes, new_packet.bytes, "bytes not equal")
+        self.assertEqual(packet.pdata, new_packet.pdata, "pdata not equal")
         for field in packet._fieldnames:
             self.assertEqual(getattr(packet, field), getattr(new_packet, field), ("%s not equal" % field))
 

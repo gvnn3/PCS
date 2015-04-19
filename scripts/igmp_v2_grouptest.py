@@ -17,11 +17,11 @@ import signal
 def results(signum, frame):
     global match
 
-    for addr, got in sorted(match.iteritems()):
+    for addr, got in sorted(match.items()):
         if (got == True):
-            print "%s answered %s" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), inet_ntop(AF_INET, struct.pack('!L', addr[1])))
+            print("%s answered %s" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), inet_ntop(AF_INET, struct.pack('!L', addr[1]))))
         else:
-            print "%s NO ANSWER for %s" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), inet_ntop(AF_INET, struct.pack('!L', addr[1])))
+            print("%s NO ANSWER for %s" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), inet_ntop(AF_INET, struct.pack('!L', addr[1]))))
 
 
 def main():
@@ -71,7 +71,7 @@ def main():
        options.ether_source is None or \
        options.ip_source is None or \
        options.count is None:
-        print "Non-optional argument missing."
+        print("Non-optional argument missing.")
         return
 
     maxresp = 3 * 10

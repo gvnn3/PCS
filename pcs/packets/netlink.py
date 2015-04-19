@@ -90,10 +90,10 @@ class nlmsg_error(pcs.Packet):
     _map = None
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         error = pcs.Field("error", 32)
 
-        pcs.Packet.__init__(self, [error], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [error], pdata = pdata, **kv)
         self.description = "If type is NLMSG_ERROR, original message generating error is returned as payload with error code prepended, just like ICMP."
 
         if timestamp is None:
@@ -104,8 +104,8 @@ class nlmsg_error(pcs.Packet):
         # XXX To avoid introducing a circular dependency in this module,
         # the caller is responsible for trying to decode the payload
         # as an nlmsghdr chain.
-        if bytes is not None:
-            self.data = payload.payload(bytes[offset:len(bytes)])
+        if pdata is not None:
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 
@@ -140,7 +140,7 @@ class nlmsghdr(pcs.Packet):
                  "\x0dREPLACE\x0eEXCL\x0fCREATE"\
                  "\x10APPEND"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """ Define the common Netlink message header."""
         len = pcs.Field("len", 32)
         type = pcs.Field("type", 16, discriminator=True)
@@ -149,7 +149,7 @@ class nlmsghdr(pcs.Packet):
         pid = pcs.Field("pid", 32)      # Port ID
 
         pcs.Packet.__init__(self, [len, type, flags, seq, pid], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = " Define the common Netlink message header."
 
         if timestamp is None:
@@ -157,39 +157,39 @@ class nlmsghdr(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
 
             # XXX Check and use the length field.
-            remaining = min(len(bytes), self.len) - offset
+            remaining = min(len(pdata), self.len) - offset
             if remaining < 0:
-                remaining = len(bytes)
+                remaining = len(pdata)
 
             # Only use the external map to look up the payload type
             # if it isn't of a type we know about.
             if self._fieldnames['type'].value == NLMSG_ERROR:
-                self.data = nlmsg_error(bytes[offset:remaining], \
+                self.data = nlmsg_error(pdata[offset:remaining], \
                                         timestamp=timestamp)
             elif (self._fieldnames['type'].value != NLMSG_NOOP) and \
                  (self._fieldnames['type'].value != NLMSG_DONE):
-                self.data = self.next(bytes[offset:remaining], \
+                self.data = self.next(pdata[offset:remaining], \
                                       timestamp=timestamp)
 
             # If we failed to look up a payload type, assume that
             # the payload is opaque.
             if self.data is None:
-                self.data = payload.payload(bytes[offset:remaining], \
+                self.data = payload.payload(pdata[offset:remaining], \
                                             timestamp=timestamp)
         else:
             self.data = None
 
     # XXX TODO: fit rtnetlink in here.
-    def next(self, bytes, timestamp):
+    def next(self, pdata, timestamp):
         """Decode next layer of encapsulation."""
         #if (self.dport in udp_map.map):
-        #    return udp_map.map[self.dport](bytes, timestamp = timestamp)
+        #    return udp_map.map[self.dport](pdata, timestamp = timestamp)
         #if (self.sport in udp_map.map):
-        #    return udp_map.map[self.sport](bytes, timestamp = timestamp)
+        #    return udp_map.map[self.sport](pdata, timestamp = timestamp)
         return None
 
     # XXX TODO: fit rtnetlink in here.

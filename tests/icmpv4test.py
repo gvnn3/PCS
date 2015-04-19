@@ -54,16 +54,16 @@ if __name__ == '__main__':
 
 class icmpTestCase(unittest.TestCase):
     def test_icmpv4(self):
-        # create one packet, copy its bytes, then compare their fields
+        # create one packet, copy its pdata, then compare their fields
         icmp = icmpv4()
         assert (icmp != None)
         icmp.type = 8
         icmp.code = 0
         # Create a packet to compare against
         icmpnew = icmpv4()
-        icmpnew.decode(icmp.bytes)
+        icmpnew.decode(icmp.pdata)
 
-        self.assertEqual(icmp.bytes, icmpnew.bytes, "bytes not equal")
+        self.assertEqual(icmp.pdata, icmpnew.pdata, "pdata not equal")
         self.assertEqual(icmpnew.type, 8, "type not equal %d" % icmp.type)
         self.assertEqual(icmpnew.code, 0, "code not equal %d" % icmp.code)
 
@@ -81,7 +81,7 @@ class icmpTestCase(unittest.TestCase):
 
     def test_icmpv4_compare(self):
         """Test the underlying __compare__ functionality of the
-        packet.  Two packets constructed from the same bytes should be
+        packet.  Two packets constructed from the same pdata should be
         equal and two that are not should not be equal."""
         file = PcapConnector("loopping.out")
         packet = file.read()
@@ -158,7 +158,7 @@ class icmpTestCase(unittest.TestCase):
         echo.id = 37123
         echo.sequence = 0
 
-        ip.len = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
+        ip.len = len(ip.pdata) + len(icmp.pdata) + len(echo.pdata)
 
         packet = Chain([e, ip, icmp, echo])
 
@@ -174,7 +174,7 @@ class icmpTestCase(unittest.TestCase):
         # XXX The use of IP triggers a bpf header format bug if used
         # with loopback device on FreeBSD, so we use edsc(4) there.
 
-        n_out = output.write(packet.bytes, 42)
+        n_out = output.write(packet.pdata, 42)
         assert (n_out == 42)
 
         packet_in = input.read()

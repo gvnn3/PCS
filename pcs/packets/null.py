@@ -42,11 +42,11 @@ class null(pcs.Packet):
     """NULL."""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize a TCP packet"""
         null = pcs.StringField("null", 80*8)
         pcs.Packet.__init__(self, [null],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "NULL"
         if timestamp is None:
             self.timestamp = time.time()
@@ -54,8 +54,8 @@ class null(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes, timestamp = timestamp)
+        if (pdata is not None):
+            self.data = self.next(pdata, timestamp = timestamp)
         else:
             self.data = None
 

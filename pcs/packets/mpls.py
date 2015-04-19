@@ -88,7 +88,7 @@ class ldpmsg(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         u = pcs.Field("u", 1)
         type = pcs.Field("exp", 15)
         length = pcs.Field("length", 16)
@@ -97,7 +97,7 @@ class ldpmsg(pcs.Packet):
         oparams = pcs.OptionListField("")
 
         pcs.Packet.__init__(self, [ u, type, length, id, mparams, oparams ], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "RFC 3036 LDP message header "
 
         if timestamp is None:
@@ -105,11 +105,11 @@ class ldpmsg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
-            self.data = payload.payload(bytes[curr:remaining], \
+            remaining = len(pdata) - offset
+            self.data = payload.payload(pdata[curr:remaining], \
                                         timestamp = timestamp)
         else:
             self.data = None
@@ -119,13 +119,13 @@ class ldphdr(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         version = pcs.Field("label", 16)
         length = pcs.Field("exp", 16)
         id = pcs.StringField("id", 48)
 
         pcs.Packet.__init__(self, [ version, length, id ], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "RFC 3036 LDP packet header "
 
         if timestamp is None:
@@ -133,11 +133,11 @@ class ldphdr(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
-            self.data = payload.payload(bytes[curr:remaining], \
+            remaining = len(pdata) - offset
+            self.data = payload.payload(pdata[curr:remaining], \
                                         timestamp = timestamp)
         else:
             self.data = None
@@ -147,13 +147,13 @@ class lse(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         label = pcs.Field("label", 20)
         exp = pcs.Field("exp", 3)
         s = pcs.Field("s", 1)
         ttl = pcs.Field("ttl", 8)
 
-        pcs.Packet.__init__(self, [ label, exp, s, ttl ], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [ label, exp, s, ttl ], pdata = pdata, **kv)
         self.description = "RFC 3032 MPLS label stack entry"
 
         if timestamp is None:
@@ -161,11 +161,11 @@ class lse(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
-            self.data = payload.payload(bytes[curr:remaining], \
+            remaining = len(pdata) - offset
+            self.data = payload.payload(pdata[curr:remaining], \
                                         timestamp = timestamp)
         else:
             self.data = None

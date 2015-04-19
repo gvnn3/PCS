@@ -51,7 +51,7 @@ def main():
        options.ether_dest is None or \
        options.ip_source is None or \
        options.count is None:
-        print "Non-optional argument missing."
+        print("Non-optional argument missing.")
         return
 
     if options.ip_dest is None:
@@ -96,7 +96,7 @@ def main():
         packet = input.readpkt()
         chain = packet.chain()
 	if chain.packets[2].type == IGMP_DVMRP:
-	    print chain.packets[2].println()
+	    print(chain.packets[2].println())
 	    #print "%s is in %s" % \
 	    #    (inet_ntop(AF_INET, struct.pack('!L', chain.packets[1].src)), \
 	    #     inet_ntop(AF_INET, struct.pack('!L', chain.packets[2].group)))

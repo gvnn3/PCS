@@ -19,7 +19,7 @@ if __name__ == '__main__':
 class igmpv3TestCase(unittest.TestCase):
 
     def test_igmpv3_encode(self):
-        # create one packet, copy its bytes, then compare their fields.
+        # create one packet, copy its pdata, then compare their fields.
         c = igmp(type=IGMP_v3_HOST_MEMBERSHIP_REPORT) / igmpv3.report()
         rep = c.packets[1]
 
@@ -62,7 +62,7 @@ class igmpv3TestCase(unittest.TestCase):
         c.encode()
 
         #hd = hexdumper()
-        #print hd.dump2(c.bytes)
+        #print hd.dump2(c.pdata)
         expected = "\x22\x00\xC5\xA5\x00\x00\x00\x04" \
                    "\x03\x00\x00\x00\xEF\x00\x01\x02" \
                    "\x03\x00\x00\x01\xEF\x03\x02\x01" \
@@ -71,7 +71,7 @@ class igmpv3TestCase(unittest.TestCase):
                    "\xE1\x04\x03\x02\xC0\x00\x02\x63"
  
         #print hd.dump2(expected)
-        gotttted = c.bytes
+        gotttted = c.pdata
         self.assertEqual(expected, gotttted, "test encoding")
 
     def test_igmpv3_decode(self):
@@ -84,7 +84,7 @@ class igmpv3TestCase(unittest.TestCase):
                    "\xE1\x04\x03\x02\xC0\x00\x02\x63"
 
         igh = igmp(input)
-        self.assertEqual(input, igh.chain().bytes, "test decoding")
+        self.assertEqual(input, igh.chain().pdata, "test decoding")
 
     def test_igmpv3_encode_kv(self):
         # Create reports using the new syntax.
@@ -110,7 +110,7 @@ class igmpv3TestCase(unittest.TestCase):
         c.encode()
 
         #hd = hexdumper()
-        #print hd.dump2(c.bytes)
+        #print hd.dump2(c.pdata)
         expected = "\x22\x00\xC5\xA5\x00\x00\x00\x04" \
                    "\x03\x00\x00\x00\xEF\x00\x01\x02" \
                    "\x03\x00\x00\x01\xEF\x03\x02\x01" \
@@ -119,7 +119,7 @@ class igmpv3TestCase(unittest.TestCase):
                    "\xE1\x04\x03\x02\xC0\x00\x02\x63"
  
         #print hd.dump2(expected)
-        gotttted = c.bytes
+        gotttted = c.pdata
         self.assertEqual(expected, gotttted, "test encoding")
 
 if __name__ == '__main__':

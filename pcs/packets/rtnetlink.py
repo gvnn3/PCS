@@ -381,31 +381,31 @@ class NexthopField(pcs.CompoundField):
         if self.packet is not None:
             self.packet.__needencode = True
 
-    def decode(self, bytes, curr, byteBR):
+    def decode(self, pdata, curr, byteBR):
         start = curr
 
-        [self.len.value, curr, byteBR] = self.len.decode(bytes,
+        [self.len.value, curr, byteBR] = self.len.decode(pdata,
                                                            curr, byteBR)
-        [self.flags.value, curr, byteBR] = self.flags.decode(bytes,
+        [self.flags.value, curr, byteBR] = self.flags.decode(pdata,
                                                            curr, byteBR)
-        [self.hops.value, curr, byteBR] = self.hops.decode(bytes,
+        [self.hops.value, curr, byteBR] = self.hops.decode(pdata,
                                                            curr, byteBR)
-        [self.ifindex.value, curr, byteBR] = self.ifindex.decode(bytes,
+        [self.ifindex.value, curr, byteBR] = self.ifindex.decode(pdata,
                                                            curr, byteBR)
         # TODO Parse TLVs.
         #endp = curr + (self.nsources.value * 4)
-        #remaining = len(bytes) - curr
+        #remaining = len(pdata) - curr
         #endp = min(endp, remaining)
         #while curr < endp:
         #    src = pcs.Field("", 32)
-        #    [src.value, curr, byteBR] = src.decode(bytes, curr, byteBR)
+        #    [src.value, curr, byteBR] = src.decode(pdata, curr, byteBR)
         #    self.sources.append(src)
         #curr += auxdatalen
 
         #delta = curr - start
         #self.width = 8 * delta
 
-        return [bytes, curr, byteBR]
+        return [pdata, curr, byteBR]
 
     def encode(self, bytearray, value, byte, byteBR):
         """Encode a NexthopField."""
@@ -463,7 +463,7 @@ class ifaddrmsg(pcs.Packet):
                  "\x05HOMEADDRESS\x06DEPRECATED"\
                  "\x07TENTATIVE\x08PERMANENT"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         family = pcs.Field("family", 8)
         prefixlen = pcs.Field("pad00", 8)
         flags = pcs.Field("flags", 8)
@@ -472,7 +472,7 @@ class ifaddrmsg(pcs.Packet):
         #tlvs = pcs.OptionListField("tlvs")
 
         pcs.Packet.__init__(self, [family, prefixlen, flags, scope, index],\
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "RFC 3549 interface address message."
 
         if timestamp is None:
@@ -480,12 +480,12 @@ class ifaddrmsg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # TODO demux TLVs.
             if self.data is None:
-                self.data = payload.payload(bytes[offset:remaining], \
+                self.data = payload.payload(pdata[offset:remaining], \
                                             timestamp=timestamp)
         else:
             self.data = None
@@ -506,7 +506,7 @@ class ifinfomsg(pcs.Packet):
     "\x0ePORTSEL\x0fAUTOMEDIA\x10DYNAMIC"\
     "\x11LOWER_UP\x12DORMANT\x13ECHO"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         family = pcs.Field("family", 8)
         pad00 = pcs.Field("pad00", 8)
         type = pcs.Field("type", 16)
@@ -516,7 +516,7 @@ class ifinfomsg(pcs.Packet):
         #tlvs = pcs.OptionListField("tlvs")
 
         pcs.Packet.__init__(self, [family, pad00, type, index, flags, change],\
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "RFC 3549 interface information message."
 
         if timestamp is None:
@@ -524,12 +524,12 @@ class ifinfomsg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # TODO demux TLVs.
             if self.data is None:
-                self.data = payload.payload(bytes[offset:remaining], \
+                self.data = payload.payload(pdata[offset:remaining], \
                                             timestamp=timestamp)
         else:
             self.data = None
@@ -543,7 +543,7 @@ class prefixmsg(pcs.Packet):
     _descr = None
     _flagbits = "\x01ONLINK\x02AUTOCONF"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """ Define the common RTNetlink message header."""
         family = pcs.Field("family", 8)
         pad1 = pcs.Field("pad1", 8)
@@ -557,7 +557,7 @@ class prefixmsg(pcs.Packet):
 
         pcs.Packet.__init__(self, [family, pad1, pad2, ifindex, type, \
                                    len, flags, pad3], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = " Define the common RTNetlink message header."
 
         if timestamp is None:
@@ -565,11 +565,11 @@ class prefixmsg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             if self.data is None:
-                self.data = payload.payload(bytes[offset:remaining], \
+                self.data = payload.payload(pdata[offset:remaining], \
                                             timestamp=timestamp)
         else:
             self.data = None
@@ -585,7 +585,7 @@ class rtmsg(pcs.Packet):
     _descr = None
     _flag_bits = "\x09NOTIFY\x0aCLONED\x0bEQUALIZE\x0cPREFIX"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """ Define the common RTNetlink message header."""
         family = pcs.Field("family", 8)
         dst_len = pcs.Field("dst_len", 8)
@@ -600,7 +600,7 @@ class rtmsg(pcs.Packet):
 
         pcs.Packet.__init__(self, [family, dst_len, src_len, tos, table, \
                                    protocol, scope, type, flags], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = " Define the common RTNetlink message header."
 
         if timestamp is None:
@@ -608,22 +608,22 @@ class rtmsg(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # TODO demux TLVs.
             if self.data is None:
-                self.data = payload.payload(bytes[offset:remaining], \
+                self.data = payload.payload(pdata[offset:remaining], \
                                             timestamp=timestamp)
         else:
             self.data = None
 
-    def next(self, bytes, timestamp):
+    def next(self, pdata, timestamp):
         """Decode next layer of encapsulation."""
         #if (self.dport in udp_map.map):
-        #    return udp_map.map[self.dport](bytes, timestamp = timestamp)
+        #    return udp_map.map[self.dport](pdata, timestamp = timestamp)
         #if (self.sport in udp_map.map):
-        #    return udp_map.map[self.sport](bytes, timestamp = timestamp)
+        #    return udp_map.map[self.sport](pdata, timestamp = timestamp)
         return None
 
     def rdiscriminate(self, packet, discfieldname=None, map = nlmsg_map):

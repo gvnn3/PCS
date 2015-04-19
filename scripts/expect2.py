@@ -55,26 +55,26 @@ def main():
     m = ethernet.ethernet() / ipv4.ipv4() / \
         igmp.igmp(type=IGMP_v2_HOST_MEMBERSHIP_REPORT) / igmpv2.igmpv2()
     t = 50
-    print "Waiting %d seconds to see an IGMPv2 report." % t
+    print("Waiting %d seconds to see an IGMPv2 report." % t)
     try:
         file.expect([m], t)
     except pcs.TimeoutError:
-        print "Timed out."
+        print("Timed out.")
         sys.exit(1)
 
     # Now try it with a "contains" filter.
     # This will match any packet chain containing an IGMPv2 message.
     c = igmpv2.igmpv2()
     t = 50
-    print "Waiting %d seconds to see an IGMPv2 report using 'contains'." % t
+    print("Waiting %d seconds to see an IGMPv2 report using 'contains'." % t)
     try:
         file.expect([c], t)
     except pcs.TimeoutError:
-        print "Timed out."
+        print("Timed out.")
         sys.exit(1)
 
-    print "And the matching packet chain is:"
-    print file.match
+    print("And the matching packet chain is:")
+    print(file.match)
 
     # Define a match function to apply to a field.
     # We could really use some syntactic sugar for this...
@@ -92,15 +92,15 @@ def main():
     c = ipv4.ipv4(options=[ipv4opt(IPOPT_RA)])
     c.options.compare = contains_router_alert
     t = 50
-    print "Waiting %d seconds to see any IP packet containing a Router Alert option." % t
+    print("Waiting %d seconds to see any IP packet containing a Router Alert option." % t)
     try:
         file.expect([c], t)
     except pcs.TimeoutError:
-        print "Timed out."
+        print("Timed out.")
         sys.exit(1)
 
-    print "And the matching packet chain is:"
-    print file.match
+    print("And the matching packet chain is:")
+    print(file.match)
 
     sys.exit(0)
 

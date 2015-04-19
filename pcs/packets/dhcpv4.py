@@ -72,7 +72,7 @@ class dhcpv4(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """Initialize a DHCPv4 packet. """
 
         op = pcs.Field("op", 8)
@@ -98,7 +98,7 @@ class dhcpv4(pcs.Packet):
                                    secs, flags, \
                                    ciaddr, yiaddr, siaddr, giaddr, \
                                    chaddr, sname, file, options], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "Initialize a DHCPv4 packet. "
 
         if timestamp is None:
@@ -110,15 +110,15 @@ class dhcpv4(pcs.Packet):
         # correct slice as a vanilla payload iff no options are parsed.
         curr = self.sizeof()
         #print "self.sizeof() %d\n" % curr
-        if bytes is not None:
+        if pdata is not None:
             opts_off = curr
-            end = len(bytes)
+            end = len(pdata)
             if (end - curr) > 4:
                 # If the DHCP cookie is present, we append it to the
                 # options list so it will be reflected if we re-encode.
                 # If it is not present, we set the remaining counter to 0
                 # so that the options list loop will not execute.
-                cval = struct.unpack('!L', bytes[curr:curr+4])[0]
+                cval = struct.unpack('!L', pdata[curr:curr+4])[0]
                 if cval == DHCP_OPTIONS_COOKIE:
                     options.append(pcs.Field("cookie", 32, default = cval))
                     curr += 4
@@ -126,21 +126,21 @@ class dhcpv4(pcs.Packet):
                     end = 0
 
                 while curr < end:
-                    option = struct.unpack('!B', bytes[curr])[0]
+                    option = struct.unpack('!B', pdata[curr])[0]
 
                     # Special-case options which have only a type field
                     # and no data or length field.
                     if option == DHO_PAD:               # pad
-                        # Chew adjacent bytes into a single field.
+                        # Chew adjacent pdata into a single field.
                         ps = curr
                         pc = ps
                         while pc < end:
-                            pb = struct.unpack('!B', bytes[pc])[0]
+                            pb = struct.unpack('!B', pdata[pc])[0]
                             if pb != 0:
                                 break
                             pc += 1
                         padlen = pc - ps
-                        #print "got %d pad bytes\n" % (padlen)
+                        #print "got %d pad pdata\n" % (padlen)
                         options.append(pcs.Field("pad", padlen * 8))
                         curr += padlen
                         continue
@@ -153,7 +153,7 @@ class dhcpv4(pcs.Packet):
                     # and a payload. The length byte does NOT include
                     # the length of the other fields.
                     curr += 1
-                    optlen = struct.unpack('!B', bytes[curr:curr+1])[0]
+                    optlen = struct.unpack('!B', pdata[curr:curr+1])[0]
                     if (optlen < 1 or ((curr + optlen) > end)):
                         raise UnpackError("Bad length %d for DHCPv4 option %d" % \
                               (optlen, option))
@@ -161,7 +161,7 @@ class dhcpv4(pcs.Packet):
                     # Attempt to parse this DHCP option.
                     # Note well: unlike TCP and IP options, the length field
                     # in a DHCP option field does not include the length
-                    # and type bytes.
+                    # and type pdata.
                     # The map contains functions which take the option
                     # list and byte array as parameters, and return a
                     # reference to a class which wraps that option. All
@@ -173,17 +173,17 @@ class dhcpv4(pcs.Packet):
                     if option in dhcpv4_options.map:
                         optinst = \
                             dhcpv4_options.map[option](option, \
-                                                       bytes[curr:curr+optlen])
+                                                       pdata[curr:curr+optlen])
                     else:
                         optinst = \
                             dhcpv4_options.tlv_option(option, \
-                                                      bytes[curr:curr+optlen])
+                                                      pdata[curr:curr+optlen])
 
                     options.append(optinst.field())
                     curr += optlen
 
-        if bytes is not None and curr < len(bytes):
-            self.data = payload.payload(bytes[curr:len(bytes)])
+        if pdata is not None and curr < len(pdata):
+            self.data = payload.payload(pdata[curr:len(pdata)])
         else:
             self.data = None
 

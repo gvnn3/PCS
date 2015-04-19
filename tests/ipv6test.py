@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
 class ip6TestCase(unittest.TestCase):
     def test_ipv6(self):
-        # create one packet, copy its bytes, then compare their fields
+        # create one packet, copy its pdata, then compare their fields
         ip = ipv6()
         assert (ip != None)
         ip.traffic_class = 1
@@ -65,9 +65,9 @@ class ip6TestCase(unittest.TestCase):
 
         # Create a packet to compare against
         ipnew = ipv6()
-        ipnew.decode(ip.bytes)
+        ipnew.decode(ip.pdata)
 
-        self.assertEqual(ip.bytes, ipnew.bytes, "bytes not equal")
+        self.assertEqual(ip.pdata, ipnew.pdata, "pdata not equal")
         for field in ip._fieldnames:
             self.assertEqual(getattr(ip, field), getattr(ipnew, field), ("%s not equal" % field))
 
@@ -94,7 +94,7 @@ class ip6TestCase(unittest.TestCase):
 
     def test_ipv6_compare(self):
         """Test the underlying __compare__ functionality of the
-        packet.  Two packets constructed from the same bytes should be
+        packet.  Two packets constructed from the same pdata should be
         equal and two that are not should not be equal."""
         file = PcapConnector("loopping6.out")
         packet = file.read()

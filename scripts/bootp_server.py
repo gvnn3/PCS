@@ -66,7 +66,7 @@ def main():
         output = input
     elif options.group is not None:
         if options.port is None:
-	    print "Non-optional argument missing."
+	    print("Non-optional argument missing.")
 	    return
         # XXX Currently, UmlMcast4Connector has to use the same broken
         # semantics as QEMU does, to see its traffic -- apps SHOULD be
@@ -82,7 +82,7 @@ def main():
 
     if options.ifaddr is None or \
        options.ether_source is None:
-	print "Non-optional argument missing."
+	print("Non-optional argument missing.")
 	return
 
     ifaddr = inet_atol(options.ifaddr)
@@ -121,7 +121,7 @@ def main():
 
 	chaddr_s = ether_btoa(i_dhcp.chaddr[:i_dhcp.hlen])
 	if not chaddr_s in map:
-	    print "%s not in map" % chaddr_s
+	    print("%s not in map" % chaddr_s)
 	    continue
 
 	ciaddr = inet_atol(map[chaddr_s])	# from map
@@ -216,6 +216,6 @@ def main():
 	packet = Chain([ether, ip, udp, dhcp])
 	packet.encode()
 	out = output.write(packet.bytes, len(packet.bytes))
-	print out
+	print(out)
 
 main()

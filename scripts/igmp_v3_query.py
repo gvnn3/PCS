@@ -74,7 +74,7 @@ def main():
        options.ether_source is None or \
        options.ip_source is None or \
        options.count is None:
-	print "Non-optional argument missing."
+	print("Non-optional argument missing.")
 	return
 
     #if options.ip_dest is not None and options.ether_dest is None:
@@ -178,9 +178,9 @@ def main():
             if chain.packets[2].type == IGMP_v2_HOST_MEMBERSHIP_REPORT:
                 version = 2
 	    #print chain.packets[2].println()
-	    print "%s responded to query with IGMPv%d." % \
+	    print("%s responded to query with IGMPv%d." % \
 	        ((inet_ntop(AF_INET, struct.pack('!L', chain.packets[1].src))),
-                 version)
+                 version))
 	    count -= 1
 
 main()

@@ -90,16 +90,16 @@ def main():
         header.length = 38
         packet = Chain([header, lab1, lab2, lab3, lab4, query])
 
-    print packet
-    print packet.bytes
-    print len(packet.bytes)
+    print(packet)
+    print(packet.bytes)
+    print(len(packet.bytes))
 
     conn.write(packet.bytes)
 
     retval = conn.read(1024)
 
-    print len(retval)
-    print dnsheader(retval)
+    print(len(retval))
+    print(dnsheader(retval))
 
     conn.close()
     

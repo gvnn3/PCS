@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
 class tcpTestCase(unittest.TestCase):
     def test_tcpv4(self):
-        # create one packet, copy its bytes, then compare their fields
+        # create one packet, copy its pdata, then compare their fields
         tcppacket = tcp()
         assert (tcppacket != None)
         tcppacket.sport = 51
@@ -72,9 +72,9 @@ class tcpTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         tcpnew = tcp()
-        tcpnew.decode(tcppacket.bytes)
+        tcpnew.decode(tcppacket.pdata)
 
-        self.assertEqual(tcppacket.bytes, tcpnew.bytes, "bytes not equal")
+        self.assertEqual(tcppacket.pdata, tcpnew.pdata, "pdata not equal")
         for field in tcppacket._fieldnames:
             self.assertEqual(getattr(tcppacket, field), getattr(tcpnew, field), ("%s not equal" % field))
 
@@ -84,7 +84,7 @@ class tcpTestCase(unittest.TestCase):
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
-        tcppacket = tcp(ip.data.bytes)
+        tcppacket = tcp(ip.data.pdata)
 
         self.assertEqual(tcppacket.sport, 53678, "source port not equal %d" % tcppacket.sport)
         self.assertEqual(tcppacket.dport, 80, "destination port not equal %d" %
@@ -107,19 +107,19 @@ class tcpTestCase(unittest.TestCase):
 
     def test_tcpv4_compare(self):
         """Test the underlying __compare__ functionality of the
-        packet.  Two packets constructed from the same bytes should be
+        packet.  Two packets constructed from the same pdata should be
         equal and two that are not should not be equal."""
         file = PcapConnector("wwwtcp.out")
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
-        tcp1 = tcp(ip.data.bytes)
-        tcp2 = tcp(ip.data.bytes)
+        tcp1 = tcp(ip.data.pdata)
+        tcp2 = tcp(ip.data.pdata)
         assert (tcp1 != None)
         assert (tcp2 != None)
 
 	#hd = hexdumper()
-	#print hd.dump(tcp1.bytes)
-	#print hd.dump(tcp2.bytes)
+	#print hd.dump(tcp1.pdata)
+	#print hd.dump(tcp2.pdata)
 
 	# tcp1 should not equal tcp2, they are different instances,
 	# and will therefore have different timestamps -- unless
@@ -127,10 +127,10 @@ class tcpTestCase(unittest.TestCase):
         self.assertNotEqual(tcp1, tcp2,
 			    "instances SHOULD be equal")
 
-        self.assertEqual(tcp1.bytes, tcp2.bytes,
+        self.assertEqual(tcp1.pdata, tcp2.pdata,
 			 "packet data SHOULD be equal")
         tcp1.dport = 0
-        self.assertNotEqual(tcp1.bytes, tcp2.bytes,
+        self.assertNotEqual(tcp1.pdata, tcp2.pdata,
 			    "packet data SHOULD NOT be equal")
         
     def test_tcpv4_str(self):
@@ -140,7 +140,7 @@ class tcpTestCase(unittest.TestCase):
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
-        tcppacket = tcp(ip.data.bytes)
+        tcppacket = tcp(ip.data.pdata)
         assert (tcppacket)
 
 	# pre tcp options:
@@ -180,7 +180,7 @@ class tcpTestCase(unittest.TestCase):
         packet = file.read()
         ip = ipv4(packet[file.dloff:len(packet)])
         assert (ip != None)
-        tcppacket = tcp(ip.data.bytes)
+        tcppacket = tcp(ip.data.pdata)
         assert (tcppacket)
 
 	# pre tcp options:

@@ -44,7 +44,7 @@ class Announce(pcs.Packet):
     """PTP Announce"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         originTimestampSeconds = pcs.Field("originTimestampSeconds", 48)
         originTimestampNanoSeconds = pcs.Field("originTimestampNanoSeconds", 32)
         currentUTCOffset = pcs.Field("currentUTCOffset", 16)
@@ -65,7 +65,7 @@ class Announce(pcs.Packet):
                                    grandmasterPriority2,
                                    grandmasterClockIdentity,
                                    stepsRemoved,
-                                   timeSource], bytes = bytes, **kv)
+                                   timeSource], pdata = pdata, **kv)
 
         self.description = "PTP Announce"
 
@@ -74,8 +74,8 @@ class Announce(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -85,12 +85,12 @@ class Sync(pcs.Packet):
     """PTP Sync"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         originTimestampSeconds = pcs.Field("originTimestampSeconds", 48)
         originTimestampNanoSeconds = pcs.Field("originTimestampNanoSeconds", 32)
         pcs.Packet.__init__(self, [originTimestampSeconds,
                                    originTimestampNanoSeconds],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "PTP Sync"
 
@@ -99,8 +99,8 @@ class Sync(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -115,12 +115,12 @@ class DelayRequest(pcs.Packet):
     """PTP DelayRequest"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         originTimestampSeconds = pcs.Field("originTimestampSeconds", 48)
         originTimestampNanoSeconds = pcs.Field("originTimestampNanoSeconds", 32)
         pcs.Packet.__init__(self, [originTimestampSeconds,
                                    originTimestampNanoSeconds],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "PTP DelayRequest"
 
@@ -129,8 +129,8 @@ class DelayRequest(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -143,7 +143,7 @@ class Followup(pcs.Packet):
     """PTP Followup"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """Followup Header """
         preciseOriginTimestampSeconds = pcs.Field("preciseOriginTimestampSeconds",
                                                   48)
@@ -152,7 +152,7 @@ class Followup(pcs.Packet):
 
         pcs.Packet.__init__(self, [preciseOriginTimestampSeconds,
                                    preciseOriginTimestampNanoSeconds],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "Followup"
 
@@ -161,8 +161,8 @@ class Followup(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -176,7 +176,7 @@ class DelayResponse(pcs.Packet):
     """PTP Delay Response"""
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """Delay Response"""
         receiveTimestampSeconds = pcs.Field("receiveTimestampSeconds", 48)
         receiveTimestampNanoSeconds = pcs.Field("receiveTimestampNanoSeconds", 32)
@@ -184,7 +184,7 @@ class DelayResponse(pcs.Packet):
         pcs.Packet.__init__(self, [receiveTimestampSeconds,
                                    receiveTimestampNanoSeconds,
                                    requestingPortIdentity],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "Delay Response "
 
@@ -193,8 +193,8 @@ class DelayResponse(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None

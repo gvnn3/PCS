@@ -153,27 +153,27 @@ def main():
                     packets_per[packet.timestamp] = (1, len(packet.bytes))
                     
 
-        print "%d packets in dumpfile" % packets
-        print "%d unique source IPs" % len(srcmap)
-        print "%d ARP packets" % arp_cnt
-        print "%d IPv4 packets" % ip_cnt
-        print "%d ICMPv4 packets" % icmp_cnt
-        print "%d UDP packets" % udp_cnt
-        print "%d TCP packets" % tcp_cnt
+        print("%d packets in dumpfile" % packets)
+        print("%d unique source IPs" % len(srcmap))
+        print("%d ARP packets" % arp_cnt)
+        print("%d IPv4 packets" % ip_cnt)
+        print("%d ICMPv4 packets" % icmp_cnt)
+        print("%d UDP packets" % udp_cnt)
+        print("%d TCP packets" % tcp_cnt)
 
-        print "Top source addresses were"
-        hit_list = sorted(srcmap.itervalues(), reverse = True)
+        print("Top source addresses were")
+        hit_list = sorted(iter(srcmap.values()), reverse = True)
         length = len(hit_list)
-        for i in xrange(length):
-            for addr in srcmap.items():
+        for i in range(length):
+            for addr in list(srcmap.items()):
                 if addr[1] == hit_list[i]:
-                    print "Address %s\t Count %s\t Percentage %f" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), addr[1], (float(addr[1]) / float(packets)) * float(100))
+                    print("Address %s\t Count %s\t Percentage %f" % (inet_ntop(AF_INET, struct.pack('!L', addr[0])), addr[1], (float(addr[1]) / float(packets)) * float(100)))
 
         if options.ps is not None:
             try:
                 file = open(options.ps, "w")
             except:
-                print "Could not open file %s for writing." % options.ps
+                print("Could not open file %s for writing." % options.ps)
                         
             for seconds in sorted(packets_per.keys()):
                 hms = time.strftime("%H:%M:%S",time.localtime(seconds))
@@ -183,7 +183,7 @@ def main():
             try:
                 file = open(options.ppm, "w")
             except:
-                print "Could not open file %s for writing." % options.ppm
+                print("Could not open file %s for writing." % options.ppm)
                         
             for mseconds in sorted(packets_per.keys()):
                 data = ("%s, %d, %d\n" % (mseconds,
@@ -194,7 +194,7 @@ def main():
             try:
                 file = open(options.ppu, "w")
             except:
-                print "Could not open file %s for writing." % options.ppu
+                print("Could not open file %s for writing." % options.ppu)
                         
             for useconds in sorted(packets_per.keys()):
                 dt = datetime.datetime.fromtimestamp(useconds)

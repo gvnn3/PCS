@@ -117,7 +117,7 @@ DHO_CLASSLESS_ROUTES = 121
 # the syntax for users can become simpler.
 
 class dhcp_option(object):
-    def __init__(self, optno, bytes):
+    def __init__(self, optno, pdata):
         raise foo("Abstract base class")
 
     def fieldname(self):
@@ -134,7 +134,7 @@ class dhcp_option(object):
 
 
 class cookie(dhcp_option):
-    def __init__(self, optno = 0x63, bytes = None):
+    def __init__(self, optno = 0x63, pdata = None):
         self.optno = optno
 
     def fieldname(self):
@@ -155,7 +155,7 @@ class cookie(dhcp_option):
 class end(dhcp_option):
     """ Return a DHCP end marker as a field. There is no TLV. """
 
-    def __init__(self, optno = DHO_END, bytes = None):
+    def __init__(self, optno = DHO_END, pdata = None):
         self.optno = optno
 
     def fieldname(self):
@@ -198,16 +198,16 @@ class pad(dhcp_option):
 class tlv_option(dhcp_option):
     """ Base class for a DHCP option in a TLV field. """
 
-    def __init__(self, optno, bytes = None):
+    def __init__(self, optno, pdata = None):
         self.optno = optno
-        if bytes is not None:
-            self.bytes = bytes
+        if pdata is not None:
+            self.pdata = pdata
         else:
-            self.bytes = "\0"
+            self.pdata = "\0"
 
     def __setattr__(self, name, value):
         if name == "value":
-           self.bytes = struct.pack("!B", value)
+           self.pdata = struct.pack("!B", value)
         else:
            object.__setattr__(self, name, value)
 
@@ -218,9 +218,9 @@ class tlv_option(dhcp_option):
         return "%d" % self.optno
 
     def datafield(self):
-        #return pcs.Field("v", len(self.bytes) * 8, \
-        #                 default = struct.unpack("!B", self.bytes)[0])
-        return pcs.StringField("v", len(self.bytes) * 8, default = self.bytes)
+        #return pcs.Field("v", len(self.pdata) * 8, \
+        #                 default = struct.unpack("!B", self.pdata)[0])
+        return pcs.StringField("v", len(self.pdata) * 8, default = self.pdata)
 
     def field(self):
         """ Return the complete field value as it should be appended to
@@ -228,7 +228,7 @@ class tlv_option(dhcp_option):
         return pcs.TypeLengthValueField( \
             self.fieldname(), \
             pcs.Field("t", 8, default = self.optno), \
-            pcs.Field("l", 8, default = len(self.bytes)), \
+            pcs.Field("l", 8, default = len(self.pdata)), \
             self.datafield(), \
             inclusive = False, \
             bytewise = True)
@@ -236,12 +236,12 @@ class tlv_option(dhcp_option):
 
 class subnet_mask(tlv_option):
 
-    def __init__(self, optno = DHO_SUBNET_MASK, bytes = None):
-        tlv_option.__init__(self, optno, bytes)
+    def __init__(self, optno = DHO_SUBNET_MASK, pdata = None):
+        tlv_option.__init__(self, optno, pdata)
 
     def __setattr__(self, name, value):
         if name == "value":
-           self.bytes = struct.pack("!L", value)
+           self.pdata = struct.pack("!L", value)
         else:
            object.__setattr__(self, name, value)
 
@@ -253,18 +253,18 @@ class subnet_mask(tlv_option):
 
     def datafield(self):
         return pcs.Field("", 32, \
-                         default = struct.unpack("!L", self.bytes[:4])[0])
+                         default = struct.unpack("!L", self.pdata[:4])[0])
 
 
 class routers(tlv_option):
 
-    def __init__(self, optno = DHO_ROUTERS, bytes = None):
-        tlv_option.__init__(self, optno, bytes)
+    def __init__(self, optno = DHO_ROUTERS, pdata = None):
+        tlv_option.__init__(self, optno, pdata)
 
     def __setattr__(self, name, value):
         # XXX Currently only a single gateway is accepted.
         if name == "value":
-           self.bytes = struct.pack("!L", value)
+           self.pdata = struct.pack("!L", value)
         else:
            object.__setattr__(self, name, value)
 
@@ -276,13 +276,13 @@ class routers(tlv_option):
 
     def datafield(self):
         return pcs.Field("", 32, \
-                         default = struct.unpack("!L", self.bytes[:4])[0])
+                         default = struct.unpack("!L", self.pdata[:4])[0])
         #gwlist = []
         #curr = 0
-        #while curr < len(self.bytes):
+        #while curr < len(self.pdata):
         #    gwlist.append(pcs.Field("", 32, \
         #                 default = struct.unpack("!L", \
-        #                                         self.bytes[curr:curr+4])[0]))
+        #                                         self.pdata[curr:curr+4])[0]))
         #    curr += 4
         #return gwlist
 
@@ -301,8 +301,8 @@ DHCPINFORM = 8
 
 class dhcp_message_type(tlv_option):
 
-    def __init__(self, optno = DHO_DHCP_MESSAGE_TYPE, bytes = None):
-        tlv_option.__init__(self, optno, bytes)
+    def __init__(self, optno = DHO_DHCP_MESSAGE_TYPE, pdata = None):
+        tlv_option.__init__(self, optno, pdata)
 
     def fieldname(self):
         return "dhcp-message-type"
@@ -312,17 +312,17 @@ class dhcp_message_type(tlv_option):
 
     def datafield(self):
         return pcs.Field("", 8, \
-                         default = struct.unpack("!B", self.bytes[0])[0])
+                         default = struct.unpack("!B", self.pdata[0])[0])
 
 
 class dhcp_max_message_size(tlv_option):
 
-    def __init__(self, optno = DHO_DHCP_MAX_MESSAGE_SIZE, bytes = None):
-        tlv_option.__init__(self, optno, bytes)
+    def __init__(self, optno = DHO_DHCP_MAX_MESSAGE_SIZE, pdata = None):
+        tlv_option.__init__(self, optno, pdata)
 
     def __setattr__(self, name, value):
         if name == "value":
-           self.bytes = struct.pack("!H", value)
+           self.pdata = struct.pack("!H", value)
         else:
            object.__setattr__(self, name, value)
 
@@ -334,17 +334,17 @@ class dhcp_max_message_size(tlv_option):
 
     def datafield(self):
         return pcs.Field("", 16, \
-                         default = struct.unpack("!H", self.bytes[:2])[0])
+                         default = struct.unpack("!H", self.pdata[:2])[0])
 
 
 class dhcp_class_identifier(tlv_option):
 
-    def __init__(self, optno = DHO_DHCP_CLASS_IDENTIFIER, bytes = None):
-        tlv_option.__init__(self, optno, bytes)
+    def __init__(self, optno = DHO_DHCP_CLASS_IDENTIFIER, pdata = None):
+        tlv_option.__init__(self, optno, pdata)
 
     def __setattr__(self, name, value):
         if name == "value":
-           self.bytes = value
+           self.pdata = value
         else:
            object.__setattr__(self, name, value)
 
@@ -355,7 +355,7 @@ class dhcp_class_identifier(tlv_option):
         return "VC"
 
     def datafield(self):
-        return pcs.StringField("", 8 * len(self.bytes), default = self.bytes)
+        return pcs.StringField("", 8 * len(self.pdata), default = self.pdata)
 
 
 # XXX Can't cleanly capture this (yet);
@@ -363,14 +363,14 @@ class dhcp_class_identifier(tlv_option):
 # than Field or StringField.
 class dhcp_client_identifier(tlv_option):
 
-    def __init__(self, optno = DHO_DHCP_CLIENT_IDENTIFIER, bytes = None):
-        tlv_option.__init__(self, optno, bytes)
+    def __init__(self, optno = DHO_DHCP_CLIENT_IDENTIFIER, pdata = None):
+        tlv_option.__init__(self, optno, pdata)
 
     def __setattr__(self, name, value):
         if name == "type":
-            self.bytes[0] = value
+            self.pdata[0] = value
         elif name == "value":
-            self.bytes[1:] = value
+            self.pdata[1:] = value
         else:
             object.__setattr__(self, name, value)
 
@@ -384,19 +384,19 @@ class dhcp_client_identifier(tlv_option):
         return pcs.TypeValueField("", \
                                   pcs.Field("", 8, \
                                     default = \
-                                      struct.unpack("!B", self.bytes[0])[0]), \
-                                  pcs.StringField("", 8 * len(self.bytes[1:]), \
-                                                      default = self.bytes[1:]))
+                                      struct.unpack("!B", self.pdata[0])[0]), \
+                                  pcs.StringField("", 8 * len(self.pdata[1:]), \
+                                                      default = self.pdata[1:]))
 
 
 class dhcp_parameter_req_list(tlv_option):
 
-    def __init__(self, optno = DHO_DHCP_PARAMETER_REQUEST_LIST, bytes = None):
-        tlv_option.__init__(self, optno, bytes)
+    def __init__(self, optno = DHO_DHCP_PARAMETER_REQUEST_LIST, pdata = None):
+        tlv_option.__init__(self, optno, pdata)
 
     def __setattr__(self, name, value):
         if name == "value":
-           self.bytes = value
+           self.pdata = value
         else:
            object.__setattr__(self, name, value)
 
@@ -407,17 +407,17 @@ class dhcp_parameter_req_list(tlv_option):
         return "PR"
 
     def datafield(self):
-        return pcs.StringField("", 8 * len(self.bytes), default = self.bytes)
+        return pcs.StringField("", 8 * len(self.pdata), default = self.pdata)
 
 
 class dhcp_server_identifier(tlv_option):
 
-    def __init__(self, optno = DHO_DHCP_SERVER_IDENTIFIER, bytes = None):
-        tlv_option.__init__(self, optno, bytes)
+    def __init__(self, optno = DHO_DHCP_SERVER_IDENTIFIER, pdata = None):
+        tlv_option.__init__(self, optno, pdata)
 
     def __setattr__(self, name, value):
         if name == "value":
-           self.bytes = struct.pack("!L", value)
+           self.pdata = struct.pack("!L", value)
         else:
            object.__setattr__(self, name, value)
 
@@ -429,7 +429,7 @@ class dhcp_server_identifier(tlv_option):
 
     def datafield(self):
         return pcs.Field("", 32, \
-                         default = struct.unpack("!L", self.bytes[:4])[0])
+                         default = struct.unpack("!L", self.pdata[:4])[0])
 
 
 # FreeBSD's kernel BOOTP client sends only MSZ, VC, DHCP options.

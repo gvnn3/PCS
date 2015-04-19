@@ -56,7 +56,7 @@ class arp(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize an ARP packet"""
         hrd = pcs.Field("hrd", 16, default = 1)
         pro = pcs.Field("pro", 16, default = 0x800)
@@ -69,7 +69,7 @@ class arp(pcs.Packet):
         tpa = pcs.Field("tpa", 32)
         
         pcs.Packet.__init__(self, [hrd, pro, hln, pln, op,
-                                   sha, spa, tha, tpa], bytes = bytes, **kv)
+                                   sha, spa, tha, tpa], pdata = pdata, **kv)
         self.description = "ARP"
         if timestamp is None:
             self.timestamp = time.time()
@@ -128,7 +128,7 @@ def ether_atob(pretty):
         return addr
 
 
-def ether_btoa(bytes):
+def ether_btoa(pdata):
     """Take a set of bytes and convert them to a pretty version of
     and Ethernet address.
 
@@ -138,9 +138,9 @@ def ether_btoa(bytes):
 
     pretty = ""
     for i in (list(range(5))):
-        pretty += hex(bytes[i])[2:4] # Strip the 0x from the string
+        pretty += hex(pdata[i])[2:4] # Strip the 0x from the string
         pretty += ':'
         
-    pretty += hex(bytes[5])[2:4] # Strip the 0x from the string
+    pretty += hex(pdata[5])[2:4] # Strip the 0x from the string
 
     return pretty

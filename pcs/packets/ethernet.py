@@ -57,13 +57,13 @@ class ethernet(pcs.Packet):
     _layout = pcs.Layout()
     _map = ethernet_map.map
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize an ethernet packet"""
         src = pcs.StringField("src", 48)
         dst = pcs.StringField("dst", 48)
         type = pcs.Field("type", 16, discriminator=True)
 
-        pcs.Packet.__init__(self, [dst, src, type], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [dst, src, type], pdata = pdata, **kv)
         self.description = "Ethernet"
 
         if timestamp is None:
@@ -71,8 +71,8 @@ class ethernet(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -84,14 +84,14 @@ class ethernet(pcs.Packet):
 
         if len(self.dst) >= 6:
             for byte in range(0,5):
-                retval += "%x:" % ord(self.dst[byte])
-            retval += "%x " % ord(self.dst[5])
+                retval += "%x:" % self.dst[byte]
+            retval += "%x " % self.dst[5]
 
         retval += "src: "
         if len(self.src) >= 6:
             for byte in range(0,5):
-                retval += "%x:" % ord(self.src[byte])
-            retval += "%x " % ord(self.src[5])
+                retval += "%x:" % self.src[byte]
+            retval += "%x " % self.src[5]
 
         retval += "type: 0x%x>" % self.type
 
@@ -104,14 +104,14 @@ class ethernet(pcs.Packet):
         retval += "dst: "
         if len(self.dst) >= 6:
             for byte in range(0,5):
-                retval += "%x:" % ord(self.dst[byte])
-            retval += "%x" % ord(self.dst[5])
+                retval += "%x:" % self.dst[byte]
+            retval += "%x" % self.dst[5]
 
         retval += "\nsrc: "
         if len(self.dst) >= 6:
             for byte in range(0,5):
-                retval += "%x:" % ord(self.src[byte])
-            retval += "%x" % ord(self.src[5])
+                retval += "%x:" % self.src[byte]
+            retval += "%x" % self.src[5]
 
         retval += "\ntype: 0x%x" % self.type
 
@@ -137,19 +137,19 @@ def ether_atob(pretty):
     return addr
 
 
-def ether_btoa(bytes):
+def ether_btoa(pdata):
     """Take a set of bytes and convert them to a pretty version of
     and Ethernet address.
 
-    The input buffer MUST be at least 6 bytes long and bytes after the
+    The input buffer MUST be at least 6 pdata long and pdata after the
     sixth are ignored.  No error checking is performed.
     """
 
     pretty = ""
     for i in (list(range(5))):
-        pretty += hex(ord(bytes[i]))[2:4] # Strip the 0x from the string
+        pretty += hex(pdata[i])[2:4] # Strip the 0x from the string
         pretty += ':'
         
-    pretty += hex(ord(bytes[5]))[2:4] # Strip the 0x from the string
+    pretty += hex(pdata[5])[2:4] # Strip the 0x from the string
 
     return pretty

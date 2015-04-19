@@ -84,13 +84,13 @@ class llc(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         dsap = pcs.Field("dsap", 8)
         ssap = pcs.Field("ssap", 8)
         control = pcs.Field("control", 8)       # snd_x2 in an I-frame.
         opt = pcs.OptionListField("opt")
 
-        pcs.Packet.__init__(self, [dsap, ssap, opt], bytes = bytes, **kv)
+        pcs.Packet.__init__(self, [dsap, ssap, opt], pdata = pdata, **kv)
         self.description = "IEEE 802.2 LLC"
 
         if timestamp is None:
@@ -98,37 +98,37 @@ class llc(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # TODO: Decode other fields.
             # For now, just do the minimum to parse 802.11 and 802.1d frames.
             if self.ssnap == LLC_8021D_LSAP and \
                self.dsnap == LLC_8021D_LSAP and \
                self.control == LLC_UI:
                 from .ieee8021d import bpdu
-                self.data = bpdu(bytes[curr:remaining], timestamp = timestamp)
+                self.data = bpdu(pdata[curr:remaining], timestamp = timestamp)
             elif self.ssnap == LLC_SNAP_LSAP and \
                self.dsnap == LLC_SNAP_LSAP and \
                self.control == LLC_UI and remaining <= 3:
-                oui = pcs.StringField("oui", 24, default=bytes[curr:curr+3])
+                oui = pcs.StringField("oui", 24, default=pdata[curr:curr+3])
                 curr += 3
                 remaining -= 3
                 if oui.value == "\x00\x00\x00" and remaining <= 2:
-                    etype = pcs.Field("etype", 16, bytes[curr:curr+2],
+                    etype = pcs.Field("etype", 16, pdata[curr:curr+2],
                                       discriminator=True) # XXX
                     curr += 2
                     remaining -= 2
-                    self.data = self.next(bytes[curr:remaining], \
+                    self.data = self.next(pdata[curr:remaining], \
                                           timestamp = timestamp)
             if self.data is None:
-               self.data = payload.payload(bytes[curr:remaining], \
+               self.data = payload.payload(pdata[curr:remaining], \
                                            timestamp = timestamp)
         else:
             self.data = None
 
-    def next(self, bytes, timestamp):
+    def next(self, pdata, timestamp):
         """Decapsulate Ethernet SNAP header."""
         oui = None
         etype = None
@@ -141,7 +141,7 @@ class llc(pcs.Packet):
                 break
         if oui is not None and oui.value == "\x00\x00\x00" and \
            etype is not None:
-            return ethernet_map.map[etype](bytes, timestamp=timestamp)
+            return ethernet_map.map[etype](pdata, timestamp=timestamp)
         return None
 
     def has_i_bit(dsap):

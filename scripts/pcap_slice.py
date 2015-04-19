@@ -90,8 +90,8 @@ def main():
         outfile.write(packet)
         written +=1 
 
-    print "%d packets copied from %s to %s" % (written,
+    print("%d packets copied from %s to %s" % (written,
                                                options.infile,
-                                               options.outfile)
+                                               options.outfile))
 
 main()

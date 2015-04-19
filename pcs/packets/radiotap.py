@@ -193,7 +193,7 @@ class radiotap(pcs.Packet):
             "\x0bDBM_TX_POWER\x0cANTENNA\x0dDB_ANTSIGNAL"\
             "\x0eDB_ANTNOISE\x13XCHANNEL\x20EXT"
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize an ethernet packet"""
         version = pcs.Field("version", 8)               # currently 0.
         pad = pcs.Field("pad", 8)
@@ -202,7 +202,7 @@ class radiotap(pcs.Packet):
         tlvs = pcs.OptionListField("tlvs")
 
         pcs.Packet.__init__(self, [version, pad, len, present, tlvs], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "initialize an ethernet packet"
 
         if timestamp is None:
@@ -210,24 +210,24 @@ class radiotap(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = min(len(bytes), self.len) - offset
+            remaining = min(len(pdata), self.len) - offset
             # Force little-endian conversion.
             # TODO: Process the EXT bit.
-            he_prez = struct.unpack('<i', bytes[4:4])
+            he_prez = struct.unpack('<i', pdata[4:4])
             for i in range(IEEE80211_RADIOTAP_TSFT, \
                             IEEE80211_RADIOTAP_XCHANNEL+1):
                 if (he_prez & (1 << i)) != 0:
                     if i in _vmap:
                         vt = _vmap[i]
                         vname = vt[0]
-                        vbytes = vt[1] >> 3
+                        vpdata = vt[1] >> 3
                         vfmt = vt[2]
                         vfunc = vt[3]
-                        if remaining >= vbytes:
-                            value = struct.unpack(vfmt, bytes[curr:vlen])
+                        if remaining >= vpdata:
+                            value = struct.unpack(vfmt, pdata[curr:vlen])
                             fields = vfunc(vname, value)
                             for f in fields:
                                 tlvs._options.append(f)
@@ -236,7 +236,7 @@ class radiotap(pcs.Packet):
                         else:
                             break
             # XXX TODO: always decode next header as a full 802.11 header.
-            self.data = payload.payload(bytes[curr:remaining], \
+            self.data = payload.payload(pdata[curr:remaining], \
                                         timestamp = timestamp)
         else:
             self.data = None

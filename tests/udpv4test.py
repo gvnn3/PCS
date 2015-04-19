@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
 class udpTestCase(unittest.TestCase):
     def test_udpv4(self):
-        # create one packet, copy its bytes, then compare their fields
+        # create one packet, copy its pdata, then compare their fields
         packet = udp()
         assert (packet != None)
         packet.sport = 67
@@ -64,9 +64,9 @@ class udpTestCase(unittest.TestCase):
         
         # Create a packet to compare against
         new_packet = udp()
-        new_packet.decode(packet.bytes)
+        new_packet.decode(packet.pdata)
 
-        self.assertEqual(packet.bytes, new_packet.bytes, "bytes not equal")
+        self.assertEqual(packet.pdata, new_packet.pdata, "pdata not equal")
         for field in packet._fieldnames:
             self.assertEqual(getattr(packet, field), getattr(new_packet, field), ("%s not equal" % field))
 
@@ -93,14 +93,14 @@ class udpTestCase(unittest.TestCase):
 
     def test_udpv4_compare(self):
         """Test the underlying __compare__ functionality of the
-        packet.  Two packets constructed from the same bytes should be
+        packet.  Two packets constructed from the same pdata should be
         equal and two that are not should not be equal."""
         file = pcs.PcapConnector("dns.out")
         packet = file.readpkt()
         ip = packet.data
         assert (ip != None)
-        packet1 = udp(ip.data.bytes)
-        packet2 = udp(ip.data.bytes)
+        packet1 = udp(ip.data.pdata)
+        packet2 = udp(ip.data.pdata)
         assert (packet1 != None)
         assert (packet2 != None)
         self.assertEqual(packet1, packet2, "packets should be equal but are not")
@@ -151,7 +151,7 @@ class udpTestCase(unittest.TestCase):
         "\xC0\x48\x66\x6F\x6F\x62\x61\x72" \
         "\x0A"
 
-        gotttted = c.bytes
+        gotttted = c.pdata
         self.assertEqual(expected, gotttted, "test raw encoding")
 
 if __name__ == '__main__':

@@ -76,7 +76,7 @@ class icmpv6(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, type = 0, bytes = None, **kv):
+    def __init__(self, type = 0, pdata = None, **kv):
         """icmpv6 header RFC2463 and RFC2461"""
         ty = pcs.Field("type", 8, default = type)
         code = pcs.Field("code", 8)
@@ -84,21 +84,21 @@ class icmpv6(pcs.Packet):
         if type == ICMP6_ECHO_REQUEST or type == ICMP6_ECHO_REPLY:
             id = pcs.Field("id", 16)
             seq = pcs.Field("sequence", 16)
-            pcs.Packet.__init__(self, [ty, code, cksum, id, seq], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, id, seq], pdata, **kv)
         elif type == ICMP6_TIME_EXCEEDED or type == ICMP6_DST_UNREACH or type == ND_ROUTER_SOLICIT:
             unused = pcs.Field("unused", 32)
-            pcs.Packet.__init__(self, [ty, code, cksum, unused], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, unused], pdata, **kv)
         elif type == ICMP6_PARAM_PROB:
             pointer = pcs.Field("pointer", 32)
-            pcs.Packet.__init__(self, [ty, code, cksum, pointer], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, pointer], pdata, **kv)
         elif type == ICMP6_PACKET_TOO_BIG:
             mtu = pcs.Field("mtu", 32)
-            pcs.Packet.__init__(self, [ty, code, cksum, mtu], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, mtu], pdata, **kv)
         elif type == ICMP6_NI_QUERY or type == ICMP6_NI_REPLY:
             qtype = pcs.Field("qtype", 16)
             flags = pcs.Field("flags", 16)
             nonce = pcs.Field("nonce", 64)
-            pcs.Packet.__init__(self, [ty, code, cksum, qtype, flags, nonce], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, qtype, flags, nonce], pdata, **kv)
         elif type == ND_ROUTER_ADVERT:
             chp = pcs.Field("current_hop_limit", 8)
             m = pcs.Field("m", 1)
@@ -107,30 +107,30 @@ class icmpv6(pcs.Packet):
             rlf = pcs.Field("router_lifetime", 16)
             rct = pcs.Field("reachable_time", 32)
             rtt = pcs.Field("retrans_timer", 32)
-            pcs.Packet.__init__(self, [ty, code, cksum, chp, m, o, unused, rlf, rct, rtt], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, chp, m, o, unused, rlf, rct, rtt], pdata, **kv)
         elif type == ND_NEIGHBOR_SOLICIT:
             reserved = pcs.Field("reserved", 32)
             target = pcs.StringField("target", 16 * 8)
-            pcs.Packet.__init__(self, [ty, code, cksum, reserved, target], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, reserved, target], pdata, **kv)
         elif type == ND_NEIGHBOR_ADVERT:
             r = pcs.Field("router", 1)
             s = pcs.Field("solicited", 1)
             o = pcs.Field("override", 1)
             reserved = pcs.Field("reserved", 29)
             target = pcs.StringField("target", 16 * 8)
-            pcs.Packet.__init__(self, [ty, code, cksum, r, s, o, reserved, target], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, r, s, o, reserved, target], pdata, **kv)
         elif type == ND_REDIRECT:
             reserved = pcs.Field("reserved", 32)
             target = pcs.StringField("target", 16 * 8)
             dest = pcs.StringField("destination", 16 * 8)
-            pcs.Packet.__init__(self, [ty, code, cksum, reserved, target, dest], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum, reserved, target, dest], pdata, **kv)
         elif type == MLD6_LISTENER_QUERY or type == MLD6_LISTENER_REPORT or type == MLD6_LISTENER_DONE:
             md = pcs.Field("maxdelay", 16)
             reserved = pcs.Field("reserved", 16)
             mcast = pcs.StringField("mcastaddr", 16 * 8)
-            pcs.Packet.__init__(self, [ty, code, cksum, md, reserved, mcast], bytes, **kv)            
+            pcs.Packet.__init__(self, [ty, code, cksum, md, reserved, mcast], pdata, **kv)            
         else:
-            pcs.Packet.__init__(self, [ty, code, cksum], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, code, cksum], pdata, **kv)
 
     def cksum(self, ip, data = "", nx = 0):
         """Calculate the checksum for this ICMPv6 header, outside
@@ -138,12 +138,12 @@ class icmpv6(pcs.Packet):
         p6 = pseudoipv6.pseudoipv6()
         p6.src = ip.src
         p6.dst = ip.dst
-        p6.length = len(self.getbytes()) + len (data)
+        p6.length = len(self.getpdata()) + len (data)
         if nx:
             p6.next_header = nx
         else:
             p6.next_header = ip.next_header
-        pkt = p6.getbytes() + self.getbytes() + data
+        pkt = p6.getpdata() + self.getpdata() + data
         return ipv4.ipv4_cksum(pkt)
 
     def calc_checksum(self):
@@ -159,28 +159,28 @@ class icmpv6(pcs.Packet):
             pip6.src = ip6.src
             pip6.dst = ip6.dst
             pip6.next_header = ip6.next_header
-            pip6.length = len(self.getbytes()) + len(payload)
-            tmpbytes = pip6.getbytes() + self.getbytes() + payload
+            pip6.length = len(self.getpdata()) + len(payload)
+            tmppdata = pip6.getpdata() + self.getpdata() + payload
         else:
-            tmpbytes = self.getbytes()
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+            tmppdata = self.getpdata()
+        self.checksum = ipv4.ipv4_cksum(tmppdata)
 
 class icmpv6option(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, type = 0, bytes = None, **kv):
+    def __init__(self, type = 0, pdata = None, **kv):
         """add icmp6 option header RFC2461"""
         ty = pcs.Field("type", 8, default = type)
         length = pcs.Field("length", 8)
         # Source Link-Layer Address.
         if type == 1:
             source = pcs.StringField("source", 48)
-            pcs.Packet.__init__(self, [ty, length, source], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, length, source], pdata, **kv)
         # Target Link-Layer Address
         elif type == 2:
             target = pcs.StringField("target", 48)
-            pcs.Packet.__init__(self, [ty, length, target], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, length, target], pdata, **kv)
         # Prefix Information.
         elif type == 3:
             plength = pcs.Field("prefix_length", 8)
@@ -191,15 +191,15 @@ class icmpv6option(pcs.Packet):
             plf = pcs.Field("preferred_lifetime", 32)
             reserved2 = pcs.Field("reserved2", 32)
             prefix = pcs.StringField("prefix", 16 * 8)
-            pcs.Packet.__init__(self, [ty, length, plength, l, a, reserved1, vlf, plf, reserved2, prefix], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, length, plength, l, a, reserved1, vlf, plf, reserved2, prefix], pdata, **kv)
         # Redirected Header.
         elif type == 4:
             reserved = pcs.StringField("reserved", 48)
-            pcs.Packet.__init__(self, [ty, length, reserved], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, length, reserved], pdata, **kv)
         # MTU 
         elif type == 5:
             reserved = pcs.Field("reserved", 16)
             mtu = pcs.Field("mtu", 32)
-            pcs.Packet.__init__(self, [ty, length, reserved, mtu], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, length, reserved, mtu], pdata, **kv)
         else:
-            pcs.Packet.__init__(self, [ty, length], bytes, **kv)
+            pcs.Packet.__init__(self, [ty, length], pdata, **kv)

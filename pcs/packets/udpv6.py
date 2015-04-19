@@ -45,9 +45,9 @@ class udpv6(pcs.packets.udp.udp):
     _layout = pcs.Layout()
     _map = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """Initialize a UDP packet for IPv6"""
-        pcs.packets.udp.udp.__init__(self, bytes, timestamp, **kv)
+        pcs.packets.udp.udp.__init__(self, pdata, timestamp, **kv)
 
     def cksum(self, ip, data = "", nx = 0):
         """Calculate the checksum for this UDPv6 header, outside
@@ -57,13 +57,13 @@ class udpv6(pcs.packets.udp.udp):
         p6 = pseudoipv6()
         p6.src = ip.src
         p6.dst = ip.dst
-        p6.length = len(self.getbytes()) + len(data)
+        p6.length = len(self.getpdata()) + len(data)
         if nx:
             p6.next_header = nx
         else:
             p6.next_header = ip.next_header
-        tmpbytes = p6.getbytes() + self.getbytes() + data
-        return ipv4.ipv4_cksum(tmpbytes)
+        tmppdata = p6.getpdata() + self.getpdata() + data
+        return ipv4.ipv4_cksum(tmppdata)
 
     def calc_checksum(self):
         """Calculate and store the checksum for this UDPv6 datagram.
@@ -76,6 +76,6 @@ class udpv6(pcs.packets.udp.udp):
             ip6 = self._head.find_preceding(self, pcs.packets.ipv6.ipv6)
         if ip6 is None:
             self.checksum = 0
-            self.checksum = ipv4.ipv4_cksum(self.getbytes())
+            self.checksum = ipv4.ipv4_cksum(self.getpdata())
             return
         pcs.packets.udp.udp.calc_checksum_v6(self, ip6)

@@ -51,23 +51,23 @@ class common(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
         tag = pcs.Field("tag", 32)
         checksum = pcs.Field("checksum", 32)
         pcs.Packet.__init__(self, [sport, dport, tag, checksum],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP common header class"
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None and len(bytes) > self.sizeof() ):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
-                                  discriminator = bytes[self.sizeof() + 1],
+        if (pdata is not None and len(pdata) > self.sizeof() ):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
+                                  discriminator = pdata[self.sizeof() + 1],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -77,10 +77,10 @@ class common(pcs.Packet):
            Unlike other IP transports, SCTP does *not* need to see
            preceding header fields when calculating the CRC32C."""
         self.checksum = 0xffffffff
-        tmpbytes = self.bytes
+        tmppdata = self.pdata
         if self._head is not None:
-            tmpbytes += self._head.collate_following(self)
-        self.checksum = crc32c.cksum(tmpbytes)
+            tmppdata += self._head.collate_following(self)
+        self.checksum = crc32c.cksum(tmppdata)
 
 class payload(pcs.Packet):
     """SCTP payload chunk class"""
@@ -88,7 +88,7 @@ class payload(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 0)
         reserved = pcs.Field("reserved", 5)
@@ -103,7 +103,7 @@ class payload(pcs.Packet):
         pcs.Packet.__init__(self,
                             [type, reserved, unordered, beginning, ending, 
                              length, tsn, stream_im, stream_seq, ppi],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP payload chunk class"
         if timestamp is None:
             self.timestamp = time.time()
@@ -111,8 +111,8 @@ class payload(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -125,7 +125,7 @@ class init(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """init or init ack chunk"""
         type = pcs.Field("type", 8)
         flags = pcs.Field("flags", 8)
@@ -138,7 +138,7 @@ class init(pcs.Packet):
         pcs.Packet.__init__(self, [type, flags, length, tag, 
                                    adv_recv_win_cred, outbound_streams,
                                    inbound_streams, initial_tsn],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP init or init ack chunk"
         if timestamp is None:
             self.timestamp = time.time()
@@ -146,8 +146,8 @@ class init(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -157,7 +157,7 @@ class sack(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 3)
         flags = pcs.Field("flags", 8)
@@ -171,7 +171,7 @@ class sack(pcs.Packet):
                                    adv_recv_win_cred,
                                    gap_ack_blocks,
                                    duplicate_tsns],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "common header initialization"
         if timestamp is None:
             self.timestamp = time.time()
@@ -179,8 +179,8 @@ class sack(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -190,13 +190,13 @@ class heartbeat(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 4)
         flags = pcs.Field("flags", 8)
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP heartbeat chunk"
         if timestamp is None:
             self.timestamp = time.time()
@@ -204,8 +204,8 @@ class heartbeat(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -215,14 +215,14 @@ class abort(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 6)
         reserved = pcs.Field("reserved", 7)
         tag = pcs.Field("tag", 1)
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, reserved, tag, length],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP abort chunk"
         if timestamp is None:
             self.timestamp = time.time()
@@ -230,8 +230,8 @@ class abort(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -241,14 +241,14 @@ class shutdown(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 7)
         flags = pcs.Field("flags", 8)
         length = pcs.Field("length", 16, default = 8)
         cumulative_tsn = pcs.Field("cumulative_tsn", 32)
         pcs.Packet.__init__(self, [type, flags, length, cumulative_tsn],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP shutdown chunk"
         if timestamp is None:
             self.timestamp = time.time()
@@ -256,8 +256,8 @@ class shutdown(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -267,13 +267,13 @@ class shutdown_ack(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 1)
         flags = pcs.Field("flags", 8)
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, flags, length],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP Shutdown ACK Chunk"
         if timestamp is None:
             self.timestamp = time.time()
@@ -281,8 +281,8 @@ class shutdown_ack(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -292,13 +292,13 @@ class operation_error(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 9)
         flags = pcs.Field("flags", 8)
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP operation error chunk"
         if timestamp is None:
             self.timestamp = time.time()
@@ -306,8 +306,8 @@ class operation_error(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -317,13 +317,13 @@ class cookie_echo(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 10)
         flags = pcs.Field("flags", 8)
         length = pcs.Field("length", 16)
         pcs.Packet.__init__(self, [type, flags, length],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP Cookie Echo Chunk"
         if timestamp is None:
             self.timestamp = time.time()
@@ -331,8 +331,8 @@ class cookie_echo(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -342,21 +342,21 @@ class cookie_ack(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 11)
         flags = pcs.Field("flags", 8)
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, flags, length],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCP Cookie ACK"
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None
@@ -366,14 +366,14 @@ class shutdown_complete(pcs.Packet):
 
     _layout = pcs.Layout()
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """common header initialization"""
         type = pcs.Field("type", 8, default = 14)
         reserved = pcs.Field("reserved", 7)
         tag = pcs.Field("tag", 1)
         length = pcs.Field("length", 16, default = 4)
         pcs.Packet.__init__(self, [type, reserved, tag, length],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "SCTP Shutdown Complete"
         if timestamp is None:
             self.timestamp = time.time()
@@ -381,8 +381,8 @@ class shutdown_complete(pcs.Packet):
             self.timestamp = timestamp
 
 
-        if (bytes is not None):
-            self.data = self.next(bytes[0:len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[0:len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None

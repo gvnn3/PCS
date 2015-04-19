@@ -54,7 +54,7 @@ class rtp(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         v = pcs.Field("v", 2)           # version
         p = pcs.Field("p", 1)           # padded
         x = pcs.Field("x", 1)           # extended
@@ -67,7 +67,7 @@ class rtp(pcs.Packet):
         opt = pcs.OptionListField("opt")        # optional fields
 
         pcs.Packet.__init__(self, [v, p, x, cc, m, pt, seq, ts, ssrc, opt], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "RFC 3550 Real Time Protocol"
 
         if timestamp is None:
@@ -75,39 +75,39 @@ class rtp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # Parse CSRC.
             nc = self.cc
             while nc > 0 and remaining >= 4:
-                value = struct.unpack("!I", bytes[curr:curr+4])
+                value = struct.unpack("!I", pdata[curr:curr+4])
                 csrc = pcs.Field("csrc", 32, default=value)
                 self.opt._options.append(csrc)
                 curr += 4
                 remaining -= 4
             # Parse Header Extension.
             if self.x == 1 and remaining >= 4:
-                extlen = struct.unpack("!H", bytes[curr+2:curr+4])
+                extlen = struct.unpack("!H", pdata[curr+2:curr+4])
                 extlen <<= 2
                 extlen = min(extlen, remaining)
                 # Copy the entire chunk so we keep the type field.
                 ext = pcs.StringField("ext", extlen * 8, \
-                                      default=bytes[curr:extlen+4])
+                                      default=pdata[curr:extlen+4])
                 self.opt._options.append(ext)
                 curr += extlen
                 remaining -= extlen
             # Heed padding byte.
             npad = 0
             if self.p == 1:
-                npad = bytes[-1]
-            self.data = payload.payload(bytes[curr:remaining-npad], \
+                npad = pdata[-1]
+            self.data = payload.payload(pdata[curr:remaining-npad], \
                                         timestamp = timestamp)
         else:
             self.data = None
 
-    #def next(self, bytes, timestamp):
+    #def next(self, pdata, timestamp):
     #    """Decapsulate RTP payload header according to payload type."""
 
 class rtcp(pcs.Packet):
@@ -115,7 +115,7 @@ class rtcp(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         v = pcs.Field("v", 2)
         p = pcs.Field("p", 1)
         rc = pcs.Field("rc", 5)
@@ -124,7 +124,7 @@ class rtcp(pcs.Packet):
         ssrc = pcs.Field("ssrc", 32)
 
         pcs.Packet.__init__(self, [v, p, rc, pt, length, ssrc], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "RFC 3550 Real Time Control Protocol header"
 
         if timestamp is None:
@@ -132,12 +132,12 @@ class rtcp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # XXX TODO look at pt and decapsulate next.
-            self.data = payload.payload(bytes[curr:remaining], \
+            self.data = payload.payload(pdata[curr:remaining], \
                                         timestamp = timestamp)
         else:
             self.data = None
@@ -147,7 +147,7 @@ class sender(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         ntpts = pcs.Field("ntpts", 64)
         rtpts = pcs.Field("rtpts", 32)
         spkts = pcs.Field("spkts", 32)
@@ -155,7 +155,7 @@ class sender(pcs.Packet):
         opt = pcs.OptionListField("opt")
 
         pcs.Packet.__init__(self, [ntpts, rtpts, spkts, sbytes, opt],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "RFC 3550 Real Time Control Protocol sender message portion"
 
         if timestamp is None:
@@ -163,13 +163,13 @@ class sender(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # XXX TODO decapsulate all the report counts.
             # to do this, we need to see the parent RC.
-            self.data = payload.payload(bytes[curr:remaining], \
+            self.data = payload.payload(pdata[curr:remaining], \
                                         timestamp = timestamp)
         else:
             self.data = None

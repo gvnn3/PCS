@@ -53,7 +53,7 @@ def main():
     conn.write("GET / \n\n")
     result = conn.read(1024)
     page = http.http(result)
-    print page
+    print(page)
 
 main()
 

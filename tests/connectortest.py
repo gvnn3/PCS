@@ -114,7 +114,7 @@ class pcapTestCase(unittest.TestCase):
         echo.id = 54321
         echo.seq = 12345
 
-        ip.length = len(ip.bytes) + len(icmp.bytes) + len(echo.bytes)
+        ip.length = len(ip.pdata) + len(icmp.pdata) + len(echo.pdata)
 
         packet = Chain([e, ip, icmp, echo])
 
@@ -137,7 +137,7 @@ class pcapTestCase(unittest.TestCase):
         rfile = PcapConnector(devname)
         rfile.setfilter("icmp")
 
-        count = wfile.write(packet.bytes, 42)
+        count = wfile.write(packet.pdata, 42)
         assert (count == 42)
 
         got = ethernet(rfile.read())
@@ -180,7 +180,7 @@ class pcapTestCase(unittest.TestCase):
         packet = Chain([lo, ip, icmp, echo])
 
         outfile = PcapDumpConnector("pcaptest.dump", DLT_NULL)
-        outfile.write(packet.bytes)
+        outfile.write(packet.pdata)
         outfile.close()
         
         infile = PcapConnector("pcaptest.dump")

@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
 class etherTestCase(unittest.TestCase):
     def test_ethernet(self):
-        # create one packet, copy its bytes, then compare their fields
+        # create one packet, copy its pdata, then compare their fields
         ether = ethernet()
         assert (ethernet != None)
         ether.src = b"\x00\x00\x00\x00\x00\x00"
@@ -62,9 +62,9 @@ class etherTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         ethernew = ethernet()
-        ethernew.decode(ether.bytes)
+        ethernew.decode(ether.pdata)
 
-        self.assertEqual(ether.bytes, ethernew.bytes, "bytes not equal")
+        self.assertEqual(ether.pdata, ethernew.pdata, "pdata not equal")
         self.assertEqual(ether.src, ethernew.src,
                          "sources not equal ether %s ethernew %s" %
                          (ether.src, ethernew.src))
@@ -85,9 +85,9 @@ class etherTestCase(unittest.TestCase):
 
         # Create a packet to compare against
         ethernew = ethernet()
-        ethernew.decode(ether.bytes)
+        ethernew.decode(ether.pdata)
 
-        self.assertEqual(ether.bytes, ethernew.bytes, "bytes not equal")
+        self.assertEqual(ether.pdata, ethernew.pdata, "pdata not equal")
         self.assertEqual(ether.src, ethernew.src,
                          "sources not equal ether %s ethernew %s" %
                          (ether.src, ethernew.src))
@@ -102,7 +102,7 @@ class etherTestCase(unittest.TestCase):
 
     def test_ethernet_read(self):
         """This test reads from a pre-stored pcap file generated with tcpdump and ping on the loopback interface."""
-        file = PcapConnector(b"etherping.out")
+        file = PcapConnector("etherping.out")
 #        packet = file.read()
 #        ether = ethernet(packet)
         ether = file.readpkt()
@@ -117,20 +117,20 @@ class etherTestCase(unittest.TestCase):
     def test_ethernet_write(self):
         """This test writes a fake ethernet packet to a dump file."""
         from pcs.pcap import DLT_EN10MB
-        file = PcapDumpConnector(b"etherdump.out", DLT_EN10MB)
-        # create one packet, copy its bytes, then compare their fields
+        file = PcapDumpConnector("etherdump.out", DLT_EN10MB)
+        # create one packet, copy its pdata, then compare their fields
         ether = ethernet()
         assert (ethernet != None)
         ether.src = b"\x00\x00\x00\x00\x00\x00"
         ether.dst = b"\xff\xff\xff\xff\xff\xff"
         ether.type = 2048
-        file.write(ether.bytes)
+        file.write(ether.pdata)
 
     def test_ethernet_compare(self):
         """Test the underlying __compare__ functionality of the
-        packet.  Two packets constructed from the same bytes should be
+        packet.  Two packets constructed from the same pdata should be
         equal and two that are not should not be equal."""
-        file = PcapConnector(b"etherping.out")
+        file = PcapConnector("etherping.out")
         packet = file.read()
         ether1 = ethernet(packet[0:file.dloff])
         ether2 = ethernet(packet[0:file.dloff])
@@ -145,7 +145,7 @@ class etherTestCase(unittest.TestCase):
         """This test reads from a pre-stored pcap file generated with
         tcpdump and ping on an ethernet interface and tests the
         __str__ method to make sure the correct values are printed."""
-        file = PcapConnector(b"etherping.out")
+        file = PcapConnector("etherping.out")
         packet = file.read()
         ether = ethernet(packet[0:file.dloff])
         assert (ether != None)
@@ -162,7 +162,7 @@ class etherTestCase(unittest.TestCase):
         """This test reads from a pre-stored pcap file generated with
         tcpdump and ping on an ethernet interface and tests the
         println method to make sure the correct values are printed."""
-        file = PcapConnector(b"etherping.out")
+        file = PcapConnector("etherping.out")
         packet = file.read()
         ether = ethernet(packet[0:file.dloff])
         assert (ether != None)

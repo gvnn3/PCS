@@ -84,7 +84,7 @@ class optionTestCase(unittest.TestCase):
                    "\x00\x00\x00\x00\x00\x00\x00\x00" \
                    "\x00\x00\x00\x00\x01\x01\x02\x04" \
                    "\x05\xb4\x01\x00"
-        got = packet.bytes
+        got = packet.pdata
 
         #packet.encode()
         #hd = hexdumper()
@@ -104,7 +104,7 @@ class optionTestCase(unittest.TestCase):
         expected = "\x00\x00\x00\x00\x00\x00\x00\x00" \
                    "\x00\x00\x00\x00\x00\x00\x00\x00" \
                    "\x00\x00\x00\x00"
-        got = packet.bytes
+        got = packet.pdata
 
         #packet.encode()
         #hd = hexdumper()

@@ -43,7 +43,7 @@ class pseudoipv6(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None):
+    def __init__(self, pdata = None, timestamp = None):
         """IPv6 pseudo header from RFC 2460"""
         src = pcs.StringField("src", 16 * 8)
         dst = pcs.StringField("dst", 16 * 8)
@@ -51,4 +51,4 @@ class pseudoipv6(pcs.Packet):
         zero = pcs.Field("zero", 24)
         nh = pcs.Field("next_header", 8)
         pcs.Packet.__init__(self,
-                            [src, dst, length, zero, nh], bytes);
+                            [src, dst, length, zero, nh], pdata);

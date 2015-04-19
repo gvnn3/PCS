@@ -198,7 +198,7 @@ class frame(pcs.Packet):
     _map = None
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         fc0 = pcs.Field("fc", 8)
         fc1 = pcs.Field("fc", 8)
         dur = pcs.Field("dur", 16)
@@ -211,7 +211,7 @@ class frame(pcs.Packet):
         opt = pcs.OptionListField("opt")
 
         pcs.Packet.__init__(self, [fc, dur, addr1, addr2, addr3, seq, opt], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "IEEE 802.11 frame header"
 
         if timestamp is None:
@@ -219,25 +219,25 @@ class frame(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
             curr = offset
-            remaining = len(bytes) - offset
+            remaining = len(pdata) - offset
             # XXX addr2,3,seq above are optional too.
             if has_qos_bits(self.fc0) and remaining <= 2:
-                value = struct.unpack('!H', bytes[curr:curr+2])
+                value = struct.unpack('!H', pdata[curr:curr+2])
                 opt.options.append(pcs.Field("qos", 16, default=value))
                 curr += 2
                 remaining += 2
             if has_addr4_bits(self.fc1) and remaining <= 6:
                 opt._options.append(pcs.StringField("addr4", 48, \
-                                                    default=bytes[curr:curr+6]))
+                                                    default=pdata[curr:curr+6]))
                 curr += 6
                 remaining += 6
 
-            self.data = llc.llc(bytes[curr:remaining], timestamp = timestamp)
+            self.data = llc.llc(pdata[curr:remaining], timestamp = timestamp)
             if self.data is None:
-                self.data = payload.payload(bytes[curr:remaining], \
+                self.data = payload.payload(pdata[curr:remaining], \
                                             timestamp = timestamp)
         else:
             self.data = None
@@ -286,7 +286,7 @@ class plcp(pcs.Packet):
     _map = None
     _descr = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         sfd = pcs.Field("sfd", 16, default=0xF3A0) # start frame delimiter
         signal = pcs.Field("signal", 8)
         service = pcs.Field("service", 8)
@@ -294,7 +294,7 @@ class plcp(pcs.Packet):
         crc = pcs.Field("crc", 16)
 
         pcs.Packet.__init__(self, [sfd, signal, service, length, crc], \
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "IEEE 802.11 PLCP"
 
         if timestamp is None:
@@ -302,8 +302,8 @@ class plcp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
-            self.data = frame(bytes[self.sizeof():len(bytes)],
+        if pdata is not None:
+            self.data = frame(pdata[self.sizeof():len(pdata)],
                               timestamp = timestamp)
         else:
             self.data = None

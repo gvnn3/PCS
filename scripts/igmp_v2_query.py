@@ -49,7 +49,7 @@ def main():
        options.ether_source is None or \
        options.ip_source is None or \
        options.count is None:
-        print "Non-optional argument missing."
+        print("Non-optional argument missing.")
         return
 
     maxresp = 3 * 10
@@ -92,9 +92,9 @@ def main():
         chain = packet.chain()
 	if chain.packets[2].type == IGMP_v2_HOST_MEMBERSHIP_REPORT:
 	    #print chain.packets[2].println()
-	    print "%s is in %s" % \
+	    print("%s is in %s" % \
 	        (inet_ntop(AF_INET, struct.pack('!L', chain.packets[1].src)), \
-	         inet_ntop(AF_INET, struct.pack('!L', chain.packets[3].group)))
+	         inet_ntop(AF_INET, struct.pack('!L', chain.packets[3].group))))
 	    count -= 1
 
 main()

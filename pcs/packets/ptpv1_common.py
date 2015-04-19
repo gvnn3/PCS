@@ -46,7 +46,7 @@ class CommonV1(pcs.Packet):
     _layout = pcs.Layout()
     _map = ptp_map.map
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize the common header """
         versionPTP = pcs.Field("versionPTP", 16)
         versionNetwork = pcs.Field("versionNetwork", 16)
@@ -66,7 +66,7 @@ class CommonV1(pcs.Packet):
                                    sourceCommunicationTechnology,
                                    sourceUuid, sourcePortId, sequenceId,
                                    control, zero1, flags, zero2],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "initialize the common header "
 
@@ -75,8 +75,8 @@ class CommonV1(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None

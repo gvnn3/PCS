@@ -58,15 +58,15 @@ def main():
     a.packets[1].pro = 0x0800	# ETHERTYPE_IP (default)
     a.packets[1].op = 1		# ARPOP_REQUEST
 
-    print "Waiting 10 seconds to see an ARP query."
+    print("Waiting 10 seconds to see an ARP query.")
     try:
         file.expect([a], 10)
     except pcs.TimeoutError:
-        print "Timed out."
+        print("Timed out.")
         sys.exit(1)
 
-    print "And the matching packet chain is:"
-    print file.match
+    print("And the matching packet chain is:")
+    print(file.match)
     sys.exit(0)
 
     #  TODO: Add the ability to match more complex filters

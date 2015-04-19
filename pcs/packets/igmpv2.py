@@ -52,10 +52,10 @@ class igmpv2(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize an IGMPv1/v2 header"""
         group = pcs.Field("group", 32)
-        pcs.Packet.__init__(self, [group], bytes, **kv)
+        pcs.Packet.__init__(self, [group], pdata, **kv)
         self.description = "initialize an IGMPv1/v2 header"
 
         if timestamp is None:
@@ -63,9 +63,9 @@ class igmpv2(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None
 

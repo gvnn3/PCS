@@ -79,7 +79,7 @@ class dvmrp(pcs.Packet):
 
     layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize a header very similar to that of IGMPv1/v2"""
         reserved00 = pcs.Field("reserved00", 8)
         capabilities = pcs.Field("capabilities", 8)
@@ -87,7 +87,7 @@ class dvmrp(pcs.Packet):
         major = pcs.Field("major", 8)
         options = pcs.OptionListField("options")
         pcs.Packet.__init__(self, [reserved00, capabilities,
-                                   minor, major, options], bytes, **kv)
+                                   minor, major, options], pdata, **kv)
 
         self.description = "initialize a header very similar to that of IGMPv1/v2"
 
@@ -96,10 +96,10 @@ class dvmrp(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        # XXX optional bytes not processed yet.
+        # XXX optional pdata not processed yet.
 
-        if bytes is not None:
+        if pdata is not None:
             offset = self.sizeof()
-            self.data = payload.payload(bytes[offset:len(bytes)])
+            self.data = payload.payload(pdata[offset:len(pdata)])
         else:
             self.data = None

@@ -50,7 +50,7 @@ class ymsg_hdr(pcs.Packet):
     """YMSG"""
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """Define the fields for a Yahoo Messenger header.
 
         The header is followed by a set of key value pairs, defined in
@@ -65,7 +65,7 @@ class ymsg_hdr(pcs.Packet):
         session = pcs.Field("session", 32)
         pcs.Packet.__init__(self,
                             [version, id, length, command, status, session],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
         self.description = "Define the fields for a Yahoo Messenger header"
         if timestamp is None:
             self.timestamp = time.time()
@@ -77,7 +77,7 @@ class ymsg_key_value(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, **kv):
+    def __init__(self, pdata = None, **kv):
         """The actual message is a set of key/value pairs encoded
         after the header.
         """
@@ -85,7 +85,7 @@ class ymsg_key_value(pcs.Packet):
         value = pcs.LengthValueField("value", 16)
         pcs.Packet.__init__(self,
                             [key, value],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
 
         

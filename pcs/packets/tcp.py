@@ -49,7 +49,7 @@ class tcp(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize a TCP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
@@ -70,7 +70,7 @@ class tcp(pcs.Packet):
         pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
                                    urg, ack, psh, rst, syn, fin, window,
                                    checksum, urgp, options],
-                            bytes = bytes,  **kv)
+                            pdata = pdata,  **kv)
         self.description = "TCP"
         if timestamp is None:
             self.timestamp = time.time()
@@ -78,7 +78,7 @@ class tcp(pcs.Packet):
             self.timestamp = timestamp
 
         # Decode TCP options.
-        if bytes is not None:
+        if pdata is not None:
             data_offset = self.offset * 4        # in bytes
             options_len = data_offset - self.sizeof()
 
@@ -90,14 +90,16 @@ class tcp(pcs.Packet):
             # If options are present then they must fit into the 40 byte
             # option area. We will perform this check during encoding later.
 
-            if data_offset > len(bytes):
+            if data_offset > len(pdata):
                 raise UnpackError("TCP segment is larger than input (%d > %d)" % \
-                      (data_offset, len(bytes)))
+                      (data_offset, len(pdata)))
 
             if (options_len > 0):
                 curr = self.sizeof()
                 while (curr < data_offset):
-                    option = struct.unpack('!B', bytes[curr])[0]
+                    print(type(pdata[curr]))
+                    print("%d", pdata[curr])
+                    option = struct.unpack('!B', pdata[curr])[0]
 
                     #print "(curr = %d, data_offset = %d, option = %d)" % \
                     #     (curr, data_offset, option)
@@ -113,7 +115,7 @@ class tcp(pcs.Packet):
                         curr += 1
                         continue
 
-                    optlen = struct.unpack('!B', bytes[curr+1])[0]
+                    optlen = struct.unpack('!B', pdata[curr+1])[0]
                     if (optlen < 1 or optlen > (data_offset - curr)):
                         raise UnpackError("Bad length %d for TCP option %d" % \
                               (optlen, option))
@@ -133,8 +135,8 @@ class tcp(pcs.Packet):
                         #    raise UnpackError, \
                         #          "Bad length %d for TCP option %d, should be %d" % \
                         #          (optlen, option, 4)
-                        value = struct.unpack("!H", bytes[curr+2:curr+4])[0]
-                        # XXX does tlv encode a length in bits or bytes??
+                        value = struct.unpack("!H", pdata[curr+2:curr+4])[0]
+                        # XXX does tlv encode a length in bits or pdata??
                         # 'cuz a second pass spits out 'it's optlen 16'"
                         options.append(pcs.TypeLengthValueField("mss", \
                                        pcs.Field("t", 8, default = option), \
@@ -145,7 +147,7 @@ class tcp(pcs.Packet):
                         if optlen != 3:
                             raise UnpackError("Bad length %d for TCP option %d, should be %d" % \
                                   (optlen, option, 3))
-                        value = struct.unpack("B", bytes[curr+2:curr+3])[0]
+                        value = struct.unpack("B", pdata[curr+2:curr+3])[0]
                         options.append(pcs.TypeLengthValueField("wscale", \
                                        pcs.Field("t", 8, default = option), \
                                        pcs.Field("l", 8, default = optlen), \
@@ -166,7 +168,7 @@ class tcp(pcs.Packet):
                         # to any other options.
                         sacklen = optlen - 2
                         value = struct.unpack("%dB" % sacklen,
-                                              bytes[curr+2:curr+sacklen])[0]
+                                              pdata[curr+2:curr+sacklen])[0]
                         options.append(pcs.TypeLengthValueField("sack", \
                                        pcs.Field("t", 8, default = option), \
                                        pcs.Field("l", 8, default = optlen), \
@@ -176,7 +178,7 @@ class tcp(pcs.Packet):
                         if optlen != 10:
                             raise UnpackError("Bad length %d for TCP option %d, should be %d" % \
                                   (optlen, option, 10))
-                        value = struct.unpack("!2I", bytes[curr+2:curr+10])[0]
+                        value = struct.unpack("!2I", pdata[curr+2:curr+10])[0]
                         options.append(pcs.TypeLengthValueField("tstamp", \
                                        pcs.Field("t", 8, default = option), \
                                        pcs.Field("l", 8, default = optlen), \
@@ -187,7 +189,7 @@ class tcp(pcs.Packet):
                     #        raise UnpackError, \
                     #              "Bad length %d for TCP option %d, should be %d" % \
                     #              (optlen, option, 18)
-                    #    value = struct.unpack("16B", bytes[curr+2:curr+16])[0]
+                    #    value = struct.unpack("16B", pdata[curr+2:curr+16])[0]
                     #   options.append(pcs.TypeLengthValueField("md5", \
                     #                  pcs.Field("t", 8, default = option), \
                     #                  pcs.Field("l", 8, default = optlen), \
@@ -196,7 +198,7 @@ class tcp(pcs.Packet):
                     elif option == 30:        # multipath
                         optdatalen = optlen - 2
                         value = struct.unpack("!" + str(optdatalen) + "B",
-                                              bytes[curr+2:curr+optlen])
+                                              pdata[curr+2:curr+optlen])
                         myval = 0
                         for i in value:
                              myval = myval << 8 | i
@@ -209,31 +211,31 @@ class tcp(pcs.Packet):
                     else:
                         #print "warning: unknown option %d" % option
                         optdatalen = optlen - 2
-                        value = struct.unpack("!B", bytes[curr+2:curr+optdatalen])[0]
+                        value = struct.unpack("!B", pdata[curr+2:curr+optdatalen])[0]
                         options.append(pcs.TypeLengthValueField("unknown", \
                                        pcs.Field("t", 8, default = option), \
                                        pcs.Field("l", 8, default = optlen), \
                                        pcs.Field("v", optdatalen * 8, default = value)))
                         curr += optlen
 
-        if (bytes is not None and (self.offset * 4 < len(bytes))):
-            self.data = self.next(bytes[(self.offset * 4):len(bytes)],
+        if (pdata is not None and (self.offset * 4 < len(pdata))):
+            self.data = self.next(pdata[(self.offset * 4):len(pdata)],
                                   timestamp = timestamp)
             if self.data is None:
                 from pcs.packets.payload import payload
-                self.data = payload(bytes[(self.offset * 4):len(bytes)])
+                self.data = payload(pdata[(self.offset * 4):len(pdata)])
         else:
             self.data = None
 
     # XXX TCP MUST have it's own next() function so that it can discrimnate
     # on either sport or dport.
 
-    def next(self, bytes, timestamp):
+    def next(self, pdata, timestamp):
         """Decode higher layer packets contained in TCP."""
         if (self.dport in tcp_map.map):
-            return tcp_map.map[self.dport](bytes, timestamp = timestamp)
+            return tcp_map.map[self.dport](pdata, timestamp = timestamp)
         if (self.sport in tcp_map.map):
-            return tcp_map.map[self.sport](bytes, timestamp = timestamp)
+            return tcp_map.map[self.sport](pdata, timestamp = timestamp)
         return None
     
     def __str__(self):
@@ -256,8 +258,8 @@ class tcp(pcs.Packet):
         tmpip.src = ip.src
         tmpip.dst = ip.dst
         tmpip.protocol = IPPROTO_TCP
-        tmpip.length = len(self.getbytes()) + len(data)
-        pkt = tmpip.getbytes() + self.getbytes() + data
+        tmpip.length = len(self.getpdata()) + len(data)
+        pkt = tmpip.getpdata() + self.getpdata() + data
         return ipv4.ipv4_cksum(pkt)
 
     # XXX The following code is common to both the TCP and UDP modules,
@@ -280,7 +282,7 @@ class tcp(pcs.Packet):
         # outer header was found.
         if ip is None and ip6 is None:
             self.checksum = 0
-            self.checksum = ipv4.ipv4_cksum(self.getbytes())
+            self.checksum = ipv4.ipv4_cksum(self.getpdata())
             return
         # If we found both IPv4 and IPv6 headers then we must break the tie.
         # The closest outer header wins and is used for checksum calculation.
@@ -307,9 +309,9 @@ class tcp(pcs.Packet):
         pip.src = ip.src
         pip.dst = ip.dst
         pip.protocol = IPPROTO_TCP
-        pip.length = len(self.getbytes()) + len(payload)
-        tmpbytes = pip.getbytes() + self.getbytes() + payload
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+        pip.length = len(self.getpdata()) + len(payload)
+        tmppdata = pip.getpdata() + self.getpdata() + payload
+        self.checksum = ipv4.ipv4_cksum(tmppdata)
 
     def calc_checksum_v6(self, ip6):
         """Calculate and store the checksum for the TCP segment
@@ -322,14 +324,14 @@ class tcp(pcs.Packet):
         pip6.src = ip6.src
         pip6.dst = ip6.dst
         pip6.next_header = ip6.next_header
-        pip6.length = len(self.getbytes()) + len(payload)
-        tmpbytes = pip6.getbytes() + self.getbytes() + payload
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+        pip6.length = len(self.getpdata()) + len(payload)
+        tmppdata = pip6.getpdata() + self.getpdata() + payload
+        self.checksum = ipv4.ipv4_cksum(tmppdata)
 
     def calc_length(self):
         """Calculate and store the length field(s) for this packet.
            For TCP, we need only calculate the length of the header and
            any appended options; the length of the TCP payload is
            calculated from the length field in the outer IP/IP6 header."""
-        tmpoff = len(self.getbytes())
+        tmpoff = len(self.getpdata())
         self.off = (tmpoff >> 2)

@@ -45,7 +45,7 @@ class Common(pcs.Packet):
     _layout = pcs.Layout()
     _map = ptp_map.map
     
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize the common header """
         transportSpecific = pcs.Field("transportSpecific", 4)
         messageType = pcs.Field("versionNetwork", 4, discriminator = True)
@@ -69,7 +69,7 @@ class Common(pcs.Packet):
                                    reserved2,
                                    sourcePortIdentity, sequenceId, controlField,
                                    logMessageInterval],
-                            bytes = bytes, **kv)
+                            pdata = pdata, **kv)
 
         self.description = "PTP Common Header"
 
@@ -78,8 +78,8 @@ class Common(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[self.sizeof():len(bytes)],
+        if (pdata is not None):
+            self.data = self.next(pdata[self.sizeof():len(pdata)],
                                   timestamp = timestamp)
         else:
             self.data = None

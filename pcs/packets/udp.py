@@ -47,34 +47,34 @@ class udp(pcs.Packet):
     _layout = pcs.Layout()
     _map = None
 
-    def __init__(self, bytes = None, timestamp = None, **kv):
+    def __init__(self, pdata = None, timestamp = None, **kv):
         """initialize a UDP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
         length = pcs.Field("length", 16)
         checksum = pcs.Field("checksum", 16)
         pcs.Packet.__init__(self, [sport, dport, length, checksum],
-                            bytes, **kv)
+                            pdata, **kv)
         self.description = "UDP"
         if timestamp is None:
             self.timestamp = time.time()
         else:
             self.timestamp = timestamp
 
-        if (bytes is not None):
-            self.data = self.next(bytes[8:len(bytes)], timestamp)
+        if (pdata is not None):
+            self.data = self.next(pdata[8:len(pdata)], timestamp)
         else:
             self.data = None
 
     # XXX UDP MUST have its own next() and rdiscriminate() functions,
     # so that it can discriminate on either sport or dport.
 
-    def next(self, bytes, timestamp):
+    def next(self, pdata, timestamp):
         """Decode higher level services."""
         if (self.dport in udp_map.map):
-            return udp_map.map[self.dport](bytes, timestamp = timestamp)
+            return udp_map.map[self.dport](pdata, timestamp = timestamp)
         if (self.sport in udp_map.map):
-            return udp_map.map[self.sport](bytes, timestamp = timestamp)
+            return udp_map.map[self.sport](pdata, timestamp = timestamp)
 
         return None
 
@@ -104,7 +104,7 @@ class udp(pcs.Packet):
         # outer header was found.
         if ip is None and ip6 is None:
             self.checksum = 0
-            self.checksum = ipv4.ipv4_cksum(self.getbytes())
+            self.checksum = ipv4.ipv4_cksum(self.getpdata())
             return
         # If we found both IPv4 and IPv6 headers then we must break the tie.
         # The closest outer header wins and is used for checksum calculation.
@@ -131,9 +131,9 @@ class udp(pcs.Packet):
         pip.src = ip.src
         pip.dst = ip.dst
         pip.protocol = socket.IPPROTO_UDP
-        pip.length = len(self.getbytes()) + len(payload)
-        tmpbytes = pip.getbytes() + self.getbytes() + payload
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+        pip.length = len(self.getpdata()) + len(payload)
+        tmppdata = pip.getpdata() + self.getpdata() + payload
+        self.checksum = ipv4.ipv4_cksum(tmppdata)
 
     def calc_checksum_v6(self, ip6):
         """Calculate and store the checksum for the UDP datagram
@@ -147,12 +147,12 @@ class udp(pcs.Packet):
         pip6.src = ip6.src
         pip6.dst = ip6.dst
         pip6.next_header = ip6.next_header
-        pip6.length = len(self.getbytes()) + len(payload)
-        tmpbytes = pip6.getbytes() + self.getbytes() + payload
-        self.checksum = ipv4.ipv4_cksum(tmpbytes)
+        pip6.length = len(self.getpdata()) + len(payload)
+        tmppdata = pip6.getpdata() + self.getpdata() + payload
+        self.checksum = ipv4.ipv4_cksum(tmppdata)
 
     def calc_length(self):
         """Calculate and store the length field(s) for this packet."""
-        self.length = len(self.getbytes())
+        self.length = len(self.getpdata())
         if self._head is not None:
             self.length += len(self._head.collate_following(self))

@@ -83,7 +83,7 @@ def main():
     reply = output.readpkt()
     reply = output.readpkt()
 
-    print reply
-    print reply.data
+    print(reply)
+    print(reply.data)
 
 main()
