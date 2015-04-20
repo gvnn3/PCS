@@ -131,25 +131,25 @@ class udpTestCase(unittest.TestCase):
         from pcs import inet_atol
         from pcs.packets.payload import payload
 
-        c = ethernet(src="\x01\x02\x03\x04\x05\x06",		\
-                     dst="\xff\xff\xff\xff\xff\xff") /		\
+        c = ethernet(src=b"\x01\x02\x03\x04\x05\x06",		\
+                     dst=b"\xff\xff\xff\xff\xff\xff") /		\
             ipv4(src=inet_atol("192.168.123.17"),		\
                  dst=inet_atol("192.0.2.2"), id=5235) /		\
             udp(sport=67, dport=68) /				\
-            payload("foobar\n")
+            payload(b"foobar\n")
 
         c.calc_lengths()
         c.calc_checksums()
         c.encode()
 
         expected = \
-        "\xFF\xFF\xFF\xFF\xFF\xFF\x01\x02" \
-        "\x03\x04\x05\x06\x08\x00\x45\x00" \
-        "\x00\x23\x14\x73\x00\x00\x40\x11" \
-        "\x68\x9B\xC0\xA8\x7B\x11\xC0\x00" \
-        "\x02\x02\x00\x43\x00\x44\x00\x0F" \
-        "\xC0\x48\x66\x6F\x6F\x62\x61\x72" \
-        "\x0A"
+        b"\xFF\xFF\xFF\xFF\xFF\xFF\x01\x02" \
+        b"\x03\x04\x05\x06\x08\x00\x45\x00" \
+        b"\x00\x23\x14\x73\x00\x00\x40\x11" \
+        b"\x68\x9B\xC0\xA8\x7B\x11\xC0\x00" \
+        b"\x02\x02\x00\x43\x00\x44\x00\x0F" \
+        b"\xC0\x48\x66\x6F\x6F\x62\x61\x72" \
+        b"\x0A"
 
         gotttted = c.pdata
         self.assertEqual(expected, gotttted, "test raw encoding")
