@@ -107,9 +107,9 @@ class etherTestCase(unittest.TestCase):
 #        ether = ethernet(packet)
         ether = file.readpkt()
         assert (ether != None)
-        self.assertEqual(ether.dst, "\x00\x10\xdb\x3a\x3a\x77",
+        self.assertEqual(ether.dst, b"\x00\x10\xdb\x3a\x3a\x77",
                          "dst not equal %s" % ether.src)
-        self.assertEqual(ether.src, "\x00\x0d\x93\x44\xfa\x62",
+        self.assertEqual(ether.src, b"\x00\x0d\x93\x44\xfa\x62",
                          "src not equal %s" % ether.dst)
         self.assertEqual(ether.type, 0x800, "type not equal %d" % ether.type)
 

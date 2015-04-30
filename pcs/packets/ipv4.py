@@ -235,8 +235,8 @@ class ipv4(pcs.Packet):
         tmppdata = pdata
         total = 0
         if len(tmppdata) % 2 == 1:
-            tmppdata += "\0"
-        for i in range(len(tmppdata)/2):
+            tmppdata += b"\0"
+        for i in range(len(tmppdata)//2):
             total += (struct.unpack("!H", tmppdata[2*i:2*i+2])[0])
         total = (total >> 16) + (total & 0xffff)
         total += total >> 16

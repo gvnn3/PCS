@@ -568,7 +568,7 @@ class TypeLengthValueField(object):
 
         if self.bytewise is True:
             # Length should be encoded as a measure of bytes, not bits.
-            self.length.value /= 8
+            self.length.value //= 8
 
         [byte, byteBR] = self.type.encode(bytearray, self.type.value, byte, byteBR)
         [byte, byteBR] = self.length.encode(bytearray, self.length.value, byte, byteBR)
