@@ -53,9 +53,9 @@ class tcp(pcs.Packet):
         """initialize a TCP packet"""
         sport = pcs.Field("sport", 16)
         dport = pcs.Field("dport", 16)
-        seq = pcs.Field("sequence", 32)
-        acknum = pcs.Field("ack_number", 32)
-        off = pcs.Field("offset", 4, default=5)
+        sequence = pcs.Field("sequence", 32)
+        ack_number = pcs.Field("ack_number", 32)
+        offset = pcs.Field("offset", 4, default=5)
         reserved = pcs.Field("reserved", 3)
         ns = pcs.Field("ns", 1)
         cwr = pcs.Field("cwr", 1)
@@ -68,11 +68,12 @@ class tcp(pcs.Packet):
         fin = pcs.Field("fin", 1)
         window = pcs.Field("window", 16)
         checksum = pcs.Field("checksum", 16)
-        urgp = pcs.Field("urg_pointer",16)
+        urg_pointer = pcs.Field("urg_pointer",16)
         options = pcs.OptionListField("options")
-        pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
-                                   ns, cwr, ece, urg, ack, psh, rst, syn, fin,
-                                   window, checksum, urgp, options],
+        pcs.Packet.__init__(self, [sport, dport, sequence, ack_number, offset,
+                                   reserved, ns, cwr, ece, urg, ack, psh, rst,
+                                   syn, fin, window, checksum, urg_pointer,
+                                   options],
                             bytes = bytes,  **kv)
         self.description = "TCP"
         if timestamp is None:
@@ -252,7 +253,7 @@ class tcp(pcs.Packet):
         return retval
 
     def pretty(self, attr):
-        """Pretty prting a field"""
+        """Pretty print a field"""
         pass
 
     def cksum(self, ip, data = ""):
@@ -340,4 +341,4 @@ class tcp(pcs.Packet):
            any appended options; the length of the TCP payload is
            calculated from the length field in the outer IP/IP6 header."""
         tmpoff = len(self.getbytes())
-        self.off = (tmpoff >> 2)
+        self.offset = (tmpoff >> 2)
