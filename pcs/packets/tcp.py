@@ -55,8 +55,11 @@ class tcp(pcs.Packet):
         dport = pcs.Field("dport", 16)
         seq = pcs.Field("sequence", 32)
         acknum = pcs.Field("ack_number", 32)
-        off = pcs.Field("offset", 4)
-        reserved = pcs.Field("reserved", 6)
+        off = pcs.Field("offset", 4, default=5)
+        reserved = pcs.Field("reserved", 3)
+        ns = pcs.Field("ns", 1)
+        cwr = pcs.Field("cwr", 1)
+        ece = pcs.Field("ece", 1)
         urg = pcs.Field("urgent", 1)
         ack = pcs.Field("ack", 1)
         psh = pcs.Field("push", 1)
@@ -68,8 +71,8 @@ class tcp(pcs.Packet):
         urgp = pcs.Field("urg_pointer",16)
         options = pcs.OptionListField("options")
         pcs.Packet.__init__(self, [sport, dport, seq, acknum, off, reserved,
-                                   urg, ack, psh, rst, syn, fin, window,
-                                   checksum, urgp, options],
+                                   ns, cwr, ece, urg, ack, psh, rst, syn, fin,
+                                   window, checksum, urgp, options],
                             bytes = bytes,  **kv)
         self.description = "TCP"
         if timestamp is None:
