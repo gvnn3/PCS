@@ -1220,7 +1220,7 @@ class Packet(object):
 
         # If the caller passes their own discriminator then we use the
         # caller's otherwise we use the one built into the packet.
-        # The use of a caller supplied discriminator allows use to
+        # The use of a caller supplied discriminator allows us to
         # more easily unpack packets that are chunked, where the
         # current packet does not contain knowledge about what comes
         # next.
