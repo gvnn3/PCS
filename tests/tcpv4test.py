@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
 class tcpTestCase(unittest.TestCase):
     def test_tcpv4(self):
-        # create one packet, copy its bytes, then compare their fields
+        """Create one packet, copy its bytes, then compare their fields"""
         tcppacket = tcp()
         assert (tcppacket != None)
         tcppacket.sport = 51
@@ -77,6 +77,37 @@ class tcpTestCase(unittest.TestCase):
         self.assertEqual(tcppacket.bytes, tcpnew.bytes, "bytes not equal")
         for field in tcppacket._fieldnames:
             self.assertEqual(getattr(tcppacket, field), getattr(tcpnew, field), ("%s not equal" % field))
+
+    def test_tcpv4_offset(self):
+        """Test the computed data offset field of the packet, without options"""
+        tcppacket = tcp()
+        tcppacket.offset = 0
+        tcppacket.calc_length()
+        self.assertEqual(tcppacket.offset, 5)
+
+    def test_tcpv4_offset_with_options(self):
+        """Test the computed data offset field of the packet, with options"""
+        tcppacket = tcp()
+        tcppacket.offset = 0
+        nop = pcs.Field("nop", 8)
+        mss = pcs.TypeLengthValueField("mss",
+                                       pcs.Field("t", 8, default = 0x02),
+                                       pcs.Field("l", 8),
+                                       pcs.Field("v", 16))
+        end = pcs.Field("end", 8)
+
+        nop.value = 1
+        mss.value.value = 1460		# Most common Internet MSS value.
+
+	# Build a TCP option list which will be 32-bits aligned.
+        tcppacket.options.append(nop)
+        tcppacket.options.append(nop)
+        tcppacket.options.append(mss)
+        tcppacket.options.append(nop)
+        tcppacket.options.append(end)
+
+        tcppacket.calc_length()
+        self.assertEqual(tcppacket.offset, 7)
 
     def test_tcpv4_read(self):
         """This test reads from a pre-stored pcap file generated with tcpdump."""
@@ -144,10 +175,10 @@ class tcpTestCase(unittest.TestCase):
         assert (tcppacket)
 
 	# pre tcp options:
-        #expected = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n"
+        #expected = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nns 0\ncwr 0\nece 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n"
 
 	# post tcp options:
-        expected = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n" \
+        expected = "TCP\nsport 53678\ndport 80\nsequence 1351059655\nack_number 0\noffset 11\nreserved 0\nns 0\ncwr 0\nece 0\nurgent 0\nack 0\npush 0\nreset 0\nsyn 1\nfin 0\nwindow 65535\nchecksum 15295\nurg_pointer 0\n" \
 		   "options [" \
 			"[Field: mss, Value: " \
 				"<pcs.Field  name v, 16 bits, " \
@@ -191,7 +222,8 @@ class tcpTestCase(unittest.TestCase):
 	# game "python" say we have to preserve the structure of
 	# objects returned by __repr__().
         expected = "<TCP: sport: 53678, dport: 80, sequence: 1351059655, " \
-		   "ack_number: 0, offset: 11, reserved: 0, urgent: 0, " \
+		   "ack_number: 0, offset: 11, reserved: 0, " \
+                   "ns: 0, cwr: 0, ece: 0, urgent: 0, " \
 		   "ack: 0, push: 0, reset: 0, syn: 1, fin: 0, " \
 		   "window: 65535, checksum: 15295, urg_pointer: 0, " \
 		   "options: [" \
