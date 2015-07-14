@@ -640,7 +640,7 @@ class OptionListField(CompoundField, list):
        Option lists inhabit many protocols, including IP and TCP."""
 
     def __init__(self, name, width = 0, option_list = [], compare = None):
-        """Iniitialize an OptionListField."""
+        """Initialize an OptionListField."""
         list.__init__(self)
         self.packet = None
         self.name = name
@@ -671,6 +671,10 @@ class OptionListField(CompoundField, list):
         retval =  (self._options[self.index].value)
         self.index += 1
         return retval
+
+    def get_byname(self, name):
+        """Get all options matching the given name"""
+        return [opt for opt in self._options if opt.name == name]
     
     def __eq__(self, other):
         """Test two option lists for equality.
