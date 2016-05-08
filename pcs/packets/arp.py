@@ -111,36 +111,3 @@ class arp(pcs.Packet):
         retval += "%s\n" % inet_ntop(AF_INET, struct.pack('!L', self.tpa))
 
         return retval
-
-#
-# Functions defined for the module.
-#
-def ether_atob(pretty):
-    """Take a pretty version of an ethernet address and convert it to a
-    string of bytes.
-
-    The input string MUST be of the form xx:yy:zz:aa:bb:cc and leading
-    zero's must be supplied.  Nor error checking is performed.
-    """
-    addr = ""
-    for i in 0, 3, 6, 9, 12, 15:
-        addr += "%c" % int(pretty[i:i+2], 16)
-        return addr
-
-
-def ether_btoa(bytes):
-    """Take a set of bytes and convert them to a pretty version of
-    and Ethernet address.
-
-    The input buffer MUST be at least 6 bytes long and bytes after the
-    sixth are ignored.  No error checking is performed.
-    """
-
-    pretty = ""
-    for i in (range(5)):
-        pretty += hex(bytes[i])[2:4] # Strip the 0x from the string
-        pretty += ':'
-        
-    pretty += hex(bytes[5])[2:4] # Strip the 0x from the string
-
-    return pretty
