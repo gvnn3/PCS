@@ -33,7 +33,7 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: This module performs a self test on the IPv4 packet.
+# Description: This module performs a self test on the ICMPv4 packet.
 # That is to say it first encodes a packet, then decodes it and makes
 # sure that the data matches.
 
