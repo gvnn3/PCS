@@ -1,4 +1,4 @@
-# Copyright (c) 2009, Neville-Neil Consulting
+# Copyright (c) 2009-2016, Neville-Neil Consulting
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
