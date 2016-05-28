@@ -76,9 +76,9 @@ class icmpv6(pcs.Packet):
 
     _layout = pcs.Layout()
 
-    def __init__(self, type = 0, bytes = None, **kv):
+    def __init__(self, bytes = None, type = 0, **kv):
         """icmpv6 header RFC2463 and RFC2461"""
-        ty = pcs.Field("type", 8, default = type)
+        ty = pcs.Field("type", 8, default = type, discriminator=True)
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
         if type == ICMP6_ECHO_REQUEST or type == ICMP6_ECHO_REPLY:
@@ -130,6 +130,7 @@ class icmpv6(pcs.Packet):
             mcast = pcs.StringField("mcastaddr", 16 * 8)
             pcs.Packet.__init__(self, [ty, code, cksum, md, reserved, mcast], bytes, **kv)            
         else:
+            self.description = "ICMPv6"
             pcs.Packet.__init__(self, [ty, code, cksum], bytes, **kv)
 
     def cksum(self, ip, data = "", nx = 0):

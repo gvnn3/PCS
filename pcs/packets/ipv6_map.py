@@ -41,6 +41,7 @@
 from socket import IPPROTO_UDP, IPPROTO_TCP, IPPROTO_AH, IPPROTO_ESP, IPPROTO_ICMP
 
 IPPROTO_SCTP = 132
+IPV6_ICMP = 58
 
 import udp, tcp, ipsec, icmpv6 # sctp
 
@@ -48,5 +49,5 @@ map = {IPPROTO_UDP: udp.udp,
        IPPROTO_TCP: tcp.tcp,
        IPPROTO_AH: ipsec.ah,
        IPPROTO_ESP: ipsec.esp,
-       IPPROTO_ICMP: icmpv6.icmpv6}
+       IPV6_ICMP: icmpv6.icmpv6}
 
