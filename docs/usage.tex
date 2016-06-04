@@ -2,6 +2,102 @@
 \begin{frame}
 	\frametitle{Introduction}
 	\begin{itemize}
+	\item History
+	\item A new idea
+	\item Features
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{History}
+	\begin{itemize}
+	\item Protocols in C
+	\item Postel´s Advice/Curse
+	\item Bits of Bytes and Octets
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Packets are First Class}
+	\begin{itemize}
+	\item Classes
+	\item Flexible Fields
+	\item Can be sub classed
+	\item Contain their data
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Bit Twiddling in C}
+	\begin{lstlisting}
+
+	\end{lstlisting}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Packet Class Usage}
+	\begin{lstlisting}
+>>> from pcs.packets.ipv4 import *
+>>> ip = ipv4()
+>>> print ip
+version 4
+hlen 0
+tos 0
+length 0
+id 0
+flags 0
+offset 0
+ttl 64
+protocol 0
+checksum 0
+src 0.0.0.0
+dst 0.0.0.0
+	\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}
+	\frametitle{Update a Value}
+	\begin{lstlisting}
+>> ip.hlen=5<<2
+>>> print ip
+version 4
+hlen 20
+tos 0
+length 0
+id 0
+flags 0
+offset 0
+ttl 64
+protocol 0
+checksum 0
+src 0.0.0.0
+dst 0.0.0.0
+	\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}
+	\frametitle{Features}
+	\begin{itemize}
+	\item $n$ builtin packets
+	\item Connectors
+	\item Trivial to add new packets
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Add a Packet}
+	\begin{itemize}
+	\item
+	\item
+	\item
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Use a Connector}
+	\begin{itemize}
 	\item
 	\item
 	\item
@@ -36,48 +132,6 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Packet Class Usage}
-	\begin{lstlisting}
->>> from pcs.packets.ipv4 import *
->>> ip = ipv4()
->>> print ip
-version 4
-hlen 0
-tos 0
-length 0
-id 0
-flags 0
-offset 0
-ttl 64
-protocol 0
-checksum 0
-src 0.0.0.0
-dst 0.0.0.0
-	end{lstlisting}
-\end{frame}
-
-
-\begin{frame}
-	\frametitle{Update a Value}
-	\begin{lstlisting}
->> ip.hlen=5<<2
->>> print ip
-version 4
-hlen 20
-tos 0
-length 0
-id 0
-flags 0
-offset 0
-ttl 64
-protocol 0
-checksum 0
-src 0.0.0.0
-dst 0.0.0.0
-	\end{lstlisting}
-\end{frame}
-
-\begin{frame}
 	\frametitle{}
 	\begin{lstlisting}
 
@@ -91,4 +145,12 @@ dst 0.0.0.0
 	\end{lstlisting}
 \end{frame}
 
+\begin{frame}
+	\frametitle{}
+	\begin{itemize}
+	\item
+	\item
+	\item
+	\end{itemize}
+\end{frame}
 
