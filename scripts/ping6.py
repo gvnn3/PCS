@@ -85,7 +85,8 @@ def main():
         ipv6(hop=64, next_header = 58, length = plen, \
                      src=inet_pton(AF_INET6, options.ip_source),  \
                      dst=inet_pton(AF_INET6, options.ip_dest)) / \
-        icmpv6(type=ICMP6_ECHO_REQUEST, id=12345) / \
+        icmpv6(type=ICMP6_ECHO_REQUEST) / \
+        icmpv6echo(id=12345) / \
         payload(payload="foobar")
 
     c.calc_lengths()
@@ -95,13 +96,14 @@ def main():
     #
     output = PcapConnector(options.ether_iface)
     ip = c.packets[1]
-    icmpecho = c.packets[2]
+    icmp = c.packets[2]
+    icmpecho = c.packets[3]
     count = int(options.count)
     while (count > 0):
-        # c.calc_checksums()
-        # icmpecho.cksum = icmpv6.cksum(icmpecho, ip)
-        # icmpecho.calc_checksum()
-        c.encode()
+        #c.calc_checksums()
+        #icmpecho.cksum = icmpv6.cksum(icmpecho, ip)
+        icmp.calc_checksum()
+        print icmp
 
         out = output.write(c.bytes, len(c.bytes))
 #        packet = input.read()

@@ -36,9 +36,10 @@
 
 import pcs
 import pcs.packets.pseudoipv6
-import pcs.packets.ipv4
 
 import struct
+
+import time
 
 # icmp6 type
 ND_ROUTER_SOLICIT = 133
@@ -53,17 +54,18 @@ MLD6_LISTENER_DONE = 132
 MLD6_MTRACE_RESP = 200
 MLD6_MTRACE = 201
 
-ICMP6_ROUTER_RENUMBERING = 138
-ICMP6_NI_QUERY = 139
-ICMP6_NI_REPLY = 140
-ICMP6_WRUREQUEST = 139	
-ICMP6_WRUREPLY = 140	
 ICMP6_DST_UNREACH = 1
 ICMP6_PACKET_TOO_BIG = 2
 ICMP6_TIME_EXCEEDED = 3
 ICMP6_PARAM_PROB = 4
 ICMP6_ECHO_REQUEST = 128	
 ICMP6_ECHO_REPLY = 129
+
+ICMP6_ROUTER_RENUMBERING = 138
+ICMP6_NI_QUERY = 139
+ICMP6_NI_REPLY = 140
+ICMP6_WRUREQUEST = 139	
+ICMP6_WRUREPLY = 140	
 
 # router renumbering flags
 ICMP6_RR_FLAGS_TEST	= 0x80
@@ -72,66 +74,167 @@ ICMP6_RR_FLAGS_FORCEAPPLY = 0x20
 ICMP6_RR_FLAGS_SPECSITE	= 0x10
 ICMP6_RR_FLAGS_PREVDONE = 0x08
 
-class icmpv6(pcs.Packet):
+# ICMP Error Codes (from FreeBSD netinet/icmp6.h)
+ICMP6_DST_UNREACH_NOROUTE = 0	# no route to destination
+ICMP6_DST_UNREACH_ADMIN	 = 1	# administratively prohibited
+ICMP6_DST_UNREACH_NOTNEIGHBOR = 2	# not a neighbor(obsolete)
+ICMP6_DST_UNREACH_BEYONDSCOPE = 2	# beyond scope of source address
+ICMP6_DST_UNREACH_ADDR = 3	# address unreachable
+ICMP6_DST_UNREACH_NOPORT = 4	# port unreachable
+ICMP6_DST_UNREACH_POLICY = 5	# failed ingress/egress policy
+ICMP6_DST_UNREACH_REJECT = 6	# Reject route to destination
+
+ICMP6_TIME_EXCEED_TRANSIT = 0	# ttl==0 in transit
+ICMP6_TIME_EXCEED_REASSEMBLY = 1 # ttl==0 in reass
+
+ICMP6_PARAMPROB_HEADER = 0	# erroneous header field
+ICMP6_PARAMPROB_NEXTHEADER = 1	# unrecognized next header
+ICMP6_PARAMPROB_OPTION = 2	# unrecognized option
+
+class icmpv6unreach(pcs.Packet):
+    """ICMPv6 Destination Unreachable"""
 
     _layout = pcs.Layout()
 
-    def __init__(self, bytes = None, type = 0, **kv):
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        """initialize an ICMPv6 destination unreachable packet"""
+        unused = pcs.Field("unused", 32)
+        pcs.Packet.__init__(self, [unused], bytes, **kv)
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if bytes is not None:
+            offset = self.sizeof()
+            from pcs.packets import payload
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+
+class icmpv6mtu(pcs.Packet):
+    """ICMPv6 Packet Too Big"""
+
+    _layout = pcs.Layout()
+
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        """initialize an ICMPv6 packet too big packet"""
+        mtu = pcs.Field("mtu", 32)
+        pcs.Packet.__init__(self, [mtu], bytes, **kv)
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if bytes is not None:
+            offset = self.sizeof()
+            from pcs.packets import payload
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+
+class icmpv6time(pcs.Packet):
+    """ICMPv6 Time Exceeded"""
+
+    _layout = pcs.Layout()
+
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        """initialize an ICMPv6 time exceeded packet"""
+        unused = pcs.Field("unused", 32)
+        seq = pcs.Field("sequence", 16)
+        pcs.Packet.__init__(self, [id, seq], bytes, **kv)
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if bytes is not None:
+            offset = self.sizeof()
+            from pcs.packets import payload
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+
+class icmpv6param(pcs.Packet):
+    """ICMPv6 Parameter Problem"""
+
+    _layout = pcs.Layout()
+
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        """initialize an ICMPv6 packet too big packet"""
+        pointer = pcs.Field("pointer", 32)
+        pcs.Packet.__init__(self, [mtu], bytes, **kv)
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if bytes is not None:
+            offset = self.sizeof()
+            from pcs.packets import payload
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+
+class icmpv6echo(pcs.Packet):
+    """ICMPv6 Echo"""
+
+    _layout = pcs.Layout()
+
+    def __init__(self, bytes = None, timestamp = None, **kv):
+        """initialize an ICMPv6 echo packet, used by ping6(8) and others"""
+        id = pcs.Field("id", 16)
+        seq = pcs.Field("sequence", 16)
+        pcs.Packet.__init__(self, [id, seq], bytes, **kv)
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        if bytes is not None:
+            offset = self.sizeof()
+            from pcs.packets import payload
+            self.data = payload.payload(bytes[offset:len(bytes)])
+        else:
+            self.data = None
+    
+icmp6_map = {
+	ICMP6_DST_UNREACH:	icmpv6unreach,
+	ICMP6_PACKET_TOO_BIG:	icmpv6mtu,
+	ICMP6_TIME_EXCEEDED:	icmpv6time,
+	ICMP6_PARAM_PROB:	icmpv6param,
+	ICMP6_ECHO_REQUEST:	icmpv6echo,
+	ICMP6_ECHO_REPLY:	icmpv6echo
+}
+
+class icmpv6(pcs.Packet):
+
+    _layout = pcs.Layout()
+    _map = icmp6_map
+    
+    def __init__(self, bytes = None, timestamp = None, type = 0, **kv):
         """icmpv6 header RFC2463 and RFC2461"""
         ty = pcs.Field("type", 8, default = type, discriminator=True)
         code = pcs.Field("code", 8)
         cksum = pcs.Field("checksum", 16)
-        if type == ICMP6_ECHO_REQUEST or type == ICMP6_ECHO_REPLY:
-            id = pcs.Field("id", 16)
-            seq = pcs.Field("sequence", 16)
-            pcs.Packet.__init__(self, [ty, code, cksum, id, seq], bytes, **kv)
-        elif type == ICMP6_TIME_EXCEEDED or type == ICMP6_DST_UNREACH or type == ND_ROUTER_SOLICIT:
-            unused = pcs.Field("unused", 32)
-            pcs.Packet.__init__(self, [ty, code, cksum, unused], bytes, **kv)
-        elif type == ICMP6_PARAM_PROB:
-            pointer = pcs.Field("pointer", 32)
-            pcs.Packet.__init__(self, [ty, code, cksum, pointer], bytes, **kv)
-        elif type == ICMP6_PACKET_TOO_BIG:
-            mtu = pcs.Field("mtu", 32)
-            pcs.Packet.__init__(self, [ty, code, cksum, mtu], bytes, **kv)
-        elif type == ICMP6_NI_QUERY or type == ICMP6_NI_REPLY:
-            qtype = pcs.Field("qtype", 16)
-            flags = pcs.Field("flags", 16)
-            nonce = pcs.Field("nonce", 64)
-            pcs.Packet.__init__(self, [ty, code, cksum, qtype, flags, nonce], bytes, **kv)
-        elif type == ND_ROUTER_ADVERT:
-            chp = pcs.Field("current_hop_limit", 8)
-            m = pcs.Field("m", 1)
-            o = pcs.Field("o", 1)
-            unused = pcs.Field("unused", 6)
-            rlf = pcs.Field("router_lifetime", 16)
-            rct = pcs.Field("reachable_time", 32)
-            rtt = pcs.Field("retrans_timer", 32)
-            pcs.Packet.__init__(self, [ty, code, cksum, chp, m, o, unused, rlf, rct, rtt], bytes, **kv)
-        elif type == ND_NEIGHBOR_SOLICIT:
-            reserved = pcs.Field("reserved", 32)
-            target = pcs.StringField("target", 16 * 8)
-            pcs.Packet.__init__(self, [ty, code, cksum, reserved, target], bytes, **kv)
-        elif type == ND_NEIGHBOR_ADVERT:
-            r = pcs.Field("router", 1)
-            s = pcs.Field("solicited", 1)
-            o = pcs.Field("override", 1)
-            reserved = pcs.Field("reserved", 29)
-            target = pcs.StringField("target", 16 * 8)
-            pcs.Packet.__init__(self, [ty, code, cksum, r, s, o, reserved, target], bytes, **kv)
-        elif type == ND_REDIRECT:
-            reserved = pcs.Field("reserved", 32)
-            target = pcs.StringField("target", 16 * 8)
-            dest = pcs.StringField("destination", 16 * 8)
-            pcs.Packet.__init__(self, [ty, code, cksum, reserved, target, dest], bytes, **kv)
-        elif type == MLD6_LISTENER_QUERY or type == MLD6_LISTENER_REPORT or type == MLD6_LISTENER_DONE:
-            md = pcs.Field("maxdelay", 16)
-            reserved = pcs.Field("reserved", 16)
-            mcast = pcs.StringField("mcastaddr", 16 * 8)
-            pcs.Packet.__init__(self, [ty, code, cksum, md, reserved, mcast], bytes, **kv)            
+        self.description = "ICMPv6"
+        pcs.Packet.__init__(self, [ty, code, cksum], bytes, **kv)
+        if timestamp is None:
+            self.timestamp = time.time()
         else:
-            self.description = "ICMPv6"
-            pcs.Packet.__init__(self, [ty, code, cksum], bytes, **kv)
+            self.timestamp = timestamp
+            
+        if bytes is not None:
+            offset = self.sizeof()
+            # XXX Workaround Packet.next() -- it only returns something
+            # if it can discriminate.
+            self.data = self.next(bytes[offset:len(bytes)],
+                                  timestamp = timestamp)
+            if self.data is None:
+                from pcs.packets.payload import payload
+                self.data = payload(bytes[offset:len(bytes)])
+            else:
+                self.data = None
 
     def cksum(self, ip, data = "", nx = 0):
         """Calculate the checksum for this ICMPv6 header, outside
