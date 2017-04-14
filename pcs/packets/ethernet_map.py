@@ -47,6 +47,7 @@ ETHERTYPE_IPV6		= 0x86dd	# IPv6
 ETHERTYPE_MPLS		= 0x8847	# unicast
 ETHERTYPE_MPLS_M	= 0x8848	# multicast
 ETHERTYPE_SLOW		= 0x8809	# 802.3ad link aggregation (LACP)
+ETHERTYPE_TEST		= 0x8822	# Ethertype for test protocols ONLY
 
 map = {ETHERTYPE_IP: ipv4.ipv4,
        ETHERTYPE_ARP: arp.arp,
