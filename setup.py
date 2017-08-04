@@ -84,6 +84,7 @@ class config_pcap(config.config):
                     for sd in ('lib', ''):
                         for lib in (('pcap', 'libpcap.a'),
                                     ('pcap', 'libpcap.dylib'),
+                                    ('pcap', 'libpcap.so'),
                                     ('wpcap', 'wpcap.lib')):
                             if os.path.exists(os.path.join(d, sd, lib[1])):
                                 cfg['library_dirs'] = [ os.path.join(d, sd) ]
