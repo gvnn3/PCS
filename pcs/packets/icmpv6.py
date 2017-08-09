@@ -35,8 +35,9 @@
 # Description: A class which describes an ICMPv6 packet
 
 import pcs
-import pcs.packets.pseudoipv6
-import pcs.packets.ipv4
+from pcs.packets.pseudoipv6 import pseudoipv6
+from pcs.packets.ipv4 import ipv4
+
 
 import struct
 
@@ -133,6 +134,12 @@ class icmpv6(pcs.Packet):
             self.description = "ICMPv6"
             pcs.Packet.__init__(self, [ty, code, cksum], bytes, **kv)
 
+        if (bytes is not None):
+            self.data = self.next(bytes[self.sizeof():len(bytes)],
+                                  timestamp = timestamp)
+        else:
+            self.data = None
+
     def cksum(self, ip, data = "", nx = 0):
         """Calculate the checksum for this ICMPv6 header, outside
            of a chain."""
@@ -154,9 +161,9 @@ class icmpv6(pcs.Packet):
         self.checksum = 0
         if self._head is not None:
             payload = self._head.collate_following(self)
-            ip6 = self._head.find_preceding(self, pcs.packets.ipv6)
+            ip6 = self._head.find_preceding(self, pcs.packets.ipv6.ipv6)[0]
             assert ip6 is not None, "No preceding IPv6 header."
-            pip6 = pseudoipv6.pseudoipv6()
+            pip6 = pseudoipv6()
             pip6.src = ip6.src
             pip6.dst = ip6.dst
             pip6.next_header = ip6.next_header
@@ -169,7 +176,7 @@ class icmpv6(pcs.Packet):
 class icmpv6option(pcs.Packet):
 
     _layout = pcs.Layout()
-    
+
     def __init__(self, type = 0, bytes = None, **kv):
         """add icmp6 option header RFC2461"""
         ty = pcs.Field("type", 8, default = type)
@@ -197,10 +204,15 @@ class icmpv6option(pcs.Packet):
         elif type == 4:
             reserved = pcs.StringField("reserved", 48)
             pcs.Packet.__init__(self, [ty, length, reserved], bytes, **kv)
-        # MTU 
+        # MTU
         elif type == 5:
             reserved = pcs.Field("reserved", 16)
             mtu = pcs.Field("mtu", 32)
             pcs.Packet.__init__(self, [ty, length, reserved, mtu], bytes, **kv)
         else:
             pcs.Packet.__init__(self, [ty, length], bytes, **kv)
+
+    def calc_length(self):
+        """Calculate and store the length of the ICMPv6 option into the ICMPv6
+           option packet.  The length is in units of 8-octets (8-bytes)."""
+        self.length = len(self) >> 3

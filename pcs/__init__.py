@@ -1315,6 +1315,7 @@ class Packet(object):
         """Create a Packet from HTML."""
         pass
 
+
 class Chain(list):
     """A chain is simply a list of packets.  Chains are used to
     aggregate related sub packets into one chunk for transmission."""
@@ -1558,6 +1559,7 @@ class Chain(list):
         self.calc_lengths()
         self.calc_checksums()
         self.encode()
+
 
 class ConnNotImpError(Exception):
     """Calling a method that is not implemented raises this exception.

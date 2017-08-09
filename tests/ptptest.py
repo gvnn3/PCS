@@ -47,7 +47,7 @@ if __name__ == '__main__':
                               # with extra arguments.
 
     from pcs.packets.ptpv1 import *
-    from pcs.packets.ptpv1_common import Common
+    from pcs.packets.ptpv1_common import CommonV1
     from pcs.packets.ipv4 import ipv4
     from pcs.packets.udpv4 import udpv4
     import pcs
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 class ptpTestCase(unittest.TestCase):
     def test_ptp_header(self):
         # create one header, copy its bytes, then compare their fields
-        ptp = Common()
+        ptp = CommonV1()
         assert (ptp != None)
 
         ptp.versionPTP = 2
@@ -66,7 +66,7 @@ class ptpTestCase(unittest.TestCase):
         ptp.controlField = 0
 
         # Create a packet to compare against
-        ptpnew = Common()
+        ptpnew = CommonV1()
         ptpnew.decode(ptp.bytes)
 
         self.assertEqual(ptp.bytes, ptpnew.bytes, "bytes not equal")

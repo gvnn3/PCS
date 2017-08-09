@@ -58,7 +58,7 @@ class ipv6(pcs.Packet):
 
     _layout = pcs.Layout()
     _map = ipv6_map.map
-    
+
     def __init__(self, bytes = None, timestamp = None, **kv):
         """IPv6 Packet from RFC 2460"""
         version = pcs.Field("version", 4, default = 6)
@@ -78,17 +78,17 @@ class ipv6(pcs.Packet):
         else:
             self.timestamp = timestamp
 
-
         if (bytes is not None):
-            ## 40 bytes is the standard size of an IPv6 header
+            # 40 bytes is the standard size of an IPv6 header
             offset = 40
             self.data = self.next(bytes[offset:len(bytes)],
                                   timestamp = timestamp)
         else:
             self.data = None
-        
+
     def __str__(self):
-        """Walk the entire packet and pretty print the values of the fields.  Addresses are printed if and only if they are set and not 0."""
+        """Walk the entire packet and pretty print the values of the fields.
+           Addresses are printed if and only if they are set and not 0."""
         retval = ""
         for field in self._layout:
             if (field.name == "src" or field.name == "dst"):
@@ -110,3 +110,9 @@ class ipv6(pcs.Packet):
                 break
         return v6
 
+    def calc_length(self):
+        """Calculate the IPv6 payload length and store into header. Payload
+           length does not include the heads length."""
+        self.length = 0
+        if self._head is not None:
+            self.length = len(self._head.collate_following(self))

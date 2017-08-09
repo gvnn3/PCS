@@ -47,7 +47,7 @@ if __name__ == '__main__':
                               # with extra arguments.
 
     from pcs.packets.ptpv1 import *
-    from pcs.packets.ptpv1_common import Common
+    from pcs.packets.ptpv1_common import CommonV1
     from pcs.packets.ipv4 import ipv4
     from pcs.packets.udpv4 import udpv4
     import pcs
@@ -69,7 +69,7 @@ class ptpTestCase(unittest.TestCase):
         ptp.control = 0
 
         # Create a packet to compare against
-        ptpnew = Common()
+        ptpnew = CommonV1()
         ptpnew.decode(ptp.bytes)
 
         self.assertEqual(ptp.bytes, ptpnew.bytes, "bytes not equal")
