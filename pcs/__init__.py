@@ -227,6 +227,10 @@ layout of the data and how it is addressed."""
             (value > (2 ** self.width) - 1)):
             raise FieldBoundsError, "Value must be between 0 and %d but is %d" % ((2 ** self.width - 1), value)
 
+    def width(self):
+        """Return the width of a field."""
+        return self.width
+
     def __copy__(self):
         """Return a shallow copy of a Field; used by copy module.
            Fields may be copied, they are not immutable."""
@@ -1314,6 +1318,13 @@ class Packet(object):
     def fromHTML(self):
         """Create a Packet from HTML."""
         pass
+
+    def field(self, name):
+        """Return a field by name"""
+        for field in self._layout:
+            if field.name == name:
+                return (field)
+        raise FieldError()
 
 class Chain(list):
     """A chain is simply a list of packets.  Chains are used to
